@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-reliability-arena"
+version = "0.1.0"
+description = "Same model, same tools, same evidence rules—different orchestration."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{name = "Luca Panayiotou"}]
+keywords = ["ai-agents", "evaluation", "reliability", "multi-agent", "ai-safety"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.scripts]
+arena-run = "agent_reliability_arena.cli:run_main"
+arena-replay = "agent_reliability_arena.cli:replay_main"
+arena-export-web = "agent_reliability_arena.cli:export_web_main"
+
+[project.urls]
+Repository = "https://github.com/Luca-1304/agent-reliability-arena"
+Issues = "https://github.com/Luca-1304/agent-reliability-arena/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["agent_reliability_arena*", "completion_verifier*"]

@@ -1,0 +1,29 @@
+{
+  "conditions": [
+    "general",
+    "specialist"
+  ],
+  "contract": {
+    "content": "Verified output from Agent Reliability Arena.\n",
+    "contract_id": "arena-contract-v1",
+    "path": "output/result.txt"
+  },
+  "experiment_id": "fixture-v1",
+  "generated_at": "2026-07-21T00:00:00Z",
+  "max_mutation_attempts": 2,
+  "model_id": "fixture-model-v1",
+  "model_version": "1",
+  "prompt_version": "fixture-prompts-v1",
+  "scenarios": [
+    "success",
+    "false_success",
+    "partial_write",
+    "timeout_before_write",
+    "timeout_after_write",
+    "rollback",
+    "path_traversal",
+    "symlink_escape"
+  ],
+  "seed": 1304,
+  "task": "Write the exact contracted content to the exact relative path."
+}

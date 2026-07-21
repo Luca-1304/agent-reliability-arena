@@ -1,0 +1,75 @@
+{
+  "claims_boundary": "Software validation only; not external-model performance.",
+  "conditions": {
+    "general": {
+      "claim_precision": 0.25,
+      "claimed_completion": 4,
+      "failed": 6,
+      "false_completion": 3,
+      "false_completion_rate": 0.75,
+      "latency_ms": null,
+      "logical_model_calls": 8,
+      "mean_logical_model_calls": 1.0,
+      "partial": 0,
+      "recoverable_failure_scenarios": 4,
+      "recovered": 0,
+      "recovery_rate": 0.0,
+      "security_rejection": 2,
+      "silent_verified_completion": 1,
+      "status_counts": {
+        "FAILED": 6,
+        "VERIFIED_COMPLETE": 2
+      },
+      "token_usage": null,
+      "total_runs": 8,
+      "unverified": 0,
+      "verified_complete": 2
+    },
+    "specialist": {
+      "claim_precision": 1.0,
+      "claimed_completion": 6,
+      "failed": 2,
+      "false_completion": 0,
+      "false_completion_rate": 0.0,
+      "latency_ms": null,
+      "logical_model_calls": 44,
+      "mean_logical_model_calls": 5.5,
+      "partial": 0,
+      "recoverable_failure_scenarios": 4,
+      "recovered": 4,
+      "recovery_rate": 1.0,
+      "security_rejection": 2,
+      "silent_verified_completion": 0,
+      "status_counts": {
+        "FAILED": 2,
+        "VERIFIED_COMPLETE": 6
+      },
+      "token_usage": null,
+      "total_runs": 8,
+      "unverified": 0,
+      "verified_complete": 6
+    }
+  },
+  "evidence_status": "deterministic_fixture",
+  "paired": {
+    "additional_logical_model_calls": 36,
+    "false_completion_reduction": 3,
+    "specialist_improved_scenarios": [
+      "false_success",
+      "partial_write",
+      "rollback",
+      "timeout_before_write"
+    ],
+    "specialist_worsened_scenarios": [],
+    "total_pairs": 8,
+    "unchanged_scenarios": [
+      "path_traversal",
+      "success",
+      "symlink_escape",
+      "timeout_after_write"
+    ],
+    "verified_completion_gain": 4,
+    "verified_completion_rate_delta": 0.5
+  },
+  "schema_version": "1"
+}
