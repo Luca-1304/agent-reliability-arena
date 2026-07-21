@@ -45,10 +45,11 @@ jobs:
           fi
           echo "Verified archive from $matched"
 
-      - name: Replace bootstrap tree with verified release
+      - name: Replace tree while preserving bootstrap workflow
         shell: bash
         run: |
           set -euo pipefail
+          cp .github/workflows/bootstrap-release.yml /tmp/bootstrap-release.yml
           rm -rf /tmp/arena-unpack
           mkdir -p /tmp/arena-unpack
           unzip -q /tmp/arena-release.zip -d /tmp/arena-unpack
@@ -57,7 +58,9 @@ jobs:
           test -f "$source_dir/scripts/verify_release.py"
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp -a "$source_dir"/. .
-          rm -f .github/workflows/bootstrap-release.yml
+          rm -rf .github/workflows
+          mkdir -p .github/workflows
+          cp /tmp/bootstrap-release.yml .github/workflows/bootstrap-release.yml
 
       - name: Commit verified source tree
         shell: bash
