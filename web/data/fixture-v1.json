@@ -1,0 +1,1637 @@
+{
+  "claims_boundary": "Software validation only; not external-model performance.",
+  "evidence_status": "deterministic_fixture",
+  "experiment": {
+    "config_digest": "92ac4dcfbe617ed417e0c31b55416eda8274e7b08ea20c853324e69f49627106",
+    "contract": {
+      "content": "Verified output from Agent Reliability Arena.\n",
+      "contract_id": "arena-contract-v1",
+      "path": "output/result.txt"
+    },
+    "experiment_id": "fixture-v1",
+    "model_id": "fixture-model-v1",
+    "model_version": "1",
+    "prompt_version": "fixture-prompts-v1",
+    "seed": 1304
+  },
+  "metrics": {
+    "claims_boundary": "Software validation only; not external-model performance.",
+    "conditions": {
+      "general": {
+        "claim_precision": 0.25,
+        "claimed_completion": 4,
+        "failed": 6,
+        "false_completion": 3,
+        "false_completion_rate": 0.75,
+        "latency_ms": null,
+        "logical_model_calls": 8,
+        "mean_logical_model_calls": 1.0,
+        "partial": 0,
+        "recoverable_failure_scenarios": 4,
+        "recovered": 0,
+        "recovery_rate": 0.0,
+        "security_rejection": 2,
+        "silent_verified_completion": 1,
+        "status_counts": {
+          "FAILED": 6,
+          "VERIFIED_COMPLETE": 2
+        },
+        "token_usage": null,
+        "total_runs": 8,
+        "unverified": 0,
+        "verified_complete": 2
+      },
+      "specialist": {
+        "claim_precision": 1.0,
+        "claimed_completion": 6,
+        "failed": 2,
+        "false_completion": 0,
+        "false_completion_rate": 0.0,
+        "latency_ms": null,
+        "logical_model_calls": 44,
+        "mean_logical_model_calls": 5.5,
+        "partial": 0,
+        "recoverable_failure_scenarios": 4,
+        "recovered": 4,
+        "recovery_rate": 1.0,
+        "security_rejection": 2,
+        "silent_verified_completion": 0,
+        "status_counts": {
+          "FAILED": 2,
+          "VERIFIED_COMPLETE": 6
+        },
+        "token_usage": null,
+        "total_runs": 8,
+        "unverified": 0,
+        "verified_complete": 6
+      }
+    },
+    "evidence_status": "deterministic_fixture",
+    "paired": {
+      "additional_logical_model_calls": 36,
+      "false_completion_reduction": 3,
+      "specialist_improved_scenarios": [
+        "false_success",
+        "partial_write",
+        "rollback",
+        "timeout_before_write"
+      ],
+      "specialist_worsened_scenarios": [],
+      "total_pairs": 8,
+      "unchanged_scenarios": [
+        "path_traversal",
+        "success",
+        "symlink_escape",
+        "timeout_after_write"
+      ],
+      "verified_completion_gain": 4,
+      "verified_completion_rate_delta": 0.5
+    },
+    "schema_version": "1"
+  },
+  "scenarios": [
+    {
+      "general": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "false_success",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": true,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "false_success",
+              "source_event_id": "source-false_success"
+            },
+            "status": "FAILED"
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": true,
+        "logical_model_calls": 1,
+        "status": "FAILED"
+      },
+      "scenario_id": "false_success",
+      "specialist": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "false_success",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": true,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "false_success",
+              "source_event_id": "source-false_success"
+            },
+            "status": "FAILED"
+          },
+          {
+            "attempt_number": 2,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "success",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "matches_contract": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": false,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "success",
+              "source_event_id": "source-success"
+            },
+            "status": "VERIFIED_COMPLETE"
+          }
+        ],
+        "audit_records": [
+          {
+            "conflicts": [
+              "reported_success_without_matching_state"
+            ],
+            "decision": "recover",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state does not match the contract and one retry remains.",
+            "source_assessment": "Source reported success."
+          },
+          {
+            "conflicts": [],
+            "decision": "accept",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state matches the full contract.",
+            "source_assessment": "Source reported success."
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": false,
+        "logical_model_calls": 7,
+        "recovered": true,
+        "recovery": {
+          "failure_class": "false_success",
+          "proposed_action": "write_file",
+          "refusal_reason": null,
+          "remaining_attempts": 1,
+          "retry_justified": true
+        },
+        "status": "VERIFIED_COMPLETE",
+        "strategy": {
+          "anticipated_failures": [
+            "success",
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "timeout_after_write",
+            "rollback",
+            "path_traversal",
+            "symlink_escape"
+          ],
+          "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+          "permitted_actions": [
+            "write_file"
+          ],
+          "required_postcondition": "Independent path, size, SHA-256, and content match.",
+          "retryable_failures": [
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "rollback"
+          ],
+          "stop_conditions": [
+            "verified",
+            "attempt_limit",
+            "security_rejection"
+          ],
+          "terminal_failures": [
+            "path_traversal",
+            "symlink_escape"
+          ]
+        },
+        "synthesis": {
+          "completion_claimed": true,
+          "evidence_refs": [
+            "evaluation.json",
+            "observation.json"
+          ],
+          "limitations": [
+            "Deterministic fixture policy, not external-model performance."
+          ],
+          "summary": "Independent evidence verified the contracted file.",
+          "verified_status": "VERIFIED_COMPLETE"
+        }
+      }
+    },
+    {
+      "general": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "ae58a011373afa605b32dd6f18303196b1d15cf03de00cbe2c6782c9f53a8ed4",
+              "size": 23,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "partial_write",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "ae58a011373afa605b32dd6f18303196b1d15cf03de00cbe2c6782c9f53a8ed4",
+              "size": 23,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": true,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "partial_write",
+              "source_event_id": "source-partial_write"
+            },
+            "status": "FAILED"
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": true,
+        "logical_model_calls": 1,
+        "status": "FAILED"
+      },
+      "scenario_id": "partial_write",
+      "specialist": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "ae58a011373afa605b32dd6f18303196b1d15cf03de00cbe2c6782c9f53a8ed4",
+              "size": 23,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "partial_write",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "ae58a011373afa605b32dd6f18303196b1d15cf03de00cbe2c6782c9f53a8ed4",
+              "size": 23,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": true,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "partial_write",
+              "source_event_id": "source-partial_write"
+            },
+            "status": "FAILED"
+          },
+          {
+            "attempt_number": 2,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "success",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "matches_contract": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": false,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "success",
+              "source_event_id": "source-success"
+            },
+            "status": "VERIFIED_COMPLETE"
+          }
+        ],
+        "audit_records": [
+          {
+            "conflicts": [
+              "reported_success_without_matching_state"
+            ],
+            "decision": "recover",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state does not match the contract and one retry remains.",
+            "source_assessment": "Source reported success."
+          },
+          {
+            "conflicts": [],
+            "decision": "accept",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state matches the full contract.",
+            "source_assessment": "Source reported success."
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": false,
+        "logical_model_calls": 7,
+        "recovered": true,
+        "recovery": {
+          "failure_class": "partial_write",
+          "proposed_action": "write_file",
+          "refusal_reason": null,
+          "remaining_attempts": 1,
+          "retry_justified": true
+        },
+        "status": "VERIFIED_COMPLETE",
+        "strategy": {
+          "anticipated_failures": [
+            "success",
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "timeout_after_write",
+            "rollback",
+            "path_traversal",
+            "symlink_escape"
+          ],
+          "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+          "permitted_actions": [
+            "write_file"
+          ],
+          "required_postcondition": "Independent path, size, SHA-256, and content match.",
+          "retryable_failures": [
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "rollback"
+          ],
+          "stop_conditions": [
+            "verified",
+            "attempt_limit",
+            "security_rejection"
+          ],
+          "terminal_failures": [
+            "path_traversal",
+            "symlink_escape"
+          ]
+        },
+        "synthesis": {
+          "completion_claimed": true,
+          "evidence_refs": [
+            "evaluation.json",
+            "observation.json"
+          ],
+          "limitations": [
+            "Deterministic fixture policy, not external-model performance."
+          ],
+          "summary": "Independent evidence verified the contracted file.",
+          "verified_status": "VERIFIED_COMPLETE"
+        }
+      }
+    },
+    {
+      "general": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "path_traversal",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": true,
+            "source_report": {
+              "attempted_path": "../escape.txt",
+              "completion_claimed": false,
+              "error_kind": "security_rejection",
+              "reported_evidence": {},
+              "reported_success": false,
+              "scenario_id": "path_traversal",
+              "source_event_id": "source-path_traversal"
+            },
+            "status": "FAILED"
+          }
+        ],
+        "completion_claimed": false,
+        "false_completion": false,
+        "logical_model_calls": 1,
+        "status": "FAILED"
+      },
+      "scenario_id": "path_traversal",
+      "specialist": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "path_traversal",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": true,
+            "source_report": {
+              "attempted_path": "../escape.txt",
+              "completion_claimed": false,
+              "error_kind": "security_rejection",
+              "reported_evidence": {},
+              "reported_success": false,
+              "scenario_id": "path_traversal",
+              "source_event_id": "source-path_traversal"
+            },
+            "status": "FAILED"
+          }
+        ],
+        "audit_records": [
+          {
+            "conflicts": [],
+            "decision": "fail",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent execution recorded a terminal security rejection.",
+            "source_assessment": "Source did not report success."
+          }
+        ],
+        "completion_claimed": false,
+        "false_completion": false,
+        "logical_model_calls": 4,
+        "recovered": false,
+        "recovery": null,
+        "status": "FAILED",
+        "strategy": {
+          "anticipated_failures": [
+            "success",
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "timeout_after_write",
+            "rollback",
+            "path_traversal",
+            "symlink_escape"
+          ],
+          "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+          "permitted_actions": [
+            "write_file"
+          ],
+          "required_postcondition": "Independent path, size, SHA-256, and content match.",
+          "retryable_failures": [
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "rollback"
+          ],
+          "stop_conditions": [
+            "verified",
+            "attempt_limit",
+            "security_rejection"
+          ],
+          "terminal_failures": [
+            "path_traversal",
+            "symlink_escape"
+          ]
+        },
+        "synthesis": {
+          "completion_claimed": false,
+          "evidence_refs": [
+            "evaluation.json",
+            "observation.json"
+          ],
+          "limitations": [
+            "Deterministic fixture policy, not external-model performance."
+          ],
+          "summary": "The contracted file was not independently verified.",
+          "verified_status": "FAILED"
+        }
+      }
+    },
+    {
+      "general": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "rollback",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": false,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "rollback",
+              "source_event_id": "source-rollback"
+            },
+            "status": "FAILED"
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": true,
+        "logical_model_calls": 1,
+        "status": "FAILED"
+      },
+      "scenario_id": "rollback",
+      "specialist": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "rollback",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": false,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "rollback",
+              "source_event_id": "source-rollback"
+            },
+            "status": "FAILED"
+          },
+          {
+            "attempt_number": 2,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "success",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "matches_contract": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": false,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "success",
+              "source_event_id": "source-success"
+            },
+            "status": "VERIFIED_COMPLETE"
+          }
+        ],
+        "audit_records": [
+          {
+            "conflicts": [
+              "reported_success_without_matching_state"
+            ],
+            "decision": "recover",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state does not match the contract and one retry remains.",
+            "source_assessment": "Source reported success."
+          },
+          {
+            "conflicts": [],
+            "decision": "accept",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state matches the full contract.",
+            "source_assessment": "Source reported success."
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": false,
+        "logical_model_calls": 7,
+        "recovered": true,
+        "recovery": {
+          "failure_class": "rollback",
+          "proposed_action": "write_file",
+          "refusal_reason": null,
+          "remaining_attempts": 1,
+          "retry_justified": true
+        },
+        "status": "VERIFIED_COMPLETE",
+        "strategy": {
+          "anticipated_failures": [
+            "success",
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "timeout_after_write",
+            "rollback",
+            "path_traversal",
+            "symlink_escape"
+          ],
+          "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+          "permitted_actions": [
+            "write_file"
+          ],
+          "required_postcondition": "Independent path, size, SHA-256, and content match.",
+          "retryable_failures": [
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "rollback"
+          ],
+          "stop_conditions": [
+            "verified",
+            "attempt_limit",
+            "security_rejection"
+          ],
+          "terminal_failures": [
+            "path_traversal",
+            "symlink_escape"
+          ]
+        },
+        "synthesis": {
+          "completion_claimed": true,
+          "evidence_refs": [
+            "evaluation.json",
+            "observation.json"
+          ],
+          "limitations": [
+            "Deterministic fixture policy, not external-model performance."
+          ],
+          "summary": "Independent evidence verified the contracted file.",
+          "verified_status": "VERIFIED_COMPLETE"
+        }
+      }
+    },
+    {
+      "general": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "success",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "matches_contract": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": false,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "success",
+              "source_event_id": "source-success"
+            },
+            "status": "VERIFIED_COMPLETE"
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": false,
+        "logical_model_calls": 1,
+        "status": "VERIFIED_COMPLETE"
+      },
+      "scenario_id": "success",
+      "specialist": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "success",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "matches_contract": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": false,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "success",
+              "source_event_id": "source-success"
+            },
+            "status": "VERIFIED_COMPLETE"
+          }
+        ],
+        "audit_records": [
+          {
+            "conflicts": [],
+            "decision": "accept",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state matches the full contract.",
+            "source_assessment": "Source reported success."
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": false,
+        "logical_model_calls": 4,
+        "recovered": false,
+        "recovery": null,
+        "status": "VERIFIED_COMPLETE",
+        "strategy": {
+          "anticipated_failures": [
+            "success",
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "timeout_after_write",
+            "rollback",
+            "path_traversal",
+            "symlink_escape"
+          ],
+          "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+          "permitted_actions": [
+            "write_file"
+          ],
+          "required_postcondition": "Independent path, size, SHA-256, and content match.",
+          "retryable_failures": [
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "rollback"
+          ],
+          "stop_conditions": [
+            "verified",
+            "attempt_limit",
+            "security_rejection"
+          ],
+          "terminal_failures": [
+            "path_traversal",
+            "symlink_escape"
+          ]
+        },
+        "synthesis": {
+          "completion_claimed": true,
+          "evidence_refs": [
+            "evaluation.json",
+            "observation.json"
+          ],
+          "limitations": [
+            "Deterministic fixture policy, not external-model performance."
+          ],
+          "summary": "Independent evidence verified the contracted file.",
+          "verified_status": "VERIFIED_COMPLETE"
+        }
+      }
+    },
+    {
+      "general": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "symlink_escape",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": true,
+            "source_report": {
+              "attempted_path": "link/escape.txt",
+              "completion_claimed": false,
+              "error_kind": "security_rejection",
+              "reported_evidence": {},
+              "reported_success": false,
+              "scenario_id": "symlink_escape",
+              "source_event_id": "source-symlink_escape"
+            },
+            "status": "FAILED"
+          }
+        ],
+        "completion_claimed": false,
+        "false_completion": false,
+        "logical_model_calls": 1,
+        "status": "FAILED"
+      },
+      "scenario_id": "symlink_escape",
+      "specialist": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "symlink_escape",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": true,
+            "source_report": {
+              "attempted_path": "link/escape.txt",
+              "completion_claimed": false,
+              "error_kind": "security_rejection",
+              "reported_evidence": {},
+              "reported_success": false,
+              "scenario_id": "symlink_escape",
+              "source_event_id": "source-symlink_escape"
+            },
+            "status": "FAILED"
+          }
+        ],
+        "audit_records": [
+          {
+            "conflicts": [],
+            "decision": "fail",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent execution recorded a terminal security rejection.",
+            "source_assessment": "Source did not report success."
+          }
+        ],
+        "completion_claimed": false,
+        "false_completion": false,
+        "logical_model_calls": 4,
+        "recovered": false,
+        "recovery": null,
+        "status": "FAILED",
+        "strategy": {
+          "anticipated_failures": [
+            "success",
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "timeout_after_write",
+            "rollback",
+            "path_traversal",
+            "symlink_escape"
+          ],
+          "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+          "permitted_actions": [
+            "write_file"
+          ],
+          "required_postcondition": "Independent path, size, SHA-256, and content match.",
+          "retryable_failures": [
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "rollback"
+          ],
+          "stop_conditions": [
+            "verified",
+            "attempt_limit",
+            "security_rejection"
+          ],
+          "terminal_failures": [
+            "path_traversal",
+            "symlink_escape"
+          ]
+        },
+        "synthesis": {
+          "completion_claimed": false,
+          "evidence_refs": [
+            "evaluation.json",
+            "observation.json"
+          ],
+          "limitations": [
+            "Deterministic fixture policy, not external-model performance."
+          ],
+          "summary": "The contracted file was not independently verified.",
+          "verified_status": "FAILED"
+        }
+      }
+    },
+    {
+      "general": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "timeout_after_write",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "matches_contract": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": false,
+              "error_kind": "timeout",
+              "reported_evidence": {},
+              "reported_success": false,
+              "scenario_id": "timeout_after_write",
+              "source_event_id": "source-timeout_after_write"
+            },
+            "status": "VERIFIED_COMPLETE"
+          }
+        ],
+        "completion_claimed": false,
+        "false_completion": false,
+        "logical_model_calls": 1,
+        "status": "VERIFIED_COMPLETE"
+      },
+      "scenario_id": "timeout_after_write",
+      "specialist": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "timeout_after_write",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "matches_contract": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": false,
+              "error_kind": "timeout",
+              "reported_evidence": {},
+              "reported_success": false,
+              "scenario_id": "timeout_after_write",
+              "source_event_id": "source-timeout_after_write"
+            },
+            "status": "VERIFIED_COMPLETE"
+          }
+        ],
+        "audit_records": [
+          {
+            "conflicts": [
+              "source_failure_but_postcondition_verified"
+            ],
+            "decision": "accept",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state matches the full contract.",
+            "source_assessment": "Source did not report success."
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": false,
+        "logical_model_calls": 4,
+        "recovered": false,
+        "recovery": null,
+        "status": "VERIFIED_COMPLETE",
+        "strategy": {
+          "anticipated_failures": [
+            "success",
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "timeout_after_write",
+            "rollback",
+            "path_traversal",
+            "symlink_escape"
+          ],
+          "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+          "permitted_actions": [
+            "write_file"
+          ],
+          "required_postcondition": "Independent path, size, SHA-256, and content match.",
+          "retryable_failures": [
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "rollback"
+          ],
+          "stop_conditions": [
+            "verified",
+            "attempt_limit",
+            "security_rejection"
+          ],
+          "terminal_failures": [
+            "path_traversal",
+            "symlink_escape"
+          ]
+        },
+        "synthesis": {
+          "completion_claimed": true,
+          "evidence_refs": [
+            "evaluation.json",
+            "observation.json"
+          ],
+          "limitations": [
+            "Deterministic fixture policy, not external-model performance."
+          ],
+          "summary": "Independent evidence verified the contracted file.",
+          "verified_status": "VERIFIED_COMPLETE"
+        }
+      }
+    },
+    {
+      "general": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "timeout_before_write",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": false,
+              "error_kind": "timeout",
+              "reported_evidence": {},
+              "reported_success": false,
+              "scenario_id": "timeout_before_write",
+              "source_event_id": "source-timeout_before_write"
+            },
+            "status": "FAILED"
+          }
+        ],
+        "completion_claimed": false,
+        "false_completion": false,
+        "logical_model_calls": 1,
+        "status": "FAILED"
+      },
+      "scenario_id": "timeout_before_write",
+      "specialist": {
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "timeout_before_write",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": false,
+              "matches_content": false,
+              "matches_contract": false,
+              "path": "output/result.txt",
+              "regular_file": false,
+              "sha256": null,
+              "size": null,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": false,
+              "error_kind": "timeout",
+              "reported_evidence": {},
+              "reported_success": false,
+              "scenario_id": "timeout_before_write",
+              "source_event_id": "source-timeout_before_write"
+            },
+            "status": "FAILED"
+          },
+          {
+            "attempt_number": 2,
+            "evidence": {
+              "confined": true,
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "injected_scenario": "success",
+            "observation": {
+              "confined": true,
+              "contract_id": "arena-contract-v1",
+              "error": null,
+              "exists": true,
+              "matches_content": true,
+              "matches_contract": true,
+              "path": "output/result.txt",
+              "regular_file": true,
+              "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+              "size": 46,
+              "trust_basis": "independent_local_state"
+            },
+            "security_rejected": false,
+            "source_report": {
+              "attempted_path": "output/result.txt",
+              "completion_claimed": true,
+              "error_kind": null,
+              "reported_evidence": {
+                "fabricated": false,
+                "path": "output/result.txt",
+                "sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+                "size": 46
+              },
+              "reported_success": true,
+              "scenario_id": "success",
+              "source_event_id": "source-success"
+            },
+            "status": "VERIFIED_COMPLETE"
+          }
+        ],
+        "audit_records": [
+          {
+            "conflicts": [],
+            "decision": "recover",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state does not match the contract and one retry remains.",
+            "source_assessment": "Source did not report success."
+          },
+          {
+            "conflicts": [],
+            "decision": "accept",
+            "evidence_refs": [
+              "source_report.json",
+              "observation.json",
+              "evaluation.json"
+            ],
+            "observation_assessment": "Independent state matches the full contract.",
+            "source_assessment": "Source reported success."
+          }
+        ],
+        "completion_claimed": true,
+        "false_completion": false,
+        "logical_model_calls": 7,
+        "recovered": true,
+        "recovery": {
+          "failure_class": "timeout_before_write",
+          "proposed_action": "write_file",
+          "refusal_reason": null,
+          "remaining_attempts": 1,
+          "retry_justified": true
+        },
+        "status": "VERIFIED_COMPLETE",
+        "strategy": {
+          "anticipated_failures": [
+            "success",
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "timeout_after_write",
+            "rollback",
+            "path_traversal",
+            "symlink_escape"
+          ],
+          "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+          "permitted_actions": [
+            "write_file"
+          ],
+          "required_postcondition": "Independent path, size, SHA-256, and content match.",
+          "retryable_failures": [
+            "false_success",
+            "partial_write",
+            "timeout_before_write",
+            "rollback"
+          ],
+          "stop_conditions": [
+            "verified",
+            "attempt_limit",
+            "security_rejection"
+          ],
+          "terminal_failures": [
+            "path_traversal",
+            "symlink_escape"
+          ]
+        },
+        "synthesis": {
+          "completion_claimed": true,
+          "evidence_refs": [
+            "evaluation.json",
+            "observation.json"
+          ],
+          "limitations": [
+            "Deterministic fixture policy, not external-model performance."
+          ],
+          "summary": "Independent evidence verified the contracted file.",
+          "verified_status": "VERIFIED_COMPLETE"
+        }
+      }
+    }
+  ],
+  "schema_version": "1",
+  "tagline": "Same model. Same tools. Same evidence rules. Different orchestration.",
+  "title": "Agent Reliability Arena"
+}

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A controlled reliability comparison between one general agent and a same-model specialist system.">
+  <title>Agent Reliability Arena</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#comparison">Skip to comparison</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Agent Reliability Arena home">
+      <span class="brand-mark" aria-hidden="true">AR</span>
+      <span>Agent Reliability Arena</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#comparison">Trace</a>
+      <a href="#results">Results</a>
+      <a href="#method">Method</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Controlled agent-evaluation system</p>
+        <h1 id="hero-title">Same model. Same tools. Same evidence rules. <span>Different orchestration.</span></h1>
+        <p class="hero-summary">Inspect how one general agent and a unified specialist system respond to identical failures—then follow the independent evidence behind every completion claim.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#comparison">View a failure trace</a>
+          <a class="button secondary" href="#method">See the controls</a>
+        </div>
+        <p id="fixture-note" class="fixture-note"><strong>Deterministic fixture:</strong> this release validates software behaviour and measurement plumbing. It is not an external-model leaderboard.</p>
+      </div>
+      <div class="architecture-card" aria-label="Specialist system architecture">
+        <div class="architecture-title">Unified specialist path</div>
+        <ol>
+          <li><span>01</span>Strategist defines the bounded plan</li>
+          <li><span>02</span>Operator performs the permitted action</li>
+          <li><span>03</span>Auditor checks source report against state</li>
+          <li><span>04</span>Recovery proposes one justified retry</li>
+          <li><span>05</span>Synthesiser reports only verified outcomes</li>
+        </ol>
+        <div class="verifier-lock"><span aria-hidden="true">✓</span> Independent verifier remains authoritative</div>
+      </div>
+    </section>
+
+    <section id="results" class="results-section" aria-labelledby="results-title">
+      <div class="section-heading">
+        <p class="eyebrow">Fixture results</p>
+        <h2 id="results-title">Reliability improved here—with measurable overhead.</h2>
+        <p>Absolute counts stay beside every rate. Token use and latency are not invented for deterministic fixtures.</p>
+      </div>
+      <div class="metric-grid" aria-live="polite">
+        <article class="metric-card">
+          <span class="metric-label">General verified</span>
+          <strong id="general-verified">Loading</strong>
+          <span class="metric-context">independently verified outcomes</span>
+        </article>
+        <article class="metric-card accent">
+          <span class="metric-label">Specialist verified</span>
+          <strong id="specialist-verified">Loading</strong>
+          <span class="metric-context">independently verified outcomes</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">False completions removed</span>
+          <strong id="false-reduction">Loading</strong>
+          <span class="metric-context">unsupported claims prevented</span>
+        </article>
+        <article class="metric-card tradeoff">
+          <span class="metric-label">Additional logical calls</span>
+          <strong id="extra-calls">Loading</strong>
+          <span class="metric-context">specialist orchestration cost</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="comparison" class="comparison-section" aria-labelledby="comparison-title">
+      <div class="section-heading comparison-heading">
+        <div>
+          <p class="eyebrow">Paired trace explorer</p>
+          <h2 id="comparison-title">One task. Two orchestration strategies.</h2>
+        </div>
+        <div class="scenario-control">
+          <label for="scenario-select">Choose injected scenario</label>
+          <select id="scenario-select" aria-describedby="fixture-note"></select>
+        </div>
+      </div>
+
+      <div id="scenario-summary" class="scenario-summary" aria-live="polite"></div>
+
+      <div class="trace-grid">
+        <article class="trace-panel" aria-labelledby="general-title">
+          <div class="trace-header">
+            <div>
+              <p class="trace-kicker">Condition A</p>
+              <h3 id="general-title">General agent</h3>
+            </div>
+            <span id="general-status" class="status-chip"></span>
+          </div>
+          <p class="trace-description">One role plans, acts, checks and reports.</p>
+          <div id="general-trace" class="trace-list"></div>
+          <dl class="trace-stats">
+            <div><dt>Completion claimed</dt><dd id="general-claim"></dd></div>
+            <div><dt>Logical calls</dt><dd id="general-calls"></dd></div>
+          </dl>
+        </article>
+
+        <article class="trace-panel specialist-panel" aria-labelledby="specialist-title">
+          <div class="trace-header">
+            <div>
+              <p class="trace-kicker">Condition B</p>
+              <h3 id="specialist-title">Unified specialists</h3>
+            </div>
+            <span id="specialist-status" class="status-chip"></span>
+          </div>
+          <p class="trace-description">Five bounded roles share one evidence contract.</p>
+          <div id="specialist-trace" class="trace-list"></div>
+          <dl class="trace-stats">
+            <div><dt>Completion claimed</dt><dd id="specialist-claim"></dd></div>
+            <div><dt>Logical calls</dt><dd id="specialist-calls"></dd></div>
+          </dl>
+        </article>
+      </div>
+
+      <section class="evidence-section" aria-labelledby="evidence-title">
+        <div class="evidence-heading">
+          <div>
+            <p class="eyebrow">Evidence explorer</p>
+            <h3 id="evidence-title">The model report is not the proof.</h3>
+          </div>
+          <p>Canonical completion evidence comes from independently observed local state.</p>
+        </div>
+        <div id="evidence-grid" class="evidence-grid"></div>
+      </section>
+    </section>
+
+    <section id="method" class="method-section" aria-labelledby="method-title">
+      <div class="section-heading">
+        <p class="eyebrow">Experiment controls</p>
+        <h2 id="method-title">The comparison changes orchestration—not the task.</h2>
+      </div>
+      <div class="method-grid">
+        <article><span>Held constant</span><h3>Model label and version</h3><p id="model-control">Loading experiment metadata.</p></article>
+        <article><span>Held constant</span><h3>Tool and contract</h3><p id="contract-control">Loading contract metadata.</p></article>
+        <article><span>Held constant</span><h3>Failures and seed</h3><p id="seed-control">Loading seed metadata.</p></article>
+        <article><span>Measured trade-off</span><h3>Calls and recovery</h3><p>Extra specialist calls remain visible beside reliability gains.</p></article>
+      </div>
+      <div class="claims-boundary">
+        <strong>Claims boundary</strong>
+        <p id="claims-boundary">Loading.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built as an evidence-first agent reliability demonstration.</p>
+    <p>Fixture data is reproducible from the repository CLI.</p>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
