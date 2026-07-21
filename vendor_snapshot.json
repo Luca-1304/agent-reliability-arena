@@ -1,0 +1,163 @@
+{
+  "files": [
+    {
+      "path": "src/completion_verifier/__init__.py",
+      "sha256": "87ffd6b2f7f3d853b283058026b5f16093e2e526cc1b0d88cbe1468c93d2531f"
+    },
+    {
+      "path": "src/completion_verifier/__main__.py",
+      "sha256": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d"
+    },
+    {
+      "path": "src/completion_verifier/adapter_cli.py",
+      "sha256": "63100856da826e890c66bd2c239519ed0233294566b8f71343c942a08c7c8ce2"
+    },
+    {
+      "path": "src/completion_verifier/adapters/__init__.py",
+      "sha256": "9602b62b53767ac4676ee99e4188b2e4916d3a8d1290e05bbda531c9c3c952e4"
+    },
+    {
+      "path": "src/completion_verifier/adapters/base.py",
+      "sha256": "fe0568041df62904e3a5ba98705054b18809489e44f54f864e917ff1f1efa8e3"
+    },
+    {
+      "path": "src/completion_verifier/adapters/generic_json.py",
+      "sha256": "e2569f1740749537e6ca851fe1441432031cbbe72c337346f232215c2de459f6"
+    },
+    {
+      "path": "src/completion_verifier/adapters/openai_trace.py",
+      "sha256": "ffc05c120fa215f6868ab936920b191bdfd85ba2148952886722bc3569dd894e"
+    },
+    {
+      "path": "src/completion_verifier/benchmark/__init__.py",
+      "sha256": "f7732ce65f9aa5eee3f93dff2175cfe4ebfecf9b0cb138bbff7f22a94a1e0549"
+    },
+    {
+      "path": "src/completion_verifier/benchmark/harness.py",
+      "sha256": "bbeec4b7e4c54698766566e046d83f59aed2030273967db5255e993601470ee6"
+    },
+    {
+      "path": "src/completion_verifier/benchmark/models.py",
+      "sha256": "1d37051395a3f50a33f1be44d36bd71573c0be96bed69fe97846c4dddec3b3e5"
+    },
+    {
+      "path": "src/completion_verifier/benchmark/reference_runner.py",
+      "sha256": "5f416690860c141083997c72cd976ebfe0116b23816b07b4d741e71958d2fb42"
+    },
+    {
+      "path": "src/completion_verifier/benchmark/reporting.py",
+      "sha256": "9d1a15c204f863a5a1f3b8b74dce2b9a77498013449e57571802f79f922d9f3d"
+    },
+    {
+      "path": "src/completion_verifier/benchmark/runner.py",
+      "sha256": "2658b2960d7b5f629a5a62083c3ca49998a4ddf953dafae6929f493b026f8ae2"
+    },
+    {
+      "path": "src/completion_verifier/benchmark/scenarios.py",
+      "sha256": "82162a15b02e2b83c9ae8fd592343081adc5f139c20e2337f2af5bbc993080ea"
+    },
+    {
+      "path": "src/completion_verifier/benchmark_cli.py",
+      "sha256": "6702aee75a383efaa8532d2d0ec14b644b7244faab4bdaf089228ef8926ca650"
+    },
+    {
+      "path": "src/completion_verifier/cli.py",
+      "sha256": "a49c0a2eac44e696dbb656422ec5ba96baf53bfdebbee0167032ef11672de3af"
+    },
+    {
+      "path": "src/completion_verifier/evaluator.py",
+      "sha256": "1f0f8f57a7d649427c0a7103ca737392df9f87a7c25420f1a05e90adc9b8ee36"
+    },
+    {
+      "path": "src/completion_verifier/live/__init__.py",
+      "sha256": "6bcebf955f665ba6b5c757d08a367ee48a9e3bb8f55068668c48f57d7e415440"
+    },
+    {
+      "path": "src/completion_verifier/live/config.py",
+      "sha256": "250c107d688b26026ebc319100ae6a94c2af20aab3550319f69050b8341a8c23"
+    },
+    {
+      "path": "src/completion_verifier/live/models.py",
+      "sha256": "a9d0d3f6b1dd5f2d28f19a58a7b0ea465f1d53b176c35ea75eacb5a3a62c08ef"
+    },
+    {
+      "path": "src/completion_verifier/live/openai_transport.py",
+      "sha256": "5dd7450403f6db87e5035d6b0906f180aa5f0232a6b1971b7f4983eac32d8107"
+    },
+    {
+      "path": "src/completion_verifier/live/records.py",
+      "sha256": "6253cd65bec14ba303c77ec78a6c5a4b563f29c5e41d487df45801e0a036e3fa"
+    },
+    {
+      "path": "src/completion_verifier/live/replay.py",
+      "sha256": "839e2f6a6f97ecef8e8a3778b079358773d52fe11f50d22c21c2706cc6f105ac"
+    },
+    {
+      "path": "src/completion_verifier/live/reporting.py",
+      "sha256": "77a2fd36417cb4f47b22c445ca2c22b57c7b6cdc28448829ccf6fd403d8efc2f"
+    },
+    {
+      "path": "src/completion_verifier/live/runner.py",
+      "sha256": "748bb9daa0d0a86f94a38890c642a5d64a0a5dc2c7b8f9c0a6859917b31fa4b0"
+    },
+    {
+      "path": "src/completion_verifier/live/runner_support.py",
+      "sha256": "2244f0645e37661f8949d51cd0e36b832c870ca5b6a3d894374f96aa0fe3afb1"
+    },
+    {
+      "path": "src/completion_verifier/live/security.py",
+      "sha256": "97d0400ab58ac714cd9c286b6d2a2cdca3d80c9422980ed5b09d17dcb9914272"
+    },
+    {
+      "path": "src/completion_verifier/live/transport.py",
+      "sha256": "574501169457153a011f59e2f223b6f5c969851ab9f24f91ca2407b26abb2ccb"
+    },
+    {
+      "path": "src/completion_verifier/live_cli.py",
+      "sha256": "b015cee106cd967f4bdbb242555062232cd2f151e7bcdc5f704d9adebf230e7d"
+    },
+    {
+      "path": "src/completion_verifier/metrics.py",
+      "sha256": "ccfac16cd4cbcdbaba47ca4f6ac033159f5482dad69284a4f04f4aa71f2f8101"
+    },
+    {
+      "path": "src/completion_verifier/models.py",
+      "sha256": "e6c4fb9fca1ca299c94d749baaa7501a4dd5f264d12167dee3c3becec6357ab5"
+    },
+    {
+      "path": "src/completion_verifier/sandbox/__init__.py",
+      "sha256": "e1e564b9aa7a511cd7cf539af6a834db394f272ec47aa89326d757f883ed9829"
+    },
+    {
+      "path": "src/completion_verifier/sandbox/filesystem.py",
+      "sha256": "01242626a039b18e839e644930cdcf982b6250e8029e07a547d7c948e2943dc8"
+    },
+    {
+      "path": "src/completion_verifier/sandbox/models.py",
+      "sha256": "16f8494260728f1dd4f10a6240205613854b6eacb65b5196bde0695b0b11c928"
+    },
+    {
+      "path": "src/completion_verifier/sandbox/reporting.py",
+      "sha256": "8c0b52cbf0ee62cd260225cac5caaf67690ef1f0ca6591fd796a8182d1e25586"
+    },
+    {
+      "path": "src/completion_verifier/sandbox/runner.py",
+      "sha256": "d10a554702474a927fe23f70f5959d1e8fab07a14d2739a418734ff06dbda59c"
+    },
+    {
+      "path": "src/completion_verifier/sandbox/scenarios.py",
+      "sha256": "53ac372654020a7b3a3dc060d5294b06c52c2720afad1037491a6d55b501cc86"
+    },
+    {
+      "path": "src/completion_verifier/sandbox/suite.py",
+      "sha256": "966e1b6c9458a5edf72b9068ee8755b7d930778006a6c9bb62a17ebde45fea73"
+    },
+    {
+      "path": "src/completion_verifier/sandbox_cli.py",
+      "sha256": "88d176ee724a1bf4bb68e7f84a07e25fd969d88d76fd732d071715b94d3c07fb"
+    }
+  ],
+  "source_commit": "f65fb3450e3c1d7db17f0192667b854d126cd190",
+  "source_repository": "https://github.com/Luca-1304/agent-completion-verifier",
+  "source_version": "0.6.0"
+}
