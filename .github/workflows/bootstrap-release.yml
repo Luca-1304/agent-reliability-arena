@@ -1,0 +1,70 @@
+name: bootstrap verified release
+
+on:
+  push:
+    branches: [release/v0.1.0]
+    paths: [.github/workflows/bootstrap-release.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/v0.1.0
+          fetch-depth: 0
+
+      - name: Download checksum-matched archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='4fe27252ca26966bb70d3bef8dd611f623580b1b6e4120734cede0b2e8d13016'
+          urls=(
+            'https://www.adobe.com/files/id/urn:aaid:sc:EU:564460a9-e7fc-4c9d-9e7a-8742a18acaa6'
+            'https://at.adobe.com/CAnr0UZ5wtkMqH83'
+            'https://platform-cs-irl1.adobe.io/content/storage/id/urn:aaid:sc:EU:564460a9-e7fc-4c9d-9e7a-8742a18acaa6'
+          )
+          matched=''
+          for url in "${urls[@]}"; do
+            rm -f /tmp/arena-release.zip
+            if curl --location --fail --silent --show-error --retry 2 --output /tmp/arena-release.zip "$url"; then
+              actual="$(sha256sum /tmp/arena-release.zip | awk '{print $1}')"
+              if [[ "$actual" == "$expected" ]]; then
+                matched="$url"
+                break
+              fi
+            fi
+          done
+          if [[ -z "$matched" ]]; then
+            echo 'No Adobe endpoint returned the checksum-matched release archive.' >&2
+            exit 1
+          fi
+          echo "Verified archive from $matched"
+
+      - name: Replace bootstrap tree with verified release
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/arena-unpack
+          mkdir -p /tmp/arena-unpack
+          unzip -q /tmp/arena-release.zip -d /tmp/arena-unpack
+          source_dir='/tmp/arena-unpack/agent_reliability_arena_v0.1.0'
+          test -f "$source_dir/pyproject.toml"
+          test -f "$source_dir/scripts/verify_release.py"
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a "$source_dir"/. .
+          rm -f .github/workflows/bootstrap-release.yml
+
+      - name: Commit verified source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Publish verified Agent Reliability Arena v0.1.0'
+          git push origin HEAD:release/v0.1.0
