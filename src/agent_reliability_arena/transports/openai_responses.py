@@ -14,9 +14,15 @@ from .base import ModelCallRequest, ModelCallResult, ModelUsage, TransportError
 
 _DEFAULT_ENDPOINT = "https://api.openai.com/v1/responses"
 _RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
+_RETRYABLE_PROVIDER_ERROR_CODES = {
+    "internal_error",
+    "rate_limit_exceeded",
+    "request_timeout",
+    "server_error",
+}
 
 
-def _extract_content(payload: dict[str, Any]) -> tuple[str, str | None]:
+def _extract_content(payload: dict[str, Any], *, allow_empty: bool = False) -> tuple[str, str | None]:
     text_chunks: list[str] = []
     refusal_chunks: list[str] = []
     output = payload.get("output", [])
@@ -43,7 +49,7 @@ def _extract_content(payload: dict[str, Any]) -> tuple[str, str | None]:
                 refusal = block.get("refusal")
                 if isinstance(refusal, str) and refusal:
                     refusal_chunks.append(refusal)
-    if not text_chunks and not refusal_chunks:
+    if not text_chunks and not refusal_chunks and not allow_empty:
         raise TransportError(
             "Provider response contained no output_text or refusal content.",
             category="invalid_response",
@@ -54,6 +60,16 @@ def _extract_content(payload: dict[str, Any]) -> tuple[str, str | None]:
 
 def _int_or_zero(value: object) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+
+def _optional_header_int(value: object) -> int | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = int(value)
+    except ValueError:
+        return None
+    return parsed if parsed >= 0 else None
 
 
 def _extract_usage(payload: dict[str, Any]) -> ModelUsage:
@@ -86,6 +102,40 @@ def _error_message(body: bytes, fallback: str) -> str:
         if isinstance(error, dict) and isinstance(error.get("message"), str):
             return error["message"]
     return fallback
+
+
+def _incomplete_reason(payload: dict[str, Any]) -> str | None:
+    details = payload.get("incomplete_details")
+    if not isinstance(details, dict):
+        return None
+    reason = details.get("reason")
+    return reason if isinstance(reason, str) and reason.strip() else None
+
+
+def _raise_failed_response(
+    payload: dict[str, Any],
+    *,
+    client_request_id: str,
+    provider_request_id: str | None,
+) -> None:
+    error = payload.get("error")
+    code: str | None = None
+    message = "The provider returned a failed response."
+    if isinstance(error, dict):
+        raw_code = error.get("code")
+        raw_message = error.get("message")
+        if isinstance(raw_code, str) and raw_code.strip():
+            code = raw_code.strip()
+        if isinstance(raw_message, str) and raw_message.strip():
+            message = raw_message
+    raise TransportError(
+        message,
+        category="provider_response_failed",
+        retryable=code in _RETRYABLE_PROVIDER_ERROR_CODES,
+        provider_error_code=code,
+        client_request_id=client_request_id,
+        provider_request_id=provider_request_id,
+    )
 
 
 class OpenAIResponsesTransport:
@@ -139,6 +189,7 @@ class OpenAIResponsesTransport:
             raise ValueError("'request' must be a ModelCallRequest instance.")
         payload = self._provider_payload(request)
         body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        client_request_id = f"arena-{request.digest}"
         http_request = urllib.request.Request(
             self.endpoint,
             data=body,
@@ -147,6 +198,7 @@ class OpenAIResponsesTransport:
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
                 "User-Agent": "agent-reliability-arena/0.2",
+                "X-Client-Request-Id": client_request_id,
             },
         )
         started = self._clock_ns()
@@ -154,6 +206,7 @@ class OpenAIResponsesTransport:
             with self._opener(http_request, timeout=self.timeout_seconds) as response:
                 raw = response.read()
                 provider_request_id = response.headers.get("x-request-id")
+                provider_processing_ms = _optional_header_int(response.headers.get("openai-processing-ms"))
         except urllib.error.HTTPError as exc:
             raw = exc.read()
             request_id = exc.headers.get("x-request-id") if exc.headers is not None else None
@@ -162,6 +215,7 @@ class OpenAIResponsesTransport:
                 category="http_error",
                 retryable=exc.code in _RETRYABLE_STATUS_CODES,
                 status_code=exc.code,
+                client_request_id=client_request_id,
                 provider_request_id=request_id,
             ) from None
         except urllib.error.URLError as exc:
@@ -169,6 +223,7 @@ class OpenAIResponsesTransport:
                 f"OpenAI API connection failed: {exc.reason}",
                 category="network_error",
                 retryable=True,
+                client_request_id=client_request_id,
             ) from None
         elapsed_ms = max(0, (self._clock_ns() - started) // 1_000_000)
         try:
@@ -178,6 +233,7 @@ class OpenAIResponsesTransport:
                 "OpenAI API returned invalid JSON.",
                 category="invalid_response",
                 retryable=False,
+                client_request_id=client_request_id,
                 provider_request_id=provider_request_id,
             ) from exc
         if not isinstance(decoded, dict):
@@ -185,6 +241,7 @@ class OpenAIResponsesTransport:
                 "OpenAI API returned a non-object response.",
                 category="invalid_response",
                 retryable=False,
+                client_request_id=client_request_id,
                 provider_request_id=provider_request_id,
             )
         response_id = decoded.get("id")
@@ -195,13 +252,24 @@ class OpenAIResponsesTransport:
                 "OpenAI API response did not include an id.",
                 category="invalid_response",
                 retryable=False,
+                client_request_id=client_request_id,
                 provider_request_id=provider_request_id,
             )
         if not isinstance(response_model, str) or not response_model:
             response_model = request.model_id
         if not isinstance(status, str) or not status:
             status = "unknown"
-        output_text, refusal_text = _extract_content(decoded)
+        if status == "failed":
+            _raise_failed_response(
+                decoded,
+                client_request_id=client_request_id,
+                provider_request_id=provider_request_id,
+            )
+        incomplete_reason = _incomplete_reason(decoded) if status == "incomplete" else None
+        output_text, refusal_text = _extract_content(
+            decoded,
+            allow_empty=status == "incomplete" and incomplete_reason is not None,
+        )
         return ModelCallResult(
             call_id=request.call_id,
             request_digest=request.digest,
@@ -214,5 +282,8 @@ class OpenAIResponsesTransport:
             usage=_extract_usage(decoded),
             raw_response_sha256=hashlib.sha256(raw).hexdigest(),
             refusal_text=refusal_text,
+            incomplete_reason=incomplete_reason,
+            client_request_id=client_request_id,
             provider_request_id=provider_request_id,
+            provider_processing_ms=provider_processing_ms,
         )
