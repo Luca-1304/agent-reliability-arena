@@ -82,7 +82,7 @@ Tracking: [#13 — Prepare Agent Reliability Arena v0.2 release candidate](https
 - disclosure-safe public/private evidence boundary;
 - complete Python 3.10–3.13 source, release, wheel and clean-wheel verification.
 
-## Current stage
+## Current empirical boundary
 
 ### Stage 7 — Minimal private provider pilot
 
@@ -115,20 +115,43 @@ Still required to complete Stage 7:
 
 Exit condition: one real-provider paired run completes or aborts with preserved, independently verified private evidence. One pilot remains insufficient for a representative performance conclusion.
 
-## Planned empirical stages
-
 ### Stage 8 — Repeated paired experiment
 
-Status: **not started**
+Status: **preregistered runner, safe continuation and descriptive analysis implemented; real repeated execution not performed**  
+Tracking: [#21 — Add preregistered repeated paired experiment runner](https://github.com/Luca-1304/agent-reliability-arena/issues/21)
 
-- pre-register scenarios, repetition count and stopping rules;
-- randomise or counterbalance condition order where applicable;
-- measure tokens, wall-clock latency, provider processing time and dated cost;
-- separate provider failures from orchestration failures;
-- report absolute counts and uncertainty intervals;
-- preserve all private raw evidence needed for replay.
+Completed implementation:
 
-Exit condition: a complete dataset suitable for cautious analysis, not a single-run anecdote.
+- [x] immutable exact trial schedule with canonical plan digest;
+- [x] deterministic round-robin scenario schedule and counterbalanced first condition;
+- [x] unique seed per planned trial, shared by both conditions within that trial;
+- [x] exact experiment-level call, requested-output-token, reserved-total-token and monetary ceilings;
+- [x] General-first and Specialist-first private paired execution without changing condition artifact names;
+- [x] immutable experiment plan, preflight and start records;
+- [x] independently verified trial ledger and summary before checkpoint advancement;
+- [x] atomic experiment checkpoint after each verified completed trial;
+- [x] deliberate pause after a verified trial and continuation without replaying completed calls;
+- [x] refusal of non-contiguous, partial, altered, unexpected or aborted evidence;
+- [x] terminal experiment abort with preserved trial evidence;
+- [x] absolute paired outcome counts and Specialist-minus-General difference;
+- [x] Wilson 95% condition intervals;
+- [x] explicitly labelled paired normal-approximation interval;
+- [x] exact two-sided binomial sign test over discordant pairs;
+- [x] measured call, token and latency totals reconstructed from verified ledgers;
+- [x] permanent provider-free four-trial pause/resume release reproduction;
+- [x] separate terminal-abort reproduction;
+- [x] `comparative_claim_permitted: false` throughout.
+
+Still required before Stage 8 becomes empirical evidence:
+
+- [ ] complete Stage 7 or explicitly preregister a reviewed real repeated plan;
+- [ ] approve the aggregate worst-case provider reservation;
+- [ ] execute the complete schedule without changing its stopping rule;
+- [ ] retain every completed, failed and aborted trial;
+- [ ] independently verify all ledgers and experiment artifacts;
+- [ ] interpret intervals and sign tests only within the recorded sample limitations.
+
+Exit condition: a complete preregistered real-provider dataset suitable for cautious analysis, not a single-run anecdote. Provider-free infrastructure alone does not satisfy this exit condition.
 
 ### Stage 9 — Disclosure-safe evidence release
 
@@ -177,4 +200,5 @@ Only after the file-write experiment is empirically understood:
 - claims of general AI safety;
 - claims that specialist orchestration is universally superior;
 - hiding failed runs or selecting only favourable examples;
+- treating an interval or p-value as proof of causality or representativeness;
 - merging separate ACE projects into one oversized repository.
