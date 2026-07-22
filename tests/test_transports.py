@@ -31,10 +31,17 @@ def request() -> ModelCallRequest:
 
 
 class FakeResponse:
-    def __init__(self, payload: dict, request_id: str = "req_test") -> None:
+    def __init__(
+        self,
+        payload: dict,
+        request_id: str = "req_test",
+        processing_ms: str | None = None,
+    ) -> None:
         self._body = json.dumps(payload).encode("utf-8")
         self.headers = Message()
         self.headers["x-request-id"] = request_id
+        if processing_ms is not None:
+            self.headers["openai-processing-ms"] = processing_ms
 
     def read(self) -> bytes:
         return self._body
@@ -57,12 +64,13 @@ class TransportTests(unittest.TestCase):
         spaced = ModelCallRequest(**(first.to_dict() | {"input_text": "  exact input\n"}))
         self.assertEqual(spaced.input_text, "  exact input\n")
 
-    def test_openai_transport_parses_text_usage_and_request_id(self) -> None:
+    def test_openai_transport_parses_text_usage_and_request_provenance(self) -> None:
         seen = {}
 
         def opener(http_request, timeout):
             seen["timeout"] = timeout
             seen["authorization"] = http_request.headers["Authorization"]
+            seen["client_request_id"] = http_request.get_header("X-client-request-id")
             seen["payload"] = json.loads(http_request.data.decode("utf-8"))
             payload = {
                 "id": "resp_test",
@@ -81,7 +89,7 @@ class TransportTests(unittest.TestCase):
                 },
             }
             seen["raw"] = json.dumps(payload).encode("utf-8")
-            return FakeResponse(payload)
+            return FakeResponse(payload, processing_ms="17")
 
         ticks = iter((1_000_000_000, 1_025_000_000))
         transport = OpenAIResponsesTransport(
@@ -89,10 +97,15 @@ class TransportTests(unittest.TestCase):
             opener=opener,
             clock_ns=lambda: next(ticks),
         )
-        result = transport.complete(request())
+        model_request = request()
+        result = transport.complete(model_request)
+        expected_client_request_id = f"arena-{model_request.digest}"
         self.assertEqual(result.output_text, "first second")
         self.assertEqual(result.latency_ms, 25)
+        self.assertEqual(result.provider_processing_ms, 17)
         self.assertEqual(result.provider_request_id, "req_test")
+        self.assertEqual(result.client_request_id, expected_client_request_id)
+        self.assertEqual(seen["client_request_id"], expected_client_request_id)
         self.assertEqual(result.raw_response_sha256, hashlib.sha256(seen["raw"]).hexdigest())
         self.assertEqual(result.usage.to_dict()["cached_input_tokens"], 3)
         self.assertEqual(result.usage.to_dict()["reasoning_tokens"], 2)
@@ -142,6 +155,55 @@ class TransportTests(unittest.TestCase):
         result = transport.complete(request())
         self.assertEqual(result.output_text, "")
         self.assertEqual(result.refusal_text, "I cannot do that.")
+
+    def test_records_incomplete_response_without_inventing_output(self) -> None:
+        transport = OpenAIResponsesTransport(
+            api_key="x",
+            opener=lambda *args, **kwargs: FakeResponse(
+                {
+                    "id": "resp-incomplete",
+                    "model": "gpt-test",
+                    "status": "incomplete",
+                    "incomplete_details": {"reason": "max_output_tokens"},
+                    "output": [],
+                    "usage": {
+                        "input_tokens": 12,
+                        "output_tokens": 8,
+                        "total_tokens": 20,
+                    },
+                }
+            ),
+        )
+        result = transport.complete(request())
+        self.assertEqual(result.status, "incomplete")
+        self.assertEqual(result.incomplete_reason, "max_output_tokens")
+        self.assertEqual(result.output_text, "")
+        self.assertIsNone(result.refusal_text)
+        self.assertEqual(result.usage.total_tokens, 20)
+
+    def test_failed_response_becomes_structured_retryable_transport_error(self) -> None:
+        transport = OpenAIResponsesTransport(
+            api_key="x",
+            opener=lambda *args, **kwargs: FakeResponse(
+                {
+                    "id": "resp-failed",
+                    "model": "gpt-test",
+                    "status": "failed",
+                    "error": {
+                        "code": "server_error",
+                        "message": "The model failed to generate a response.",
+                    },
+                    "output": [],
+                },
+                request_id="req_failed",
+            ),
+        )
+        with self.assertRaises(TransportError) as raised:
+            transport.complete(request())
+        self.assertEqual(raised.exception.category, "provider_response_failed")
+        self.assertEqual(raised.exception.provider_error_code, "server_error")
+        self.assertEqual(raised.exception.provider_request_id, "req_failed")
+        self.assertTrue(raised.exception.retryable)
 
     def test_rejects_insecure_or_implicit_custom_endpoint_and_missing_content(self) -> None:
         with self.assertRaisesRegex(ValueError, "HTTPS"):
