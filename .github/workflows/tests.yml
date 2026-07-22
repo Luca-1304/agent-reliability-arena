@@ -37,6 +37,23 @@ jobs:
       - name: Compile source
         run: python -m compileall -q src tests scripts
 
+      - name: Run disclosure diagnostics
+        id: disclosure
+        shell: bash
+        run: |
+          set +e
+          python -m unittest tests.test_disclosure_export -v > disclosure-debug.txt 2>&1
+          code=$?
+          cat disclosure-debug.txt
+          exit $code
+
+      - name: Upload disclosure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disclosure-debug-${{ matrix.python-version }}
+          path: disclosure-debug.txt
+
       - name: Run source tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
 
