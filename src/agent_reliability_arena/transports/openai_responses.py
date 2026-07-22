@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -7,14 +8,9 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable
 from typing import Any
+from urllib.parse import urlparse
 
-from .base import (
-    ModelCallRequest,
-    ModelCallResult,
-    ModelUsage,
-    TransportError,
-    canonical_json_sha256,
-)
+from .base import ModelCallRequest, ModelCallResult, ModelUsage, TransportError
 
 _DEFAULT_ENDPOINT = "https://api.openai.com/v1/responses"
 _RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
@@ -94,14 +90,20 @@ class OpenAIResponsesTransport:
         api_key: str | None = None,
         endpoint: str = _DEFAULT_ENDPOINT,
         timeout_seconds: float = 120.0,
+        allow_custom_endpoint: bool = False,
         opener: Callable[..., Any] | None = None,
         clock_ns: Callable[[], int] = time.perf_counter_ns,
     ) -> None:
         resolved_key = api_key if api_key is not None else os.environ.get("OPENAI_API_KEY")
         if not isinstance(resolved_key, str) or not resolved_key.strip():
             raise ValueError("OPENAI_API_KEY is required for the OpenAI Responses transport.")
-        if not isinstance(endpoint, str) or not endpoint.startswith("https://"):
+        parsed_endpoint = urlparse(endpoint) if isinstance(endpoint, str) else None
+        if parsed_endpoint is None or parsed_endpoint.scheme != "https" or not parsed_endpoint.hostname:
             raise ValueError("'endpoint' must be an HTTPS URL.")
+        if not isinstance(allow_custom_endpoint, bool):
+            raise ValueError("'allow_custom_endpoint' must be a boolean.")
+        if parsed_endpoint.hostname != "api.openai.com" and not allow_custom_endpoint:
+            raise ValueError("Custom endpoints require allow_custom_endpoint=True.")
         if not isinstance(timeout_seconds, (int, float)) or isinstance(timeout_seconds, bool) or timeout_seconds <= 0:
             raise ValueError("'timeout_seconds' must be greater than zero.")
         self._api_key = resolved_key.strip()
@@ -202,6 +204,6 @@ class OpenAIResponsesTransport:
             status=status,
             latency_ms=int(elapsed_ms),
             usage=_extract_usage(decoded),
-            raw_response_sha256=canonical_json_sha256(decoded),
+            raw_response_sha256=hashlib.sha256(raw).hexdigest(),
             provider_request_id=provider_request_id,
         )
