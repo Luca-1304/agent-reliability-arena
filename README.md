@@ -7,17 +7,39 @@ Agent Reliability Arena is a controlled evaluation and demonstration system for 
 1. one **general agent** that plans, acts, checks and reports alone; and
 2. one **unified specialist system** with bounded Strategist, Operator, Auditor, Recovery and Synthesiser roles.
 
-Both conditions receive the same task, fixture-model label, sandbox, failure scenario, mutation limit and independently observed acceptance contract. The project asks a narrow engineering question:
+Both conditions receive the same task, model configuration, sandbox, failure scenario, mutation limit and independently observed acceptance contract. The project asks a narrow engineering question:
 
 > Does role-specialised orchestration improve reliable completion enough to justify its additional calls and complexity?
 
 ![Agent Reliability Arena trace viewer](web/arena-preview.png)
 
-## Evidence status
+## Current evidence status
+
+The repository contains two deliberately separate evidence layers:
+
+### Public v0.1.0 fixture
 
 **Deterministic fixture — software validation, not external-model performance.**
 
-This v0.1.0 release proves that the experiment plumbing, role boundaries, evidence separation, metrics, replay and employer-facing trace viewer behave as designed. The fixed fixture policies are not presented as OpenAI, Anthropic, Gemini, local-model or human performance.
+The published reference run proves that the experiment plumbing, role boundaries, evidence separation, metrics, replay and trace viewer behave as designed. The fixed policies are not presented as OpenAI, Anthropic, Gemini, local-model, human or production performance.
+
+### v0.2.0 development tree
+
+`main` now includes a complete **provider-free live-model path**:
+
+- versioned provider-neutral request and result contracts;
+- an HTTPS OpenAI Responses adapter with credential and endpoint protections;
+- tamper-evident private transport ledgers;
+- a source-controlled six-role prompt catalogue;
+- deterministic request construction and preflight manifests;
+- fail-closed role-output parsing;
+- provider-neutral general and specialist orchestrators;
+- exact contract checks before bounded mutation;
+- independent observation, verification, audit, recovery and synthesis.
+
+The latest release fixture runs this path end to end with scripted provider responses. It does **not** claim real-model performance and does not spend provider funds.
+
+See [Project status](docs/PROJECT_STATUS.md), [Roadmap](ROADMAP.md) and [Changelog](CHANGELOG.md).
 
 ## Reference fixture results
 
@@ -33,7 +55,7 @@ The specialist fixture improves four paired outcomes and removes three false-com
 
 See [RESULTS.md](RESULTS.md) for scenario-level detail, [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for the comparison rules, and [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for the trust boundary.
 
-## Two-minute local reproduction
+## Two-minute deterministic reproduction
 
 ```bash
 python -m venv .venv
@@ -55,6 +77,8 @@ python -m http.server 8000 --directory web
 
 Open `http://localhost:8000` to inspect the paired trace viewer.
 
+The test and release suite also exercise the v0.2 provider-free live path. No API key is required and no external request is made.
+
 ## What the viewer shows
 
 - identical task and contract metadata;
@@ -70,24 +94,35 @@ The web application is static, read-only and dependency-free. It executes no mod
 ## Architecture
 
 ```text
-Experiment config
-      │
-      ├───────────────┬─────────────────────────┐
-      │               │                         │
-General condition     │              Specialist condition
-one policy call       │        Strategist → Operator → Auditor
-      │               │                      │
-      │               │              Recovery when justified
-      │               │                      │
-      └───────────────┴──────────────┬───────┘
-                                     │
-                        Confined file-write sandbox
-                                     │
-                        Independent state observation
-                                     │
-                     Agent Completion Verifier v0.6.0
-                                     │
-                       Paired metrics + replay bundle
+Experiment config + prompt catalogue
+                  │
+                  ▼
+       Deterministic request preflight
+                  │
+         ┌────────┴────────┐
+         │                 │
+ General condition    Specialist condition
+     General          Strategist → Operator
+         │                     → Auditor
+         │                 Recovery if justified
+         │                     → Synthesiser
+         └────────┬────────┘
+                  │
+       Provider-neutral transport
+                  │
+       Private tamper-evident ledger
+                  │
+       Strict role-output contracts
+                  │
+        Exact contract authorisation
+                  │
+        Confined file-write sandbox
+                  │
+       Independent state observation
+                  │
+      Agent Completion Verifier v0.6.0
+                  │
+       Evidence-derived final outcome
 ```
 
 The Arena vendors the published Agent Completion Verifier v0.6.0 source at commit `f65fb3450e3c1d7db17f0192667b854d126cd190`. Every vendored Python file is recorded in [vendor_snapshot.json](vendor_snapshot.json).
@@ -98,10 +133,12 @@ The specialist condition cannot grade itself:
 
 - Strategist and Auditor cannot mutate state.
 - Operator cannot approve completion.
+- Proposed writes must match the exact configured path and content before execution.
 - Recovery runs only after an evidence-backed mismatch and has one attempt.
 - Security rejections are terminal.
 - Synthesiser cannot claim completion unless the verifier status is `VERIFIED_COMPLETE`.
 - Canonical evidence comes from independently observed local state, never from a success-shaped receipt.
+- Every provider-shaped call can be recorded in a private ledger and verified without re-execution.
 
 ## Commands
 
@@ -111,20 +148,28 @@ The specialist condition cannot grade itself:
 | `arena-replay` | Verify and summarise an existing artifact directory without executing tools. |
 | `arena-export-web` | Produce a reduced, non-sensitive data bundle for the static viewer. |
 
+A public live-provider command is deliberately not included in the current release. Real-provider execution remains a separately gated private experiment.
+
 ## Verification
 
-The release gate covers:
+The current release gate covers:
 
 - Python 3.10, 3.11, 3.12 and 3.13;
-- source compilation and the complete unit suite;
+- source compilation and the complete unit and integration suite;
 - exact reference metrics;
 - fairness invariants and bounded role permissions;
-- artifact determinism and SHA-256 manifests;
-- tamper and unlisted-file rejection;
+- provider-free verification of all 64 permitted live request templates;
+- strict valid outputs for all six roles and malformed-output rejection;
+- provider response, refusal, incomplete and failure handling;
+- request, result, record and ledger digests;
+- tamper, traversal, symlink and unlisted-file rejection;
+- three complete provider-free live orchestration scenarios;
 - read-only replay;
 - clean-wheel installation and command execution;
 - static-viewer accessibility, local-data and no-external-runtime checks;
 - vendored verifier integrity.
+
+Latest complete matrix: GitHub Actions run **#59**, successful on all four supported Python versions.
 
 Run locally:
 
@@ -136,26 +181,31 @@ python scripts/verify_release.py
 ## Repository map
 
 ```text
-src/agent_reliability_arena/   experiment, orchestration, metrics and replay
+src/agent_reliability_arena/   experiment, live boundaries, orchestration and replay
 src/completion_verifier/       digest-pinned v0.6.0 verifier snapshot
-examples/                      source-controlled fixture configuration
-reference_runs/fixture-v1/     reproducible evidence bundle
+examples/                      fixture config and live prompt catalogue
+reference_runs/fixture-v1/     reproducible public evidence bundle
 web/                           static employer-facing trace viewer
 web/data/                      reduced verified public export
-tests/                         fairness, reliability, artifact and UI tests
-docs/                          methodology, contribution and demo narrative
+tests/                         fairness, reliability, transport, ledger and UI tests
+docs/                          status, methodology, threat model and contribution record
 ```
 
-## Next empirical phase
+## Current development priority
 
-A later release can replace deterministic role policies with a versioned real-model transport. Comparative claims will require:
+The next step is **v0.2 release-candidate hardening**, not an immediate benchmark claim.
 
-- explicit model snapshots and prompt versions;
-- repeated paired runs on the same scenario seeds;
-- measured token usage, latency and dated prices;
-- uncertainty intervals and absolute counts;
-- provider failures separated from orchestration failures;
-- public disclosure bundles derived from replayable raw artifacts.
+Before a paid provider pilot, the repository must define and verify:
+
+- package and documentation version consistency;
+- private run-directory and secret-handling rules;
+- hard call, token and monetary ceilings;
+- explicit abort conditions;
+- a preflight-only operator procedure;
+- disclosure-safe public export from private evidence;
+- a fresh complete release matrix on the final candidate.
+
+After that, the first empirical step is one tightly bounded private paired run using an explicitly named, dated model snapshot. Repeated trials and public comparative claims come only after the pilot evidence is internally consistent.
 
 No real-model result should be described as representative from a single run.
 
