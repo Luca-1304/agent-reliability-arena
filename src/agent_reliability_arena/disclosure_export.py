@@ -144,11 +144,13 @@ def _run_id(value: object) -> str:
 
 def _scan_public(value: object, path: str = "export") -> None:
     if isinstance(value, dict):
+        is_redaction_record = path == "export.redaction_record"
         for key, item in value.items():
             if not isinstance(key, str):
                 raise ValueError(f"{path} contains a non-string key.")
-            if key.lower() in _PROHIBITED_KEYS:
+            if not is_redaction_record and key.lower() in _PROHIBITED_KEYS:
                 raise ValueError(f"{path} contains prohibited public field {key!r}.")
+            _safe_text(key, f"{path} key")
             _scan_public(item, f"{path}.{key}")
         return
     if isinstance(value, list):
