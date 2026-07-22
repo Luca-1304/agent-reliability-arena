@@ -8,9 +8,9 @@ The transport boundary separates provider communication from orchestration, inde
 
 ## Included contracts
 
-- `ModelCallRequest` records the condition, role, model identifier and version, prompt version, instructions, input, output limit, seed and local metadata.
-- Each request has a canonical SHA-256 digest so paired conditions can prove which versioned request was issued.
-- `ModelCallResult` records the provider response identifier, returned model identifier, status, output text, measured wall-clock latency, token usage, provider request ID and the SHA-256 digest of the exact response bytes.
+- `ModelCallRequest` records the condition, role, model identifier and version, prompt version, exact instructions and input, output limit, seed and local metadata.
+- Prompt whitespace is preserved, and each request has a canonical SHA-256 digest so paired conditions can prove exactly which versioned request was issued.
+- `ModelCallResult` records normal output or a valid model refusal, the provider response identifier, returned model identifier, status, measured wall-clock latency, token usage, provider request ID and the SHA-256 digest of the exact response bytes.
 - `TransportError` separates retryable network and provider failures from terminal invalid responses.
 - `ModelTransport` is the provider-neutral protocol used by later orchestration work.
 
@@ -26,6 +26,7 @@ The transport boundary separates provider communication from orchestration, inde
 - provider request-ID capture from the `x-request-id` response header;
 - input, output, total, cached-input and reasoning-token accounting when returned;
 - output extraction from all `output_text` message blocks;
+- refusal extraction from `refusal` content blocks without misclassifying a valid refusal as a transport failure;
 - SHA-256 recording of the exact provider response bytes without persisting the API key.
 
 The adapter accepts HTTPS only and sends credentials to `api.openai.com` by default. A different host requires the caller to set `allow_custom_endpoint=True` explicitly. Tests use injected openers and clocks, so the source test suite never performs a paid or external request.
@@ -47,12 +48,12 @@ Those behaviours require a separate, reviewed integration with bounded tool sche
 
 The transport tests cover:
 
-- deterministic request digests and prompt-version sensitivity;
-- response text and usage parsing;
-- latency and provider request-ID capture;
+- deterministic request digests, prompt-version sensitivity and exact prompt-whitespace preservation;
+- normal response text and valid refusal parsing;
+- usage, latency and provider request-ID capture;
 - exact response-byte hashing;
 - `store: false` and version metadata in the request payload;
 - API-key exclusion from persisted result records and raised errors;
 - HTTP 429 retry classification;
 - insecure endpoint rejection and explicit custom-host opt-in;
-- missing-output rejection.
+- missing-output-and-refusal rejection.
