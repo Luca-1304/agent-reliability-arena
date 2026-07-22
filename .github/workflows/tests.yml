@@ -44,6 +44,7 @@ jobs:
         run: |
           python scripts/verify_release.py
           python scripts/verify_disclosure_release.py
+          python scripts/verify_repeated_release.py
 
       - name: Run installed commands
         run: |
@@ -61,6 +62,7 @@ jobs:
           PATH="/tmp/arena-wheel/bin:$PATH" /tmp/arena-wheel/bin/python -m unittest discover -s tests -p "test_*.py" -v
           /tmp/arena-wheel/bin/python scripts/verify_release.py
           /tmp/arena-wheel/bin/python scripts/verify_disclosure_release.py
+          /tmp/arena-wheel/bin/python scripts/verify_repeated_release.py
           /tmp/arena-wheel/bin/arena-run --config examples/fixture_experiment.json --output /tmp/arena-wheel-run
           /tmp/arena-wheel/bin/arena-replay --input /tmp/arena-wheel-run > /tmp/wheel-replay.json
           /tmp/arena-wheel/bin/arena-export-web --input /tmp/arena-wheel-run --output /tmp/wheel-public.json

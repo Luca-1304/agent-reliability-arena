@@ -19,6 +19,12 @@ from .pilot_policy import (
 from .transports import ModelTransport, RecordingTransport, verify_transport_ledger
 
 
+_CONDITION_ORDERS = {
+    ("general", "specialist"),
+    ("specialist", "general"),
+}
+
+
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -28,6 +34,15 @@ def _timestamp(clock: Callable[[], datetime]) -> str:
     if not isinstance(value, datetime) or value.tzinfo is None:
         raise ValueError("Private pilot clock must return a timezone-aware datetime.")
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _normalise_condition_order(value: object) -> tuple[str, str]:
+    if not isinstance(value, tuple) or value not in _CONDITION_ORDERS:
+        raise ValueError(
+            "'condition_order' must be exactly ('general', 'specialist') or "
+            "('specialist', 'general')."
+        )
+    return value
 
 
 def _prepare_private_root(path: Path) -> Path:
@@ -85,6 +100,7 @@ def _abort_payload(
     error: BaseException,
     gate: PilotExecutionGate | None,
     ledger_path: Path,
+    condition_order: tuple[str, str],
     clock: Callable[[], datetime],
 ) -> dict[str, object]:
     ledger: dict[str, object] | None = None
@@ -98,6 +114,7 @@ def _abort_payload(
         "status": "aborted",
         "aborted_at": _timestamp(clock),
         "stage": stage,
+        "condition_order": list(condition_order),
         "error_type": type(error).__name__,
         "error_message": str(error),
         "gate": dict(gate.snapshot()) if gate is not None else None,
@@ -116,6 +133,7 @@ def run_private_paired_pilot(
     *,
     reviewed_policy_digest: str,
     external_execution_approved: bool,
+    condition_order: tuple[str, str] = ("general", "specialist"),
     clock: Callable[[], datetime] = _utc_now,
 ) -> dict[str, object]:
     if not isinstance(config, ExperimentConfig):
@@ -126,6 +144,7 @@ def run_private_paired_pilot(
         raise ValueError("'policy' must be a PilotPolicy.")
     if len(policy.scenario_ids) != 1:
         raise ValueError("The minimal private pilot requires exactly one scenario.")
+    condition_order = _normalise_condition_order(condition_order)
     if not policy.external_execution_enabled:
         raise PilotGateError("External execution is disabled by the reviewed pilot policy.")
     if not isinstance(external_execution_approved, bool) or not external_execution_approved:
@@ -146,7 +165,7 @@ def run_private_paired_pilot(
                 "schema_version": "arena-private-pilot-start-v1",
                 "status": "started",
                 "started_at": _timestamp(clock),
-                "condition_order": ["general", "specialist"],
+                "condition_order": list(condition_order),
                 "scenario_id": policy.scenario_ids[0],
                 "provider": policy.provider,
                 "model_id": policy.model_id,
@@ -171,28 +190,31 @@ def run_private_paired_pilot(
         )
         recorded = RecordingTransport(gate, ledger_path, clock=clock)
         scenario_id = policy.scenario_ids[0]
+        results: dict[str, Any] = {}
 
-        stage = "general"
-        general_directory = run_root / "general"
-        _private_directory(general_directory)
-        general = LiveGeneralOrchestrator(recorded).run(
-            config,
-            catalog,
-            scenario_id,
-            general_directory / "sandbox",
-        )
-        _write_private_json(general_directory / "result.json", general.to_dict())
+        for condition in condition_order:
+            stage = condition
+            condition_directory = run_root / condition
+            _private_directory(condition_directory)
+            if condition == "general":
+                execution = LiveGeneralOrchestrator(recorded).run(
+                    config,
+                    catalog,
+                    scenario_id,
+                    condition_directory / "sandbox",
+                )
+            else:
+                execution = LiveSpecialistOrchestrator(recorded).run(
+                    config,
+                    catalog,
+                    scenario_id,
+                    condition_directory / "sandbox",
+                )
+            _write_private_json(condition_directory / "result.json", execution.to_dict())
+            results[condition] = execution
 
-        stage = "specialist"
-        specialist_directory = run_root / "specialist"
-        _private_directory(specialist_directory)
-        specialist = LiveSpecialistOrchestrator(recorded).run(
-            config,
-            catalog,
-            scenario_id,
-            specialist_directory / "sandbox",
-        )
-        _write_private_json(specialist_directory / "result.json", specialist.to_dict())
+        general = results["general"]
+        specialist = results["specialist"]
 
         stage = "ledger-verification"
         ledger = verify_transport_ledger(ledger_path)
@@ -208,7 +230,7 @@ def run_private_paired_pilot(
             "status": "completed",
             "completed_at": _timestamp(clock),
             "scenario_id": scenario_id,
-            "condition_order": ["general", "specialist"],
+            "condition_order": list(condition_order),
             "provider": policy.provider,
             "model_id": policy.model_id,
             "model_version": policy.model_version,
@@ -242,6 +264,7 @@ def run_private_paired_pilot(
                         error=error,
                         gate=gate,
                         ledger_path=ledger_path,
+                        condition_order=condition_order,
                         clock=clock,
                     ),
                 )
