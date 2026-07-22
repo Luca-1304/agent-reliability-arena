@@ -71,7 +71,8 @@ Status: **complete on main**
 
 ### Stage 6 — v0.2 release candidate
 
-Status: **active**
+Status: **active**  
+Tracking: [#13 — Prepare Agent Reliability Arena v0.2 release candidate](https://github.com/Luca-1304/agent-reliability-arena/issues/13)
 
 Required before a paid or external-model experiment:
 
@@ -91,7 +92,8 @@ Exit condition: a reviewer can reproduce every non-paid path, understand every l
 
 ### Stage 7 — Minimal private provider pilot
 
-Status: **not started**
+Status: **not started; blocked by #13**  
+Tracking: [#14 — Run a minimal private real-provider pilot](https://github.com/Luca-1304/agent-reliability-arena/issues/14)
 
 Scope:
 
@@ -120,7 +122,8 @@ Exit condition: a complete dataset suitable for cautious analysis, not a single-
 
 ### Stage 9 — Disclosure-safe evidence release
 
-Status: **not started**
+Status: **design tracked; validation requires private evidence**  
+Tracking: [#15 — Design disclosure-safe empirical evidence export](https://github.com/Luca-1304/agent-reliability-arena/issues/15)
 
 - derive public artifacts from verified private evidence;
 - redact or omit prompts, secrets and sensitive provider payloads;
