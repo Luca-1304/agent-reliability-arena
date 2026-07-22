@@ -18,21 +18,7 @@ The project is complementary to, but technically distinct from:
 
 - **Agent Completion Verifier**, which evaluates whether evidence satisfies a completion contract;
 - **Agent Reliability Arena**, which compares orchestration strategies under identical evidence rules;
-- **Agent Evidence Ledger**, which preserves the ordered audit history and exposes whether that history has been altered or is logically impossible.
-
-## Employer-facing value
-
-The project should demonstrate capabilities relevant to agent infrastructure, evals, reliability, security and applied-AI engineering:
-
-- designing a stable evidence protocol rather than relying on prose logs;
-- separating claims, reports, observations and decisions by trust class;
-- defining a deterministic canonical representation before hashing;
-- building append-only local persistence with crash and concurrency handling;
-- detecting deletion, insertion, reordering, mutation and truncation;
-- encoding legal lifecycle transitions as testable invariants;
-- explaining cryptographic limits rather than overstating them;
-- providing reproducible command-line and browser-based inspection;
-- treating model and tool output as untrusted input.
+- **Agent Evidence Ledger**, which preserves ordered audit history and exposes whether that history has been altered or is logically impossible.
 
 Primary public line:
 
@@ -42,68 +28,46 @@ Supporting line:
 
 > A tamper-evident evidence ledger for tool-using agents, with independently classified observations and verifiable state transitions.
 
+## Employer-facing value
+
+The project should demonstrate:
+
+- a stable evidence protocol rather than prose logs;
+- explicit separation of claims, source reports, independent observations and decisions;
+- deterministic canonical representation before hashing;
+- append persistence with crash and cooperative-concurrency handling;
+- detection of deletion, insertion, reordering, mutation and truncation;
+- legal lifecycle transitions encoded as executable invariants;
+- honest explanation of cryptographic limits;
+- reproducible command-line and browser inspection;
+- untrusted handling of model and tool output.
+
 ## Approaches considered
 
-### 1. Hosted audit service
+### Hosted audit service
 
-Send every agent event to a central web service and expose a dashboard.
+A central service offers convenient team access and potentially stronger identity and timestamp controls, but hosting, authentication, billing and operational security would dominate the first release. It would also make the result harder to reproduce offline.
 
-Advantages:
+### Signed SQLite ledger
 
-- easy team access;
-- central retention and search;
-- an external service can provide stronger timestamping and identity controls.
+SQLite provides transactions and efficient queries, and signatures could later support stronger identity assertions. The first release would nevertheless become entangled with key generation, custody, rotation and revocation. A binary database is also less transparent for a compact public demonstration.
 
-Risks:
+### Portable hash-chained event ledger — selected
 
-- hosting, authentication, billing and operational security dominate the first release;
-- users must trust the service operator;
-- difficult to reproduce offline;
-- less suitable as a compact public engineering project.
+Use canonical newline-delimited JSON events in a local ledger directory. Each event includes the previous event hash and its own SHA-256 digest. A final seal records the root and event count. Verification can optionally require an expected root retained outside the ledger directory.
 
-### 2. Signed SQLite ledger
+This route is readable, deterministic, dependency-light and easy to inspect. It can later gain signatures or external anchoring without changing event semantics.
 
-Store normalized events in SQLite and sign database checkpoints with a user-managed key.
+Its limitations are explicit:
 
-Advantages:
-
-- efficient queries;
-- transactions and concurrency are mature;
-- signatures can support stronger actor identity and non-repudiation claims.
-
-Risks:
-
-- binary database format is less transparent in code review;
-- key generation, storage, rotation and revocation substantially expand the threat model;
-- a database file alone is awkward for a static employer-facing evidence viewer;
-- signatures can create misleading confidence when key custody is weak.
-
-### 3. Portable hash-chained event ledger — selected
-
-Use canonical newline-delimited JSON events in an append-only ledger directory. Each event includes the previous event hash and its own SHA-256 digest. A seal records the final root, event count and software version. Verification can optionally require an expected root retained outside the ledger directory.
-
-Advantages:
-
-- readable with ordinary tools;
-- deterministic and dependency-light;
-- portable between systems;
-- easy to test with exact fixtures;
-- clear integrity model;
-- well suited to a read-only static viewer;
-- can later be checkpointed, signed or anchored externally without changing event semantics.
-
-Limitations:
-
-- SHA-256 chaining alone does not prove who authored an event;
-- an attacker who can replace the complete ledger and all local seals can recompute a valid chain;
-- trustworthy detection of a complete rewrite requires an expected root stored elsewhere;
+- chaining does not prove who authored an event;
+- an attacker controlling the complete ledger and all local seals can recompute a valid replacement chain;
+- detecting complete replacement requires an independently retained expected root;
 - local timestamps do not prove trusted wall-clock time.
-
-This limitation is part of the public product story, not hidden in fine print.
 
 ## v0.1.0 scope
 
-One ledger directory represents one agent execution trace for one declared completion contract.
+One ledger directory represents one agent execution trace for one completion contract.
 
 Included:
 
@@ -111,27 +75,28 @@ Included:
 - a deterministic canonical JSON subset;
 - SHA-256 event chaining with domain separation;
 - typed actors and evidence classes;
-- legal event-transition validation;
-- append locking, flush and filesystem synchronisation;
-- artifact references with independent digests;
+- legal transition validation;
+- exclusive append locking, flush and filesystem synchronisation;
+- content-addressed artifact references;
 - a final seal and optional expected-root verification;
-- three command-line applications;
+- `ledger-record`, `ledger-verify` and `ledger-export`;
 - deterministic valid and tampered fixtures;
 - a dependency-free static viewer;
 - Python 3.10–3.13 source and clean-wheel verification.
 
 Deferred:
 
-- multiple tasks in one ledger stream;
-- network replication;
-- user accounts or hosted storage;
+- multiple tasks in one stream;
+- network replication or hosted storage;
+- user accounts;
 - public-key signatures;
 - trusted timestamp authorities;
 - hardware-backed keys;
-- transparency-log gossip or Merkle-tree inclusion proofs;
-- arbitrary database import;
-- legal non-repudiation claims;
-- shell, browser, email, payment or repository execution.
+- Merkle-tree transparency services;
+- legal non-repudiation;
+- arbitrary tool execution.
+
+“Append-only” in v0.1.0 means the supported writer only appends and refuses altered histories. It does not mean the underlying filesystem is physically immutable.
 
 ## Threat model
 
@@ -140,42 +105,43 @@ Deferred:
 The verifier should detect, within the supplied ledger directory:
 
 - event content mutation;
-- event deletion;
-- event insertion;
-- event reordering;
-- duplicate sequence numbers or event identifiers;
-- a broken previous-hash reference;
+- event deletion, insertion or reordering;
+- duplicate or skipped sequence numbers;
+- duplicate event identifiers;
+- broken previous-hash references;
 - truncated or partially written events;
-- non-canonical or malformed event encoding;
+- malformed or non-canonical encoding;
 - artifact byte changes;
-- seal/event-count disagreement;
+- seal or event-count disagreement;
 - impossible lifecycle transitions;
-- a final root that differs from an externally supplied expected root.
+- a final root differing from an externally supplied expected root.
 
 ### Adversaries considered
 
-- accidental file edits;
+- accidental edits;
 - broken logging integrations;
-- a tool or model that emits misleading success-shaped data;
-- a user who rearranges or removes events before sharing a trace;
-- incomplete file transfer;
-- a process crash during append;
-- concurrent writers attempting to append to the same ledger;
-- a malicious local editor who changes some ledger files but does not control an external expected-root checkpoint.
+- misleading success-shaped tool or model output;
+- selective removal or rearrangement before sharing;
+- incomplete transfer;
+- process interruption during append;
+- cooperative concurrent writers;
+- a malicious local editor who does not control an external checkpoint.
 
 ### Adversaries not defeated by v0.1.0 alone
 
-- an attacker who replaces the entire ledger, seal and any locally stored expected root;
-- compromise of the machine before evidence is observed;
-- forged actor identity when no cryptographic signing key exists;
-- falsified independent-observer software;
+- complete replacement of the ledger, seal and every locally stored checkpoint;
+- host compromise before observation;
+- forged actor labels without signatures;
+- a dishonest independent observer;
 - inaccurate system time;
-- operating-system or filesystem compromise beneath the writer;
-- denial of service or deletion of the entire directory.
+- operating-system compromise below the writer;
+- deletion of the entire directory.
 
-The viewer must never translate “hash chain valid” into “all facts are true.” Chain integrity and evidence truth are separate properties.
+A valid chain proves consistency of the supplied history under this threat model. It does not prove that every reported fact is true.
 
-## Ledger directory
+## Ledger and disclosure layout
+
+The sealed source ledger is self-contained:
 
 ```text
 <ledger-id>/
@@ -184,41 +150,48 @@ The viewer must never translate “hash chain valid” into “all facts are tru
   manifest.json
   artifacts/
     <sha256>.<extension>
-  public/
-    disclosure.json        # created only by explicit export
 ```
 
-`ledger.jsonl` is the canonical ordered event stream.
+`ledger.jsonl` is the canonical event stream.
 
-`seal.json` records the final event hash, event count, ledger identifier, schema version, writer version and close status. It is useful for transport and external checkpointing but is not independently trustworthy when stored only beside the ledger.
+`seal.json` records the final event hash, count, ledger identifier, schema and writer versions, and close status. It is useful for transport and checkpointing but is not independently trustworthy when stored only beside the ledger.
 
-`manifest.json` records the SHA-256 digest and byte length of every retained file except itself. The manifest is generated only when the ledger is sealed.
+`manifest.json` records the SHA-256 digest and byte length of every retained source-ledger file except itself. It is generated only after closure.
 
-Artifacts are content-addressed by SHA-256. Event payloads reference artifacts rather than embedding large or binary data.
+A disclosure bundle is always written to a separate output directory:
 
-## Canonical data rules
+```text
+<disclosure-output>/
+  disclosure.json
+  disclosure-manifest.json
+  viewer/
+```
 
-The first release uses a deliberately narrow canonical JSON subset rather than claiming full RFC 8785 compatibility.
+`ledger-export` never writes inside the sealed source ledger. This prevents a public export from invalidating or mutating the source manifest.
 
-Before hashing, an event must satisfy all of these rules:
+## Canonical data profile
 
-- UTF-8 encoding without a byte-order mark;
+The first release defines a narrow canonical JSON subset rather than claiming full RFC 8785 compatibility.
+
+Rules:
+
+- UTF-8 without a byte-order mark;
 - object keys sorted lexicographically by Unicode code point;
-- compact separators with no insignificant whitespace;
+- compact separators and no insignificant whitespace;
 - strings normalized to Unicode NFC;
-- integers only; floating-point numbers are rejected;
+- integers only; floats, NaN and Infinity rejected;
 - booleans and `null` permitted;
-- duplicate object keys rejected during parsing;
-- NaN and Infinity rejected;
+- duplicate keys rejected during parsing;
 - arrays preserve source order;
-- a trailing newline exists in `ledger.jsonl`, but the newline is not part of the event hash;
-- unknown top-level fields rejected for the declared schema version.
+- unknown top-level fields rejected for schema version `1`;
+- each ledger line must exactly equal the canonical serialization of its decoded event;
+- the ledger line ends in `\n`, which is not part of the event hash.
 
-This subset is simple enough to implement with the Python standard library plus explicit validation and is stable across supported Python versions.
+The standard library can implement this profile consistently across Python 3.10–3.13 with explicit parsing and validation.
 
 ## Hash construction
 
-Each event is hashed after all fields except `event_hash` have been populated.
+Each event is hashed after all fields except `event_hash` are populated.
 
 ```text
 canonical_event = canonical_json(event_without_event_hash)
@@ -229,15 +202,9 @@ event_hash = SHA256(
 )
 ```
 
-The first event uses:
+The genesis event uses sixty-four zeroes as `previous_hash`. Every later event must reference the immediately preceding event hash.
 
-```text
-previous_hash = "0000000000000000000000000000000000000000000000000000000000000000"
-```
-
-Every later event's `previous_hash` must equal the immediately preceding event's `event_hash`.
-
-Domain separation prevents the same canonical bytes from being silently reused as another hash object type. Artifact hashes and manifest hashes use separate domains or raw byte hashing as explicitly documented.
+Artifact bytes use raw SHA-256. Other structured hash objects use separate documented domain prefixes.
 
 ## Event envelope
 
@@ -263,24 +230,25 @@ Every event contains:
 }
 ```
 
-### Identifier rules
+### Identifiers
 
-- `ledger_id` is an opaque caller-supplied identifier or a generated UUIDv7-style value with the prefix `led_`.
-- `event_id` is deterministic within a ledger: `evt_` followed by the zero-padded sequence number.
-- `sequence` begins at zero and increments by exactly one.
-- identifiers are never reused within a ledger.
+- `ledger_id` is caller-supplied or generated from UUIDv4 with prefix `led_`;
+- deterministic fixtures inject fixed identifiers;
+- `event_id` is `evt_` followed by the zero-padded sequence;
+- sequence starts at zero and increments by exactly one;
+- identifiers cannot be reused within a ledger.
 
-### Timestamp rules
+### Timestamps
 
-- `recorded_at` is RFC 3339 UTC with a `Z` suffix;
-- timestamps must be non-decreasing;
-- timestamps are informational unless supplied by an independently trusted time source;
-- deterministic fixtures use an injected fixed clock;
-- clock regression is a verification failure because it breaks deterministic ordering assumptions, but a valid timestamp is not treated as proof of real-world time.
+- RFC 3339 UTC with `Z` suffix;
+- non-decreasing;
+- generated through an injectable clock;
+- informational unless provided by an independently trusted time source;
+- clock regression is invalid, but a valid timestamp is not proof of real-world time.
 
 ### Actor types
 
-Allowed actor types in v0.1.0:
+Allowed actor labels:
 
 - `user`;
 - `agent`;
@@ -295,90 +263,64 @@ Actor identifiers are labels, not cryptographic identities.
 
 ### Evidence classes
 
-- `context` — task, contract or configuration;
+- `context` — request, contract or configuration;
 - `intent` — proposal, authorisation or recovery plan;
 - `source_report` — what an agent or tool says happened;
 - `independent_observation` — state measured outside the reporting source;
 - `decision` — verification, policy or closure decision;
-- `error` — normalized execution, persistence or validation failure.
+- `error` — normalized operational failure.
 
-A source report can never be silently reclassified as an independent observation.
+Source reports can never be silently reclassified as independent observations.
 
-## Event types
+## Event types and invariants
 
 ### `ledger_opened`
 
-Must be sequence zero and occur exactly once.
-
-Payload includes:
-
-- writer version;
-- schema version;
-- canonicalization profile;
-- hash algorithm;
-- fixture or live evidence label.
+Sequence zero; exactly once. Declares writer version, schema version, canonical profile, hash algorithm and evidence label.
 
 ### `request_received`
 
-Records the user-visible task or a digest-backed artifact reference to it.
-
-Must occur exactly once after `ledger_opened`.
+Exactly once after opening. Records the user-visible task or a digest-backed artifact reference.
 
 ### `contract_declared`
 
-Records the completion requirements and independent observation method.
-
-Must occur exactly once after `request_received` and before mutation events.
+Exactly once after the request and before mutation attempts. Records completion requirements and the independent observation method.
 
 ### `action_proposed`
 
-Records a proposed bounded action and its contract relationship.
-
-Must reference `contract_declared`.
+References the contract and records one bounded proposed action.
 
 ### `action_authorized`
 
-Records permission for one proposed action.
-
-Must reference exactly one prior `action_proposed` event. Authorisation is intent evidence, not proof that the action occurred.
+References exactly one proposal. Authorisation is intent evidence, not proof of execution.
 
 ### `tool_attempted`
 
-Records that an authorised action was submitted to a tool boundary.
-
-Must reference a valid `action_authorized` event. A single authorisation cannot be consumed by more than one attempt unless the authorisation payload explicitly permits a bounded retry count.
+References a valid authorisation. One authorisation cannot be consumed more times than its declared bounded attempt allowance.
 
 ### `tool_reported`
 
-Records the source-reported result of a tool attempt.
-
-Must reference one `tool_attempted` event. Its evidence class is always `source_report`.
+References one attempt and always has evidence class `source_report`.
 
 ### `observation_recorded`
 
-Records independently measured state after an attempt.
+References the relevant attempt and always has evidence class `independent_observation`.
 
-Must reference the relevant `tool_attempted` event and include:
+Required payload fields:
 
 - observer identifier;
 - observation method;
 - outcome class;
 - observed contract fields;
 - artifact references when applicable;
-- `matches_contract` boolean;
-- `terminal` boolean when security or policy rejection prevents recovery.
-
-Its evidence class is always `independent_observation`.
+- `matches_contract`;
+- `terminal` when security or policy rejection prevents recovery.
 
 ### `completion_claimed`
 
-Records whether an agent or synthesiser claims completion and the event identifiers it cites as support.
-
-It may occur before an observation so false or premature claims can be represented faithfully. The ledger state machine does not convert the claim into completion.
+Records whether an agent or synthesiser claims completion and which events it cites. It is legal after an attempt and may precede observation so premature claims can be represented. A claim never changes completion state by itself.
 
 ### `verification_decided`
-
-Records the verifier's status and supporting references.
 
 Allowed statuses:
 
@@ -391,39 +333,29 @@ Allowed statuses:
 `VERIFIED_COMPLETE` is legal only when:
 
 - a contract exists;
-- at least one relevant independent observation exists after the latest mutation attempt;
-- the latest relevant observation has `matches_contract: true`;
-- no later observation contradicts that state;
-- every referenced artifact digest verifies;
-- the decision references the contract and observation events.
+- a relevant independent observation exists after the latest mutation attempt;
+- the latest relevant observation matches the contract;
+- no later observation contradicts it;
+- referenced artifacts verify;
+- the decision references the contract and observation.
 
-A completion claim is not required for independently verified completion. This allows silent successful completion to be represented.
+A completion claim is not required for independently verified completion, allowing silent success to be represented.
 
 ### `recovery_authorized`
 
-Records one bounded recovery decision after a non-terminal failed, partial or unverified decision.
+References a non-terminal `PARTIAL`, `UNVERIFIED` or `FAILED` decision and states the remaining retry allowance.
 
-Must reference the prior `verification_decided` event and specify the remaining retry allowance.
-
-It is illegal after `SECURITY_REJECTED`, after a terminal observation, or after `VERIFIED_COMPLETE`.
+Illegal after `VERIFIED_COMPLETE`, `SECURITY_REJECTED` or a terminal observation.
 
 ### `error_recorded`
 
-Records normalized persistence, tool, observer or verification errors.
-
-Secrets and authorization headers must be removed before append. Error payloads include error class and redacted message, not unrestricted exception objects.
+Stores a normalized error class and redacted message. Raw exception objects, secrets and authorization headers are forbidden.
 
 ### `ledger_closed`
 
-Must occur exactly once and be the final event.
-
-Must reference the final `verification_decided` event. The payload repeats the final status and indicates whether the ledger is complete, aborted or invalidated.
-
-No event can be appended after closure.
+Exactly once and final. References the final verification decision and repeats the final status plus close reason. No event is legal afterward.
 
 ## Lifecycle state machine
-
-Conceptual states:
 
 ```text
 NEW
@@ -441,48 +373,43 @@ ATTEMPTED
 OBSERVED
   ↓ verification_decided
 DECIDED
-  ├─ VERIFIED_COMPLETE / terminal failure → ledger_closed
-  └─ recoverable failure → recovery_authorized → action_proposed
+  ├─ verified or terminal → ledger_closed
+  └─ recoverable → recovery_authorized → action_proposed
 CLOSED
 ```
 
-Events that do not change state, such as `tool_reported`, remain legal only within their relevant attempt window.
-
-The implementation uses explicit validators per event type rather than one monolithic conditional function.
+Non-state-changing events remain legal only inside their attempt window. Event-specific validators should be separate rather than implemented as one monolithic conditional.
 
 ## Append semantics
 
-`ledger-record` is the only supported writer in v0.1.0.
+`ledger-record` is the sole supported writer in v0.1.0.
 
 Append procedure:
 
-1. acquire an exclusive lock file inside the ledger directory;
-2. parse and verify the complete existing chain;
-3. validate the proposed event against the current lifecycle state;
+1. acquire an exclusive lock inside the ledger directory;
+2. parse and verify the complete existing stream;
+3. validate the proposed event against current lifecycle state;
 4. assign sequence, event identifier, previous hash and timestamp;
-5. canonicalize and hash the event;
-6. append exactly one UTF-8 line;
-7. flush the file buffer;
-8. call `fsync` on the ledger file;
-9. update writer metadata when required;
-10. release the lock.
+5. canonicalize and hash;
+6. append one UTF-8 line;
+7. flush;
+8. `fsync` the ledger file;
+9. release the lock.
 
 The writer refuses:
 
-- a missing or malformed final newline;
-- a partial existing line;
-- a chain that already fails verification;
+- malformed or missing final newline;
+- partial final line;
+- an already-invalid chain;
 - an event after closure;
-- a concurrent lock that cannot be acquired within the configured timeout;
-- a payload containing secret-like field names such as `api_key`, `authorization`, `password`, `secret` or `token` unless explicitly allowlisted as a digest-only metadata field.
+- lock acquisition timeout;
+- forbidden secret-like fields.
 
-The lock prevents cooperative concurrent writers. It is not claimed as protection against a malicious process that ignores the lock.
+The lock coordinates compliant writers. It is not protection against a malicious process that ignores it.
 
 ## Artifact handling
 
-Large or binary evidence is stored under `artifacts/` by digest.
-
-Artifact reference fields:
+Artifacts are content-addressed beneath `artifacts/`.
 
 ```json
 {
@@ -494,34 +421,25 @@ Artifact reference fields:
 }
 ```
 
-Verification requires:
+Verification requires path confinement, regular files only, no symbolic links, correct byte length and matching SHA-256. Duplicate digest references must resolve to identical bytes.
 
-- path remains within the ledger directory;
-- file exists;
-- byte length matches;
-- SHA-256 matches;
-- duplicate digest references resolve to identical bytes;
-- symbolic links are rejected in retained artifacts.
+## Seal, manifest and expected root
 
-The ledger hashes the artifact reference; the artifact file is verified independently.
+On closure, `ledger-record close` creates the seal and manifest.
 
-## Seal and expected-root verification
-
-On closure, `ledger-record close` creates `seal.json` and `manifest.json`.
-
-`seal.json` includes:
+The seal records:
 
 - ledger identifier;
 - schema version;
 - final event hash;
 - event count;
 - final status;
-- closed timestamp;
+- close timestamp;
 - writer version;
-- canonicalization profile;
+- canonical profile;
 - hash algorithm.
 
-`ledger-verify` supports:
+Verification modes:
 
 ```bash
 ledger-verify --ledger path/to/ledger
@@ -529,23 +447,17 @@ ledger-verify --ledger path/to/ledger --expected-root <sha256>
 ledger-verify --ledger path/to/ledger --expected-root-file checkpoint.txt
 ```
 
-Without an expected root, verification proves internal consistency of the supplied directory.
+Assurance levels:
 
-With an independently retained expected root, verification also detects complete local replacement of the chain.
-
-The CLI output must state which assurance level was achieved:
-
-- `INTERNAL_CHAIN_VALID`;
-- `EXPECTED_ROOT_MATCHED`;
+- `INTERNAL_CHAIN_VALID` — the supplied directory is internally consistent;
+- `EXPECTED_ROOT_MATCHED` — internal consistency plus match to an independently retained root;
 - `INVALID`.
 
-It must never output a generic “trusted” status.
+The CLI must never output a generic “trusted” status.
 
 ## Command-line applications
 
 ### `ledger-record`
-
-Subcommands:
 
 ```text
 ledger-record init
@@ -554,74 +466,29 @@ ledger-record attach
 ledger-record close
 ```
 
-Examples:
-
-```bash
-ledger-record init \
-  --output ledgers/demo \
-  --ledger-id led_demo \
-  --evidence-label deterministic_fixture
-
-ledger-record append \
-  --ledger ledgers/demo \
-  --event-type request_received \
-  --actor-type user \
-  --actor-id user \
-  --payload-file fixtures/request.json
-
-ledger-record attach \
-  --ledger ledgers/demo \
-  --file fixtures/observation.json \
-  --media-type application/json
-
-ledger-record close \
-  --ledger ledgers/demo
-```
-
-Machine-readable JSON output is the default. A concise human summary is available through `--format text`.
+Machine-readable JSON is the default. `--format text` provides a concise summary.
 
 ### `ledger-verify`
 
-Validates:
-
-- parsing and canonical form;
-- sequence and identifiers;
-- hash chain;
-- lifecycle transitions;
-- references;
-- artifact integrity;
-- closure and seal;
-- manifest;
-- optional expected root.
+Validates parsing, canonical form, sequence, identifiers, chain, lifecycle, references, artifact integrity, seal, manifest and optional expected root.
 
 Exit codes:
 
 - `0` valid;
-- `2` invalid evidence or chain;
+- `2` invalid chain or evidence;
 - `3` malformed input;
 - `4` unsupported schema;
 - `5` operational error.
 
 ### `ledger-export`
 
-Produces a reduced disclosure bundle for the static viewer.
-
-It never modifies the source ledger.
-
-Export includes:
-
-- event timeline with selected safe payload fields;
-- actor and evidence-class labels;
-- chain and lifecycle verification results;
-- root hash and assurance level;
-- artifact metadata without private bytes unless explicitly approved;
-- disclosure manifest recording removed fields.
+Verifies the source ledger and writes a separate reduced disclosure bundle. It uses an explicit allowlist, records omitted field paths and never modifies the source.
 
 Export fails when the source ledger is invalid.
 
-## Python API
+## Python API and package boundaries
 
-The package exposes focused interfaces:
+Public API:
 
 ```python
 from agent_evidence_ledger import (
@@ -633,7 +500,7 @@ from agent_evidence_ledger import (
 )
 ```
 
-Internal modules remain small and independently testable:
+Suggested modules:
 
 ```text
 src/agent_evidence_ledger/
@@ -653,82 +520,81 @@ src/agent_evidence_ledger/
   export_cli.py
 ```
 
-No module should combine persistence, lifecycle validation and presentation logic.
+Persistence, lifecycle validation and presentation must remain separate.
 
-## Static evidence viewer
+## Static viewer
 
-A dependency-free HTML/CSS/JavaScript application reads only the reduced disclosure bundle.
+A dependency-free HTML/CSS/JavaScript application reads only `ledger-export` disclosure bundles.
 
-Primary employer experience:
+It shows:
 
-1. a clear headline: “Prove the trace, not the claim”;
-2. chain status and assurance level;
-3. final completion status;
-4. an ordered timeline of typed events;
-5. evidence-class filtering;
-6. visible links between proposals, attempts, reports, observations and decisions;
-7. a chain ribbon showing each event hash and previous-hash relationship;
-8. an explanation panel for invalid fixtures;
-9. artifact digest and byte-length details;
-10. explicit cryptographic limitations.
+- headline and limitations;
+- chain status and assurance level;
+- final completion status;
+- ordered event timeline;
+- evidence-class filters;
+- reference links between proposals, attempts, reports, observations and decisions;
+- a chain ribbon with event and previous hashes;
+- explanations for invalid fixtures;
+- artifact digest metadata.
 
-The viewer does not verify arbitrary local files in the browser in v0.1.0. It displays a bundle created by `ledger-export` and includes the export's verification report. Native browser verification can be considered later.
+The viewer does not verify arbitrary local ledgers in-browser in v0.1.0.
 
 Accessibility requirements:
 
-- semantic headings and landmarks;
-- keyboard-operable timeline navigation;
-- visible focus states;
-- text labels in addition to colour;
+- semantic structure;
+- keyboard-operable navigation;
+- visible focus;
+- labels in addition to colour;
 - sufficient contrast;
 - reduced-motion support;
-- responsive layout down to 390 CSS pixels;
-- meaningful static content when JavaScript fails.
+- responsive down to 390 CSS pixels;
+- useful static content without JavaScript.
 
 ## Deterministic fixtures
 
-### Valid fixtures
+### Valid
 
-1. verified completion with matching independent observation;
-2. silent verified completion with no agent completion claim;
+1. verified completion with matching observation;
+2. silent verified completion;
 3. recoverable failure followed by one authorised successful retry;
-4. terminal security rejection closed without retry;
-5. valid artifact-backed observation;
-6. valid ledger checked against an externally supplied expected root.
+4. terminal security rejection without retry;
+5. artifact-backed observation;
+6. valid ledger matching an external expected root.
 
-### Invalid integrity fixtures
+### Invalid integrity
 
-1. edited payload without recomputed hash;
-2. deleted middle event;
+1. edited payload;
+2. deleted event;
 3. inserted event;
 4. reordered events;
-5. broken `previous_hash`;
-6. duplicate sequence number;
-7. duplicate event identifier;
-8. truncated final JSON line;
-9. non-canonical whitespace or key ordering;
+5. broken previous hash;
+6. duplicate sequence;
+7. duplicate event ID;
+8. truncated final line;
+9. non-canonical line;
 10. modified artifact bytes;
-11. seal event-count mismatch;
-12. expected-root mismatch after a completely recomputed replacement chain.
+11. seal count mismatch;
+12. recomputed replacement chain with expected-root mismatch.
 
-### Invalid lifecycle fixtures
+### Invalid lifecycle
 
-1. request before `ledger_opened`;
-2. tool attempt without authorisation;
-3. source report classified as independent observation;
-4. `VERIFIED_COMPLETE` without an observation;
-5. `VERIFIED_COMPLETE` after a contradicting later observation;
+1. request before opening;
+2. attempt without authorisation;
+3. source report labelled as independent observation;
+4. verified completion without observation;
+5. verified completion after later contradiction;
 6. recovery after terminal security rejection;
 7. retry after verified completion;
-8. closure without a final verification decision;
-9. event appended after closure;
-10. completion decision referencing an unrelated attempt.
+8. closure without final decision;
+9. event after closure;
+10. decision referencing an unrelated attempt.
 
 Fixture labels must distinguish software validation from real agent evidence.
 
-## Error handling
+## Error model
 
-Errors are structured by layer:
+Structured errors:
 
 - `CanonicalizationError`;
 - `SchemaError`;
@@ -741,72 +607,65 @@ Errors are structured by layer:
 - `LockError`;
 - `OperationalError`.
 
-A verification report includes:
+A report includes validity, assurance level, error code, event location where available, non-sensitive expected and actual values, and safe remediation guidance. Stack traces are hidden by default.
 
-- validity;
-- assurance level;
-- error code;
-- event sequence and identifier when available;
-- expected and actual values for non-sensitive digest mismatches;
-- safe remediation guidance;
-- no unrestricted stack trace by default.
-
-Verification continues far enough to report multiple independent problems when safe, but chain-dependent checks stop after the first event whose integrity cannot be established.
+Independent problems may be aggregated when safe, but chain-dependent validation stops after integrity can no longer be established.
 
 ## Privacy and secret handling
 
-Append-only storage makes pre-ingestion filtering essential.
+Append-only storage requires filtering before ingestion.
 
 Rules:
 
-- known secret-like payload keys are rejected by default;
-- raw API keys, authorization headers, cookies and passwords are forbidden;
-- public export uses an explicit allowlist, not a denylist;
-- redaction occurs before append or during disclosure export, never by rewriting a sealed ledger;
-- a disclosure bundle records which field paths were omitted;
-- artifact export is opt-in;
-- example fixtures contain synthetic values only;
-- CI scans retained files for common secret patterns.
+- secret-like payload keys rejected by default;
+- raw API keys, authorization headers, cookies and passwords forbidden;
+- disclosure export uses an allowlist;
+- redaction occurs before append or in a separate disclosure bundle, never by rewriting a sealed ledger;
+- omitted paths recorded;
+- artifact disclosure opt-in;
+- fixtures use synthetic data;
+- CI scans for common secret patterns.
 
-The project does not claim GDPR, HIPAA, SOC 2 or legal-record compliance.
+No GDPR, HIPAA, SOC 2 or legal-record compliance claim is made.
 
 ## Claims boundary
 
 v0.1.0 may claim:
 
-- alteration of a supplied chain is detectable under the documented threat model;
+- alterations to a supplied chain are detectable under the documented threat model;
 - lifecycle-invalid histories are rejected;
 - source reports and independent observations remain structurally distinct;
-- externally retained root comparison detects a complete local chain replacement;
-- deterministic fixtures reproduce the documented integrity failures.
+- expected-root comparison detects complete local replacement;
+- deterministic fixtures reproduce documented integrity failures.
 
 v0.1.0 may not claim:
 
 - legal non-repudiation;
-- authenticated actor identity;
+- authenticated identity;
 - trusted time;
 - truth of the underlying observation;
 - protection against a fully compromised host;
-- immutability when every copy and checkpoint is controlled by the same attacker;
+- filesystem immutability;
+- protection when every copy and checkpoint is attacker-controlled;
 - blockchain or distributed-consensus properties;
 - compliance certification;
 - external-model performance.
 
 ## Repository presentation
 
-The future standalone repository should open with:
+The standalone repository should open with:
 
 - the public question;
-- a concise valid-versus-tampered viewer image;
-- a two-minute local reproduction;
+- a valid-versus-tampered viewer preview;
+- a two-minute reproduction;
 - exact assurance terminology;
-- a table of detected tamper classes;
-- architecture and threat-model diagrams;
-- deterministic fixtures and test evidence;
-- limitations visible near the headline;
+- detected tamper classes;
+- architecture and threat model;
+- fixture and CI evidence;
+- visible limitations;
 - authorship and AI-assistance disclosure.
 
-Suggested repository map:
+Suggested map:
 
 ```text
 agent-evidence-ledger/
@@ -830,123 +689,107 @@ agent-evidence-ledger/
 
 ### Unit tests
 
-- canonical JSON rules;
-- Unicode normalization;
+- canonical JSON and NFC normalization;
 - integer-only numeric validation;
-- deterministic event hashing;
-- schema validation;
-- each legal and illegal state transition;
+- deterministic hashes;
+- schema and transition validation;
 - actor and evidence-class restrictions;
-- reference resolution;
-- artifact path confinement and digest checking;
+- references;
+- artifact confinement and digest checks;
 - seal construction;
 - expected-root comparison;
-- secret-key rejection;
+- secret rejection;
 - exit-code mapping.
 
 ### Integration tests
 
-- complete valid ledger lifecycle;
-- recoverable retry lifecycle;
-- security-terminal lifecycle;
-- crash leaving a partial final line;
+- complete valid lifecycle;
+- recovery lifecycle;
+- terminal security lifecycle;
+- partial final line after interruption;
 - lock contention;
 - artifact attachment and closure;
 - disclosure export;
 - read-only verification;
-- deterministic fixture regeneration;
+- fixture regeneration;
 - source and wheel command execution.
 
-### Property-style tests
+### Deterministic mutation tests
 
-Without adding a heavy dependency, deterministic mutation generators should:
-
-- remove each event in turn;
-- swap adjacent events;
-- mutate one payload scalar;
-- alter one hash nibble;
-- truncate every event boundary;
-- insert a copied event at each position.
-
-Every generated mutation must either fail parsing or produce an invalid verification report.
+Generate ledgers with each event removed, adjacent events swapped, one scalar changed, one hash nibble altered, each event boundary truncated and copied events inserted. Every mutation must fail parsing or verification.
 
 ### Viewer tests
 
 - local data only;
 - no network dependency;
 - evidence-class labels;
-- chain and lifecycle error explanations;
+- integrity and lifecycle explanations;
 - keyboard navigation;
 - semantic structure;
-- 390-pixel responsive layout;
+- 390-pixel layout;
 - no unsupported “trusted” or “immutable” claims;
-- graceful no-JavaScript content.
+- useful no-JavaScript content.
 
 ### Release gate
 
-- Python 3.10, 3.11, 3.12 and 3.13;
-- source compilation;
-- full source test suite;
+- Python 3.10–3.13;
+- source compilation and full tests;
 - deterministic reference-ledger regeneration;
-- exact expected fixture outcomes;
-- wheel build;
-- clean-wheel installation;
-- full tests against installed wheel outside the source tree;
+- exact fixture outcomes;
+- wheel build and clean installation;
+- full tests against installed wheel outside source;
 - all three commands from the installed wheel;
-- secret scan;
-- dependency check;
-- source/wheel fixture equivalence;
-- static viewer checks;
+- secret and dependency checks;
+- source/wheel fixture equality;
+- viewer checks;
 - independently tested downloadable archive.
 
-No network or paid model call is required by tests or CI.
+Tests and CI require no network or paid model call.
 
 ## Demonstration narrative
 
-Ninety-second employer demonstration:
+Ninety seconds:
 
-1. **0–15 seconds:** An agent receives a task and reports success.
-2. **15–30 seconds:** The timeline shows that success as a source report, not proof.
-3. **30–45 seconds:** An independent observation contradicts the claim; verification records `FAILED`.
-4. **45–60 seconds:** One event is edited manually.
-5. **60–70 seconds:** `ledger-verify` identifies the exact broken sequence and digest mismatch.
-6. **70–80 seconds:** A completely recomputed replacement chain passes internal consistency but fails against the externally retained expected root.
-7. **80–90 seconds:** The viewer summarises the distinction: valid chain, valid lifecycle and truthful evidence are three separate questions.
-
-The demonstration illustrates the system; aggregate performance claims are out of scope.
+1. an agent reports success;
+2. the timeline labels it as a source report rather than proof;
+3. an independent observation contradicts it and verification records failure;
+4. one event is manually edited;
+5. `ledger-verify` identifies the broken sequence and digest;
+6. a completely recomputed replacement chain passes internal consistency but fails the independently retained expected root;
+7. the viewer explains that chain validity, lifecycle validity and evidence truth are separate questions.
 
 ## Authorship framing
 
 The contribution statement should distinguish:
 
 - Luca Panayiotou's repeated identification of unsupported agent completion as a practical failure mode;
-- the requirement that source claims remain separate from independently observed evidence;
-- the approved product direction and public-employer framing;
+- the requirement that source claims remain separate from independent observations;
+- the approved product and employer-facing direction;
 - AI-assisted specification, implementation, documentation and testing;
-- reproducible fixtures, hashes and CI as the primary technical evidence;
-- later external review or contributions when they exist.
+- reproducible fixtures, hashes and CI as primary evidence;
+- later external contributors when they exist.
 
 ## Success criteria
 
 The first release succeeds when:
 
 - an employer understands the problem in under two minutes;
-- valid and tampered ledgers are reproducible without private infrastructure;
+- valid and tampered ledgers reproduce offline;
 - every event is canonical, typed, chained and lifecycle-validated;
-- source reports cannot satisfy independent-observation requirements;
+- source reports cannot satisfy observation requirements;
 - deletion, insertion, reordering, mutation, truncation and artifact tampering are detected;
-- complete replacement is detected when an external expected root is supplied;
-- assurance terminology is precise and visible;
-- the package, CLIs and viewer pass source, wheel, matrix and archive verification;
-- the project remains clearly distinct from the Verifier and Arena.
+- complete replacement is detected with an external root;
+- assurance terminology is precise;
+- package, CLIs and viewer pass source, wheel, matrix and archive verification;
+- the project remains distinct from the Verifier and Arena.
 
 ## Implementation milestones
 
 The implementation plan should divide work into four independently reviewable releases:
 
 1. **Protocol core** — canonicalization, event schema, hash chain, state machine and deterministic invalid fixtures.
-2. **Persistence and commands** — append locking, artifact handling, seal, `ledger-record` and `ledger-verify`.
+2. **Persistence and commands** — locking, artifact handling, seal, `ledger-record` and `ledger-verify`.
 3. **Disclosure and evidence** — `ledger-export`, reference ledgers, expected-root workflow, mutation generators and release verification.
-4. **Employer-facing release** — static viewer, documentation, accessibility, clean-wheel matrix, archive verification and public repository publication.
+4. **Employer-facing release** — static viewer, documentation, accessibility, clean-wheel matrix, archive verification and standalone publication.
 
 Implementation must not begin until this written specification has been reviewed and approved.
