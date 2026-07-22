@@ -179,7 +179,10 @@ class ShowcaseReleaseTests(unittest.TestCase):
                     json.dumps(raw, indent=2, sort_keys=True) + "\n",
                     encoding="utf-8",
                 )
-                with self.assertRaisesRegex(ShowcaseReleaseError, "sensitive|unsupported|prohibited"):
+                with self.assertRaisesRegex(
+                    ShowcaseReleaseError,
+                    "(?i)sensitive|unsupported|prohibited",
+                ):
                     verify_showcase_release(root)
 
 
