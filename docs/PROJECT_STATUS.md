@@ -31,11 +31,17 @@ The release candidate and current empirical preparation provide:
 19. an immutable private evidence-set index covering completed and aborted runs;
 20. a disclosure-safe public allow-list exporter and digest-verifying replay command;
 21. public aggregate reconstruction from independently verified private ledgers;
-22. adversarial secret, path, omission and outcome-mutation tests.
+22. adversarial secret, path, omission and outcome-mutation tests;
+23. immutable repeated-experiment trial schedules and aggregate preflights;
+24. deterministic counterbalanced condition order and unique trial seeds;
+25. safe pause and continuation through a verified completed prefix without replay;
+26. terminal refusal after partial or aborted repeated-trial evidence;
+27. descriptive paired analysis with explicitly labelled uncertainty methods;
+28. a permanent four-trial provider-free pause/resume and terminal-abort reproduction.
 
 ## Verification evidence
 
-The private runner, disclosure exporter, release reproductions and guarded local script pass the complete matrix on Python 3.10, 3.11, 3.12 and 3.13.
+The private runner, disclosure exporter, repeated runner, release reproductions and guarded local script pass the complete matrix on Python 3.10, 3.11, 3.12 and 3.13.
 
 Every supported version passes:
 
@@ -43,6 +49,7 @@ Every supported version passes:
 - the complete source test suite;
 - the existing release verifier;
 - the disclosure release reproduction;
+- the repeated-experiment release reproduction;
 - installed command checks;
 - wheel build;
 - clean-wheel installation and tests;
@@ -64,6 +71,12 @@ The permanent provider-free evidence includes:
 - verification that private prompts, provider payloads, notes and machine paths do not enter the public bundle;
 - rejection of added, removed or altered private runs and changed public outcomes;
 - provider-free public export and replay commands;
+- one four-trial repeated experiment with two General-first and two Specialist-first orders;
+- a one-trial pause followed by completion with no replay of the first five calls;
+- 20 independently verified repeated-trial ledger records;
+- reconstruction of 400 scripted measured tokens and 20 ms scripted wall-clock latency;
+- a separate invalid-output trial with both trial and experiment abort evidence;
+- proof that an aborted repeated root is terminal;
 - package, installed-distribution and documentation consistency.
 
 ## What is proven
@@ -85,7 +98,13 @@ For the controlled exact file-write fixture, the repository proves that:
 - a committed private run set cannot silently lose failed or aborted runs during export;
 - public token, latency and outcome counts can be derived from verified private evidence;
 - public bundles can exclude private prompts, outputs, notes, identifiers and machine paths;
-- public aggregate mutation can be detected without provider access.
+- public aggregate mutation can be detected without provider access;
+- a repeated schedule can be fixed by digest before any trial begins;
+- order imbalance, duplicate seeds and source drift can be rejected before execution;
+- a verified completed prefix can be continued without replaying its provider-shaped calls;
+- partial, unexpected, altered or aborted trial evidence prevents unsafe continuation;
+- absolute paired outcomes and measured usage can be reconstructed from verified trial ledgers;
+- Wilson, paired normal-approximation and sign-test outputs can be labelled with their actual methods and limitations.
 
 ## What is not yet proven
 
@@ -93,9 +112,11 @@ The repository does **not** yet prove:
 
 - performance of any real hosted or local model;
 - that the local paid pilot path has executed successfully against a provider;
+- that a real repeated experiment has been executed;
 - comparative reliability from a statistically meaningful live sample;
 - measured monetary cost or price efficiency;
 - that the disclosure exporter has processed retained real-provider evidence;
+- that any interval or p-value generalises beyond the recorded sample;
 - safe execution of arbitrary tools;
 - concurrent ledger writing;
 - production readiness or unattended operation.
@@ -113,12 +134,15 @@ No real provider request has been used as benchmark evidence.
 - Monetary limits are conservative operator reservations, not measured billing.
 - A single pilot cannot justify a public comparative conclusion.
 - The disclosure exporter is validated against synthetic completed and aborted private evidence; real-evidence validation remains pending.
+- The repeated runner is validated with scripted provider-shaped evidence only.
+- A terminal repeated root must not be reused after a partial or aborted trial.
+- The paired normal interval is explicitly an approximation and may be unreliable for small or sparse samples.
 
 ## Current priority
 
 **Execute issue #14 only after the operator selects an exact dated model snapshot and approves the complete worst-case monetary reservation.**
 
-The runner and disclosure path are ready. The remaining empirical work is the deliberate local provider call, independent verification of its private evidence, then validation of issue #15 against that retained evidence. Repeated trials remain necessary before public comparative analysis.
+The first-pilot, repeated-runner and disclosure mechanisms are ready at their provider-free boundaries. The next genuine evidence step remains the deliberate local provider call, independent verification of its private evidence, then either validation of issue #15 against that evidence or a separately reviewed repeated plan under issue #21.
 
 ## Related but separate projects
 
