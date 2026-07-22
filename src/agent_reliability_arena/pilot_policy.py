@@ -26,6 +26,18 @@ _POLICY_FIELDS = {
     "external_execution_enabled",
 }
 
+_CALL_FIELDS = {
+    "call_id",
+    "condition",
+    "role",
+    "attempt_number",
+    "required",
+    "model_id",
+    "model_version",
+    "prompt_version",
+    "max_output_tokens",
+}
+
 
 def _required_text(value: object, name: str) -> str:
     if not isinstance(value, str) or not value.strip():
@@ -43,6 +55,50 @@ def _required_bool(value: object, name: str) -> bool:
     if not isinstance(value, bool):
         raise ValueError(f"'{name}' must be a boolean.")
     return value
+
+
+def _normalise_allowed_calls(value: object | None) -> Mapping[str, Mapping[str, object]] | None:
+    if value is None:
+        return None
+    if not isinstance(value, (list, tuple)) or not value:
+        raise ValueError("'allowed_calls' must be a non-empty preflight call list.")
+    normalised: dict[str, Mapping[str, object]] = {}
+    for index, raw in enumerate(value):
+        if not isinstance(raw, dict) or set(raw) != _CALL_FIELDS:
+            raise ValueError(f"allowed_calls[{index}] does not match the preflight call schema.")
+        call_id = _required_text(raw.get("call_id"), f"allowed_calls[{index}].call_id")
+        if call_id in normalised:
+            raise ValueError(f"Duplicate allowed call_id: {call_id}")
+        condition = _required_text(raw.get("condition"), f"allowed_calls[{index}].condition")
+        role = _required_text(raw.get("role"), f"allowed_calls[{index}].role")
+        model_id = _required_text(raw.get("model_id"), f"allowed_calls[{index}].model_id")
+        model_version = _required_text(
+            raw.get("model_version"), f"allowed_calls[{index}].model_version"
+        )
+        prompt_version = _required_text(
+            raw.get("prompt_version"), f"allowed_calls[{index}].prompt_version"
+        )
+        attempt_number = _positive_int(
+            raw.get("attempt_number"), f"allowed_calls[{index}].attempt_number"
+        )
+        max_output_tokens = _positive_int(
+            raw.get("max_output_tokens"), f"allowed_calls[{index}].max_output_tokens"
+        )
+        required = _required_bool(raw.get("required"), f"allowed_calls[{index}].required")
+        normalised[call_id] = MappingProxyType(
+            {
+                "call_id": call_id,
+                "condition": condition,
+                "role": role,
+                "attempt_number": attempt_number,
+                "required": required,
+                "model_id": model_id,
+                "model_version": model_version,
+                "prompt_version": prompt_version,
+                "max_output_tokens": max_output_tokens,
+            }
+        )
+    return MappingProxyType(normalised)
 
 
 @dataclass(frozen=True)
@@ -221,6 +277,7 @@ class PilotExecutionGate:
         *,
         reviewed_policy_digest: str,
         external_execution_approved: bool,
+        allowed_calls: object | None = None,
     ) -> None:
         if not isinstance(policy, PilotPolicy):
             raise ValueError("'policy' must be a PilotPolicy.")
@@ -234,6 +291,8 @@ class PilotExecutionGate:
         self.transport = transport
         self.policy = policy
         self.external_execution_approved = external_execution_approved
+        self.allowed_calls = _normalise_allowed_calls(allowed_calls)
+        self._started_call_ids: set[str] = set()
         self.calls_started = 0
         self.requested_output_tokens_reserved = 0
         self.total_tokens_reserved = 0
@@ -253,6 +312,27 @@ class PilotExecutionGate:
         scenario_id = request.metadata.get("scenario_id")
         if scenario_id not in self.policy.scenario_ids:
             raise PilotGateError("Request scenario_id is outside the reviewed pilot policy.")
+        if self.allowed_calls is None:
+            return
+        specification = self.allowed_calls.get(request.call_id)
+        if specification is None:
+            raise PilotGateError("Request call_id is outside the reviewed preflight call plan.")
+        if request.call_id in self._started_call_ids:
+            raise PilotGateError("This reviewed preflight call has already started.")
+        expected_attempt = str(specification["attempt_number"])
+        comparisons = {
+            "condition": request.condition,
+            "role": request.role,
+            "model_id": request.model_id,
+            "model_version": request.model_version,
+            "prompt_version": request.prompt_version,
+            "max_output_tokens": request.max_output_tokens,
+        }
+        for name, actual in comparisons.items():
+            if actual != specification[name]:
+                raise PilotGateError(f"Request {name} does not match the reviewed preflight call plan.")
+        if request.metadata.get("attempt_number") != expected_attempt:
+            raise PilotGateError("Request attempt_number does not match the reviewed preflight call plan.")
 
     def complete(self, request: ModelCallRequest) -> ModelCallResult:
         if not self.policy.external_execution_enabled:
@@ -278,6 +358,8 @@ class PilotExecutionGate:
         self.requested_output_tokens_reserved = next_output_tokens
         self.total_tokens_reserved = next_total_tokens
         self.cost_minor_units_reserved = next_cost
+        if self.allowed_calls is not None:
+            self._started_call_ids.add(request.call_id)
         result = self.transport.complete(request)
         self.observed_total_tokens += result.usage.total_tokens
         return result
@@ -287,6 +369,8 @@ class PilotExecutionGate:
             {
                 "policy_digest": self.policy.digest,
                 "provider": self.policy.provider,
+                "planned_calls_enforced": self.allowed_calls is not None,
+                "unique_calls_started": len(self._started_call_ids),
                 "calls_started": self.calls_started,
                 "requested_output_tokens_reserved": self.requested_output_tokens_reserved,
                 "total_tokens_reserved": self.total_tokens_reserved,
