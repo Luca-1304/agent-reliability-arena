@@ -1,0 +1,59 @@
+{
+  "author": "Luca Panayiotou",
+  "claims_boundary": "Deterministic fixture and provider-free integration evidence only; no real-provider benchmark or representative-performance claim.",
+  "comparative_claim_permitted": false,
+  "evidence_class": "deterministic_and_provider_free_showcase",
+  "files": [
+    {
+      "path": "docs/EMPLOYER_TECHNICAL_SUMMARY.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "docs/PUBLICATION_BOUNDARY.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "docs/SHOWCASE_DEMO_SCRIPT.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "web/app.js",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "web/data/fixture-v1.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "web/index.html",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "web/styles.css",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "manifest_digest": "41000789448817eabe0ba4fe13f1d310af675e3623b602f4a3bb5736867f373f",
+  "prohibited_categories": [
+    "credentials_and_authentication",
+    "private_prompts_and_raw_outputs",
+    "provider_request_metadata",
+    "private_ledgers_logs_and_notes",
+    "local_machine_paths_and_identifiers",
+    "enabled_live_policies_and_private_budgets",
+    "unsupported_performance_or_safety_claims"
+  ],
+  "project": "Agent Reliability Arena",
+  "provider_called": false,
+  "public_metrics": {
+    "additional_logical_model_calls": 36,
+    "evidence_status": "deterministic_fixture",
+    "false_completion_reduction": 3,
+    "general_verified": 2,
+    "source_file": "web/data/fixture-v1.json",
+    "specialist_verified": 6
+  },
+  "schema_version": "arena-showcase-publication-v1",
+  "showcase_version": "0.2.0rc1-public-showcase-1",
+  "source_repository": "https://github.com/Luca-1304/agent-reliability-arena"
+}
