@@ -32,6 +32,11 @@ The project distinguishes deterministic fixture evidence, provider-free integrat
 - reviewed-policy-digest and separate external-execution approval gates;
 - disabled committed pilot policy example;
 - private pilot runbook, release checklist and disclosure-safe evidence boundary;
+- exact preflight call-plan enforcement and duplicate-call rejection;
+- a secure private paired runner that writes preflight, policy, start, condition-result, ledger and final-verification artifacts;
+- preserved `abort.json` and partial ledger verification when a private run fails;
+- provider-free private-pilot release rehearsal covering one scenario, both conditions and five role calls;
+- a local-only `scripts/run_private_pilot.py` entry point that refuses GitHub Actions, missing approvals, disabled policy, digest drift and missing environment credentials;
 - project status and evidence-gated roadmap documentation.
 
 ### Verified
@@ -47,12 +52,18 @@ The project distinguishes deterministic fixture evidence, provider-free integrat
 - 12 validated role calls and three independently verified private ledgers;
 - disabled pilot policy blocks before provider invocation;
 - injected test transports remain provider-free;
-- an API key alone is insufficient to enable real network execution.
+- an API key alone is insufficient to enable real network execution;
+- unplanned and duplicate pilot calls are rejected before provider invocation;
+- one provider-free private paired rehearsal creates seven private artifacts and five verified ledger records;
+- parser failure preserves abort evidence and prevents dirty-directory reuse;
+- the local script help and refusal paths require no provider credential and leak no test secret;
+- a script-argument handling failure found during CI was corrected and the complete matrix rerun successfully.
 
 ### Not included
 
-- a public live-provider execution command;
+- an executed real-provider pilot;
 - benchmark results from any hosted or local model;
+- a public installed live-provider command;
 - automatic retry or built-in price estimation;
 - concurrent ledger writers;
 - prompt-redacted public live-evidence publication;
@@ -60,7 +71,7 @@ The project distinguishes deterministic fixture evidence, provider-free integrat
 
 ### Evidence boundary
 
-`v0.2.0rc1` is a reviewable release candidate for controlled private experimentation. It does not establish real-model performance, cost efficiency, statistical significance, production readiness or safety for arbitrary tools.
+`v0.2.0rc1` is a reviewable release candidate with a provider-free rehearsed private-pilot runner. It does not establish real-model performance, cost efficiency, statistical significance, production readiness or safety for arbitrary tools.
 
 ## v0.1.0 — 21 July 2026
 
