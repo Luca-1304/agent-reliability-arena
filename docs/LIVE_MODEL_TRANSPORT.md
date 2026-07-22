@@ -10,7 +10,7 @@ The transport boundary separates provider communication from orchestration, inde
 
 - `ModelCallRequest` records the condition, role, model identifier and version, prompt version, instructions, input, output limit, seed and local metadata.
 - Each request has a canonical SHA-256 digest so paired conditions can prove which versioned request was issued.
-- `ModelCallResult` records the provider response identifier, returned model identifier, status, output text, measured wall-clock latency, token usage, provider request ID and a digest of the raw response.
+- `ModelCallResult` records the provider response identifier, returned model identifier, status, output text, measured wall-clock latency, token usage, provider request ID and the SHA-256 digest of the exact response bytes.
 - `TransportError` separates retryable network and provider failures from terminal invalid responses.
 - `ModelTransport` is the provider-neutral protocol used by later orchestration work.
 
@@ -26,9 +26,9 @@ The transport boundary separates provider communication from orchestration, inde
 - provider request-ID capture from the `x-request-id` response header;
 - input, output, total, cached-input and reasoning-token accounting when returned;
 - output extraction from all `output_text` message blocks;
-- SHA-256 recording of the parsed provider response without persisting the API key.
+- SHA-256 recording of the exact provider response bytes without persisting the API key.
 
-The adapter accepts HTTPS only. Tests use injected openers and clocks, so the source test suite never performs a paid or external request.
+The adapter accepts HTTPS only and sends credentials to `api.openai.com` by default. A different host requires the caller to set `allow_custom_endpoint=True` explicitly. Tests use injected openers and clocks, so the source test suite never performs a paid or external request.
 
 ## Deliberate exclusions
 
@@ -50,8 +50,9 @@ The transport tests cover:
 - deterministic request digests and prompt-version sensitivity;
 - response text and usage parsing;
 - latency and provider request-ID capture;
+- exact response-byte hashing;
 - `store: false` and version metadata in the request payload;
 - API-key exclusion from persisted result records and raised errors;
 - HTTP 429 retry classification;
-- insecure endpoint rejection;
+- insecure endpoint rejection and explicit custom-host opt-in;
 - missing-output rejection.
