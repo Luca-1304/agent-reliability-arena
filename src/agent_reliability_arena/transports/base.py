@@ -12,6 +12,12 @@ def _required_text(value: object, name: str) -> str:
     return value.strip()
 
 
+def _required_content(value: object, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"'{name}' must be a non-empty string.")
+    return value
+
+
 def _non_negative_int(value: object, name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         raise ValueError(f"'{name}' must be a non-negative integer.")
@@ -45,10 +51,10 @@ class ModelCallRequest:
             "model_id",
             "model_version",
             "prompt_version",
-            "instructions",
-            "input_text",
         ):
             object.__setattr__(self, name, _required_text(getattr(self, name), name))
+        object.__setattr__(self, "instructions", _required_content(self.instructions, "instructions"))
+        object.__setattr__(self, "input_text", _required_content(self.input_text, "input_text"))
         object.__setattr__(self, "max_output_tokens", _non_negative_int(self.max_output_tokens, "max_output_tokens"))
         if self.max_output_tokens == 0:
             raise ValueError("'max_output_tokens' must be greater than zero.")
@@ -122,6 +128,7 @@ class ModelCallResult:
     latency_ms: int
     usage: ModelUsage
     raw_response_sha256: str
+    refusal_text: str | None = None
     provider_request_id: str | None = None
 
     def __post_init__(self) -> None:
@@ -131,11 +138,16 @@ class ModelCallResult:
             "provider",
             "response_id",
             "model_id",
-            "output_text",
             "status",
             "raw_response_sha256",
         ):
             object.__setattr__(self, name, _required_text(getattr(self, name), name))
+        if not isinstance(self.output_text, str):
+            raise ValueError("'output_text' must be a string.")
+        if self.refusal_text is not None:
+            object.__setattr__(self, "refusal_text", _required_content(self.refusal_text, "refusal_text"))
+        if not self.output_text and self.refusal_text is None:
+            raise ValueError("A model result must contain output_text or refusal_text.")
         object.__setattr__(self, "latency_ms", _non_negative_int(self.latency_ms, "latency_ms"))
         if self.provider_request_id is not None:
             object.__setattr__(
@@ -154,6 +166,7 @@ class ModelCallResult:
             "response_id": self.response_id,
             "model_id": self.model_id,
             "output_text": self.output_text,
+            "refusal_text": self.refusal_text,
             "status": self.status,
             "latency_ms": self.latency_ms,
             "usage": self.usage.to_dict(),
@@ -172,7 +185,7 @@ class TransportError(RuntimeError):
         status_code: int | None = None,
         provider_request_id: str | None = None,
     ) -> None:
-        super().__init__(_required_text(message, "message"))
+        super().__init__(_required_content(message, "message"))
         self.category = _required_text(category, "category")
         self.retryable = bool(retryable)
         self.status_code = status_code
