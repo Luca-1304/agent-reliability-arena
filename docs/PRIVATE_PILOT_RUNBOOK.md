@@ -1,19 +1,20 @@
 # Private real-provider pilot runbook
 
-Status: **release-candidate operating procedure**. The repository does not ship a public live-provider execution command. This document prepares a later private pilot tracked in issue #14; it does not authorise one by itself.
+Status: **runner implemented and provider-free rehearsed; real-provider pilot not yet executed**. This document governs the local pilot tracked in issue #14. It does not authorise spending or provider access by itself.
 
 ## Governing rule
 
 No credential or provider request is used until the exact experiment configuration, prompt catalogue and pilot policy have been reviewed through the provider-free preflight command.
 
-The release candidate has two independent execution barriers:
+The system has three independent execution barriers:
 
-1. `PilotExecutionGate` requires an enabled policy, the exact reviewed policy digest and explicit external-execution approval.
+1. `PilotExecutionGate` requires an enabled policy, the exact reviewed policy digest, exact preflight call membership and explicit external-execution approval.
 2. `OpenAIResponsesTransport` refuses its real network opener unless `external_execution_approved=True` is supplied explicitly.
+3. `scripts/run_private_pilot.py` refuses GitHub Actions and requires the exact operator confirmation phrase before policy loading, credential access, output creation or transport construction.
 
-**External network execution is disabled by default.** Injected test openers remain available for provider-free tests and release fixtures.
+**External network execution is disabled by default.** Injected test transports remain available for provider-free tests and release rehearsals.
 
-## Preflight-only procedure
+## Provider-free preflight
 
 The committed example policy is disabled:
 
@@ -31,32 +32,46 @@ This command:
 - reads no API key;
 - constructs no provider transport;
 - makes no network request;
-- prints the exact policy, configuration, contract and prompt-catalogue digests;
-- lists every permitted call and the maximum requested-output-token total;
+- prints exact policy, configuration, contract and prompt-catalogue digests;
+- lists every permitted call and the requested-output-token maximum;
 - reports conservative total-token and monetary reservations;
 - records `provider_called: false`.
 
-Review the entire output, especially:
+Review the complete output, especially:
 
 - provider and dated model identifier;
 - model, prompt and configuration versions;
 - scenario list;
-- maximum call count;
-- requested output-token ceiling;
+- call ceiling and every permitted call ID;
+- requested-output-token ceiling;
 - reserved total-token ceiling;
 - currency and reserved monetary ceiling;
 - policy and manifest digests;
-- `external_execution_enabled`, which must remain `false` during release-candidate verification.
+- `external_execution_enabled`.
+
+## Provider-free paired rehearsal
+
+The release suite rehearses the private runner without a credential or network request. It executes one controlled success scenario through both conditions and verifies:
+
+- one General call;
+- Strategist, Operator, Auditor and Synthesiser calls;
+- five unique calls from the reviewed preflight plan;
+- five tamper-evident ledger records;
+- seven private evidence artifacts;
+- both independently verified condition outcomes;
+- `comparative_claim_permitted: false`.
+
+The tests also prove that malformed role output creates `abort.json`, preserves the partial ledger and prevents reuse of the dirty run directory.
 
 ## Private policy preparation
 
-A later pilot must use a private copy of the policy file. Do not commit an enabled pilot policy unless every value is deliberately suitable for public disclosure.
+Use a private copy of the policy file. Do not commit an enabled pilot policy unless every value is deliberately suitable for public disclosure.
 
 The policy schema contains no credential field. Unknown fields, including `api_key`, are rejected.
 
-For the first pilot:
+For the first real pilot:
 
-- use one provider;
+- use provider `openai-responses`;
 - use one explicitly dated model snapshot;
 - use one scenario;
 - permit exactly the preflight call ceiling;
@@ -66,7 +81,7 @@ For the first pilot:
 - keep the total monetary ceiling low enough that the full reservation is acceptable;
 - stop rather than expanding the policy during a run.
 
-`reserved_cost_per_call_minor_units` is an operator-supplied conservative reservation. It is not measured provider cost and is not presented as a price estimate. Actual measured usage and a separately dated price table belong in later empirical evidence.
+`reserved_cost_per_call_minor_units` is an operator-supplied conservative reservation. It is not measured provider cost or a built-in price estimate. Actual usage and a separately dated price table belong in later empirical evidence.
 
 ## Private run-directory rules
 
@@ -78,31 +93,36 @@ Required properties:
 - readable and writable only by the operator unless a named reviewer is deliberately granted access;
 - not inside `web/`, `web/data/` or another public-export directory;
 - not synchronised to a public repository;
-- not reused after a failed or aborted run;
+- not reused after success, failure or abort;
 - never a symlink;
 - empty before execution;
-- retained until its ledger and manifest have been independently verified.
+- retained until its ledger and evidence have been independently verified.
 
 On Unix-like systems, create the directory under a restrictive mask such as `umask 077` and verify mode `0700`. On Windows, remove inherited broad access and confirm that only the operator and explicitly approved reviewers have access before use.
 
-Recommended private structure:
+The runner creates:
 
 ```text
 private_runs/<run-id>/
   preflight.json
   policy.json
+  run-start.json
   transport-calls.jsonl
   general/
+    result.json
+    sandbox/
   specialist/
-  verification-summary.json
-  operator-notes.md
+    result.json
+    sandbox/
+  verification-summary.json   # completed run only
+  abort.json                  # aborted run only
 ```
 
 Never place credentials, shell history, complete environment dumps or raw authentication headers in this directory.
 
 ## Credential handling
 
-- Supply `OPENAI_API_KEY` through the process environment only.
+- Supply `OPENAI_API_KEY` through the local process environment only.
 - Do not write the key into JSON, source files, notebooks, command arguments, logs, screenshots, issue comments or ledger metadata.
 - Do not paste it into GitHub Actions variables for this private local pilot.
 - Clear the environment variable when the process ends.
@@ -111,18 +131,53 @@ Never place credentials, shell history, complete environment dumps or raw authen
 
 The transport stores neither the API key nor raw HTTP authorisation headers in `ModelCallResult`, `TransportError` or the transport ledger.
 
+## Local execution procedure
+
+The paid path is a repository script, not a public installed command. It is never invoked by CI or the release verifier.
+
+1. Copy the disabled policy to a private location.
+2. Set the exact dated model ID/version, one scenario, conservative reservations and `external_execution_enabled: true`.
+3. Run provider-free preflight against that private policy.
+4. Review the complete output and record the exact `policy_digest`.
+5. Confirm the full worst-case monetary reservation is acceptable.
+6. Set `OPENAI_API_KEY` in the local process environment.
+7. Run:
+
+```bash
+python scripts/run_private_pilot.py \
+  --config examples/fixture_experiment.json \
+  --catalog examples/live_prompt_catalog.json \
+  --policy /private/path/pilot-policy.json \
+  --output /private/path/private_runs/<run-id> \
+  --reviewed-policy-digest <exact-64-character-digest> \
+  --approve-external-execution \
+  --operator-confirmation I_APPROVE_ONE_PRIVATE_PILOT
+```
+
+The script has no API-key argument. It refuses execution when:
+
+- either approval is missing or the confirmation phrase differs;
+- `GITHUB_ACTIONS=true`;
+- the policy provider is not `openai-responses`;
+- the reviewed digest differs from the policy or preflight;
+- external execution remains disabled;
+- `OPENAI_API_KEY` is absent from the local environment;
+- the output directory is dirty, unsafe or reused.
+
 ## Required approvals before a real call
 
 A real-provider caller must possess all of the following:
 
-1. the exact reviewed policy JSON;
+1. the exact reviewed private policy JSON;
 2. the exact `PilotPolicy.digest` printed by preflight;
 3. a policy with `external_execution_enabled: true`;
-4. `PilotExecutionGate(..., reviewed_policy_digest=<exact digest>, external_execution_approved=True)`;
-5. `OpenAIResponsesTransport(..., external_execution_approved=True)`;
-6. a private empty run directory;
-7. an acceptable worst-case token and monetary reservation;
-8. an operator decision to proceed after reading the preflight.
+4. an acceptable full monetary and token reservation;
+5. `--approve-external-execution`;
+6. `--operator-confirmation I_APPROVE_ONE_PRIVATE_PILOT`;
+7. `OpenAIResponsesTransport(..., external_execution_approved=True)` as constructed by the script;
+8. a private, empty, non-symlink run directory;
+9. `OPENAI_API_KEY` supplied through the local environment only;
+10. a deliberate operator decision after reading the preflight.
 
 Missing any item means no external call.
 
@@ -131,7 +186,8 @@ Missing any item means no external call.
 Stop the pilot immediately and make no further paid request when any of these occurs:
 
 - policy, configuration, contract or prompt-catalogue digest mismatch;
-- a request not listed in the preflight permission manifest;
+- a request not listed in the reviewed preflight plan;
+- duplicate call ID or attempt drift;
 - provider or model-version drift;
 - API-key or authentication-header exposure;
 - ledger write or ledger verification failure;
@@ -145,7 +201,7 @@ Stop the pilot immediately and make no further paid request when any of these oc
 - provider response that cannot be classified and persisted safely;
 - unexpected retry, parallel writer or second process touching the ledger.
 
-After an abort, repair and reproduce the defect provider-free before considering another paid attempt.
+On abort, `abort.json` and any verifiable partial ledger are retained. Repair and reproduce the defect provider-free before considering another paid attempt.
 
 ## Post-run procedure
 
@@ -155,7 +211,7 @@ After an abort, repair and reproduce the defect provider-free before considering
 4. Preserve failed and aborted calls; do not remove unfavourable evidence.
 5. Record the provider, exact model identifier, timestamps and operator notes.
 6. Keep private evidence private.
-7. Generate no public comparison until the disclosure-safe export and repeated-experiment stages are complete.
+7. Generate no public comparison until disclosure-safe export and repeated-experiment stages are complete.
 
 ## Claims boundary
 
