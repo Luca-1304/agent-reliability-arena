@@ -148,6 +148,7 @@ class OpenAIResponsesTransport:
         endpoint: str = _DEFAULT_ENDPOINT,
         timeout_seconds: float = 120.0,
         allow_custom_endpoint: bool = False,
+        external_execution_approved: bool = False,
         opener: Callable[..., Any] | None = None,
         clock_ns: Callable[[], int] = time.perf_counter_ns,
     ) -> None:
@@ -161,11 +162,15 @@ class OpenAIResponsesTransport:
             raise ValueError("'allow_custom_endpoint' must be a boolean.")
         if parsed_endpoint.hostname != "api.openai.com" and not allow_custom_endpoint:
             raise ValueError("Custom endpoints require allow_custom_endpoint=True.")
+        if not isinstance(external_execution_approved, bool):
+            raise ValueError("'external_execution_approved' must be a boolean.")
         if not isinstance(timeout_seconds, (int, float)) or isinstance(timeout_seconds, bool) or timeout_seconds <= 0:
             raise ValueError("'timeout_seconds' must be greater than zero.")
         self._api_key = resolved_key.strip()
         self.endpoint = endpoint
         self.timeout_seconds = float(timeout_seconds)
+        self.external_execution_approved = external_execution_approved
+        self._uses_default_network = opener is None
         self._opener = opener or urllib.request.urlopen
         self._clock_ns = clock_ns
 
@@ -187,9 +192,16 @@ class OpenAIResponsesTransport:
     def complete(self, request: ModelCallRequest) -> ModelCallResult:
         if not isinstance(request, ModelCallRequest):
             raise ValueError("'request' must be a ModelCallRequest instance.")
+        client_request_id = f"arena-{request.digest}"
+        if self._uses_default_network and not self.external_execution_approved:
+            raise TransportError(
+                "External network execution is disabled until explicitly approved.",
+                category="execution_disabled",
+                retryable=False,
+                client_request_id=client_request_id,
+            )
         payload = self._provider_payload(request)
         body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-        client_request_id = f"arena-{request.digest}"
         http_request = urllib.request.Request(
             self.endpoint,
             data=body,
