@@ -8,7 +8,7 @@ Agent Reliability Arena is at **v0.2.0rc1**.
 
 The public v0.1.0 evidence remains a deterministic fixture. It validates experiment plumbing, evidence separation, replay, metrics and the trace viewer; it is not a claim about external model performance.
 
-The release candidate and current private-pilot preparation provide:
+The release candidate and current empirical preparation provide:
 
 1. versioned model request and result contracts;
 2. an HTTPS OpenAI Responses transport with credential, endpoint and explicit network-approval protections;
@@ -27,24 +27,29 @@ The release candidate and current private-pilot preparation provide:
 15. exact preflight call-plan and duplicate-call enforcement;
 16. a private paired runner with secure artifacts and preserved abort evidence;
 17. a provider-free release rehearsal of one paired scenario;
-18. a local-only real-provider script that refuses GitHub Actions, missing approvals and missing environment credentials.
+18. a local-only real-provider script that refuses GitHub Actions, missing approvals and missing environment credentials;
+19. an immutable private evidence-set index covering completed and aborted runs;
+20. a disclosure-safe public allow-list exporter and digest-verifying replay command;
+21. public aggregate reconstruction from independently verified private ledgers;
+22. adversarial secret, path, omission and outcome-mutation tests.
 
 ## Verification evidence
 
-The private runner, release rehearsal and guarded local script have passed the complete matrix on Python 3.10, 3.11, 3.12 and 3.13.
+The private runner, disclosure exporter, release reproductions and guarded local script pass the complete matrix on Python 3.10, 3.11, 3.12 and 3.13.
 
-Every supported version passed:
+Every supported version passes:
 
 - source compilation;
 - the complete source test suite;
-- release verification;
+- the existing release verifier;
+- the disclosure release reproduction;
 - installed command checks;
 - wheel build;
 - clean-wheel installation and tests;
 - deterministic reference checks;
 - dependency validation.
 
-The permanent provider-free evidence now includes:
+The permanent provider-free evidence includes:
 
 - the deterministic v0.1.0 reference metrics;
 - 64 permitted live request templates;
@@ -55,7 +60,11 @@ The permanent provider-free evidence now includes:
 - proof that the disabled policy blocks before provider invocation;
 - one complete private-pilot rehearsal with both conditions, five role calls, five verified ledger records and seven private artifacts;
 - refusal of the local execution script inside GitHub Actions or without both explicit approvals and an environment credential;
-- package, installed-distribution and documentation version consistency.
+- a synthetic disclosure evidence set containing one completed and one aborted private run;
+- verification that private prompts, provider payloads, notes and machine paths do not enter the public bundle;
+- rejection of added, removed or altered private runs and changed public outcomes;
+- provider-free public export and replay commands;
+- package, installed-distribution and documentation consistency.
 
 ## What is proven
 
@@ -69,10 +78,14 @@ For the controlled exact file-write fixture, the repository proves that:
 - security failures remain terminal;
 - Auditor, Recovery and Synthesiser text cannot override authoritative evidence;
 - provider-shaped calls can be recorded and verified without re-execution;
-- real network execution remains disabled unless approved at both the pilot and adapter boundaries;
+- real network execution remains disabled unless approved at the local script, pilot and adapter boundaries;
 - conservative call, token and monetary reservations can be enforced before calls;
-- a paired private run can preserve complete success evidence or partial abort evidence without leaking an environment API key;
-- unplanned, duplicate or drifted calls can be rejected before provider invocation.
+- a paired private run can preserve complete success evidence or partial abort evidence without persisting credentials;
+- unplanned, duplicate or drifted calls can be rejected before provider invocation;
+- a committed private run set cannot silently lose failed or aborted runs during export;
+- public token, latency and outcome counts can be derived from verified private evidence;
+- public bundles can exclude private prompts, outputs, notes, identifiers and machine paths;
+- public aggregate mutation can be detected without provider access.
 
 ## What is not yet proven
 
@@ -82,9 +95,9 @@ The repository does **not** yet prove:
 - that the local paid pilot path has executed successfully against a provider;
 - comparative reliability from a statistically meaningful live sample;
 - measured monetary cost or price efficiency;
+- that the disclosure exporter has processed retained real-provider evidence;
 - safe execution of arbitrary tools;
 - concurrent ledger writing;
-- prompt-redacted public live-evidence publication;
 - production readiness or unattended operation.
 
 No real provider request has been used as benchmark evidence.
@@ -99,14 +112,13 @@ No real provider request has been used as benchmark evidence.
 - The real-provider script is local-only and requires an enabled private policy, an exact reviewed digest, two explicit approvals and `OPENAI_API_KEY` from the process environment.
 - Monetary limits are conservative operator reservations, not measured billing.
 - A single pilot cannot justify a public comparative conclusion.
+- The disclosure exporter is validated against synthetic completed and aborted private evidence; real-evidence validation remains pending.
 
 ## Current priority
 
 **Execute issue #14 only after the operator selects an exact dated model snapshot and approves the complete worst-case monetary reservation.**
 
-The runner and provider-free rehearsal are ready. The remaining Stage 7 work is the deliberate local provider call, independent verification of its private ledger and retention of all success, failure or abort evidence.
-
-Issue #15 separately tracks the disclosure-safe public export. Repeated trials and public comparative analysis remain later stages.
+The runner and disclosure path are ready. The remaining empirical work is the deliberate local provider call, independent verification of its private evidence, then validation of issue #15 against that retained evidence. Repeated trials remain necessary before public comparative analysis.
 
 ## Related but separate projects
 
