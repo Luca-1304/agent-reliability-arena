@@ -16,8 +16,9 @@ _DEFAULT_ENDPOINT = "https://api.openai.com/v1/responses"
 _RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
 
 
-def _extract_output_text(payload: dict[str, Any]) -> str:
-    chunks: list[str] = []
+def _extract_content(payload: dict[str, Any]) -> tuple[str, str | None]:
+    text_chunks: list[str] = []
+    refusal_chunks: list[str] = []
     output = payload.get("output", [])
     if not isinstance(output, list):
         raise TransportError(
@@ -32,17 +33,23 @@ def _extract_output_text(payload: dict[str, Any]) -> str:
         if not isinstance(content, list):
             continue
         for block in content:
-            if isinstance(block, dict) and block.get("type") == "output_text":
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "output_text":
                 text = block.get("text")
                 if isinstance(text, str) and text:
-                    chunks.append(text)
-    if not chunks:
+                    text_chunks.append(text)
+            elif block.get("type") == "refusal":
+                refusal = block.get("refusal")
+                if isinstance(refusal, str) and refusal:
+                    refusal_chunks.append(refusal)
+    if not text_chunks and not refusal_chunks:
         raise TransportError(
-            "Provider response contained no output_text content.",
+            "Provider response contained no output_text or refusal content.",
             category="invalid_response",
             retryable=False,
         )
-    return "".join(chunks)
+    return "".join(text_chunks), "".join(refusal_chunks) or None
 
 
 def _int_or_zero(value: object) -> int:
@@ -194,16 +201,18 @@ class OpenAIResponsesTransport:
             response_model = request.model_id
         if not isinstance(status, str) or not status:
             status = "unknown"
+        output_text, refusal_text = _extract_content(decoded)
         return ModelCallResult(
             call_id=request.call_id,
             request_digest=request.digest,
             provider=self.provider,
             response_id=response_id,
             model_id=response_model,
-            output_text=_extract_output_text(decoded),
+            output_text=output_text,
             status=status,
             latency_ms=int(elapsed_ms),
             usage=_extract_usage(decoded),
             raw_response_sha256=hashlib.sha256(raw).hexdigest(),
+            refusal_text=refusal_text,
             provider_request_id=provider_request_id,
         )
