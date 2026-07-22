@@ -31,7 +31,7 @@ The project distinguishes deterministic fixture evidence, provider-free integrat
 - hard call, requested-output-token, reserved-total-token and monetary-reservation ceilings;
 - reviewed-policy-digest and separate external-execution approval gates;
 - disabled committed pilot policy example;
-- private pilot runbook, release checklist and disclosure-safe evidence boundary;
+- private pilot, repeated experiment and disclosure runbooks;
 - exact preflight call-plan enforcement and duplicate-call rejection;
 - a secure private paired runner that writes preflight, policy, start, condition-result, ledger and final-verification artifacts;
 - preserved `abort.json` and partial ledger verification when a private run fails;
@@ -42,13 +42,22 @@ The project distinguishes deterministic fixture evidence, provider-free integrat
 - provider-free `arena-export-live-evidence` and `arena-verify-live-export` commands;
 - public reconstruction of outcome, token and latency aggregates from verified private ledgers;
 - optional dated price-source metadata kept separate from measured usage and provider billing;
+- immutable `TrialPlan` and `RepeatedExperimentPlan` preregistration schemas;
+- deterministic round-robin, counterbalanced repeated-trial planning with unique seeds;
+- exact experiment-level call, token and monetary reservation preflight;
+- explicit General-first or Specialist-first paired-pilot execution;
+- a private repeated runner with immutable plan/preflight/start records and atomic checkpoints;
+- safe deliberate pause and continuation through a verified completed trial prefix;
+- terminal refusal after partial, non-contiguous, altered, unexpected or aborted trial evidence;
+- descriptive repeated analysis with absolute paired counts, Wilson intervals, a labelled paired normal approximation and an exact discordant-pair sign test;
+- measured repeated-trial calls, tokens and latency reconstructed from independently verified ledgers;
 - project status and evidence-gated roadmap documentation.
 
 ### Verified
 
 - Python 3.10, 3.11, 3.12 and 3.13;
 - complete source suite;
-- release verifier and disclosure release reproduction;
+- release verifier, disclosure reproduction and repeated-experiment reproduction;
 - installed commands;
 - wheel build and clean-wheel tests;
 - deterministic reference equality;
@@ -68,22 +77,30 @@ The project distinguishes deterministic fixture evidence, provider-free integrat
 - added, removed or modified private runs are rejected after the evidence index is committed;
 - public bundle and aggregate mutation is detected during replay;
 - disclosure export and replay make no provider request;
-- disclosure release reproduction passes editable and clean-wheel verification on every supported Python version.
+- deterministic repeated schedules reject duplicate trial IDs, duplicate seeds, unknown scenarios, template drift and order imbalance;
+- four provider-free repeated trials include two General-first and two Specialist-first orders;
+- the repeated release fixture pauses after five calls and resumes the remaining 15 without replaying the first trial;
+- 20 repeated-trial ledger records reconstruct 400 scripted total tokens and 20 ms scripted latency;
+- a separate invalid-output trial preserves both trial and experiment abort evidence;
+- the aborted repeated root refuses continuation;
+- all repeated release behavior passes editable and clean-wheel verification on every supported Python version.
 
 ### Not included
 
 - an executed real-provider pilot;
+- a real repeated provider experiment;
 - benchmark results from any hosted or local model;
 - validation of the disclosure export against retained real-provider evidence;
 - a public installed live-provider command;
 - automatic retry or built-in price estimation;
 - concurrent ledger writers;
 - a representative public live-model comparison;
+- claims that statistical intervals or p-values establish causality or generality;
 - arbitrary tool execution.
 
 ### Evidence boundary
 
-`v0.2.0rc1` is a reviewable release candidate with a provider-free rehearsed private-pilot runner and disclosure-safe export mechanism. It does not establish real-model performance, cost efficiency, statistical significance, production readiness or safety for arbitrary tools.
+`v0.2.0rc1` is a reviewable release candidate with provider-free rehearsed private-pilot, repeated-experiment and disclosure mechanisms. It does not establish real-model performance, cost efficiency, statistical significance, production readiness or safety for arbitrary tools.
 
 ## v0.1.0 — 21 July 2026
 
