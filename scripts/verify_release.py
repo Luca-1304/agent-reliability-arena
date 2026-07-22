@@ -20,6 +20,7 @@ from agent_reliability_arena.transports import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+MINIMUM_DISCOVERED_TESTS = 50
 
 
 class _ReleaseFixtureTransport:
@@ -117,9 +118,9 @@ def main() -> None:
             assert (fresh / relative).read_bytes() == (reference / relative).read_bytes(), relative
         ledger_summary = verify_transport_ledger_release(temporary)
     total = count_tests()
-    assert total >= 60, total
+    assert total >= MINIMUM_DISCOVERED_TESTS, total
     print(json.dumps({
-        "tests_expected_minimum": 60,
+        "tests_expected_minimum": MINIMUM_DISCOVERED_TESTS,
         "tests_discovered": total,
         "reference_manifest_verified": True,
         "general_verified": 2,
