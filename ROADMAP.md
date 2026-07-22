@@ -132,16 +132,32 @@ Exit condition: a complete dataset suitable for cautious analysis, not a single-
 
 ### Stage 9 — Disclosure-safe evidence release
 
-Status: **design tracked; validation requires private evidence**  
+Status: **export, verifier and adversarial provider-free rehearsal implemented; validation against real private evidence pending**  
 Tracking: [#15 — Design disclosure-safe empirical evidence export](https://github.com/Luca-1304/agent-reliability-arena/issues/15)
 
-- derive public artifacts from verified private evidence;
-- redact or omit prompts, secrets and sensitive provider payloads;
-- retain hashes, configuration, model version, counts and methodology;
-- publish limitations and negative outcomes;
-- make every public metric traceable to a verified private source record.
+Completed implementation:
 
-Exit condition: another reviewer can audit the claims without receiving credentials or private prompts.
+- [x] immutable private evidence-set index commits to every completed and aborted run;
+- [x] added, removed or modified private runs are rejected before export;
+- [x] private file manifests and transport ledgers are represented by stable SHA-256 commitments;
+- [x] public output uses an explicit allow-list rather than field-by-field deletion;
+- [x] prompts, role inputs, model outputs, provider identifiers, operator notes and machine paths are excluded;
+- [x] completed and aborted runs remain visible in public counts;
+- [x] token and latency totals are derived from independently verified private ledgers;
+- [x] dated price-source metadata is kept separate from measured usage and billing claims;
+- [x] public aggregate fields are reconstructed during replay and outcome mutation is rejected;
+- [x] `arena-export-live-evidence` and `arena-verify-live-export` make no provider request;
+- [x] synthetic completed-and-aborted evidence passes source, release, wheel and clean-wheel verification on Python 3.10–3.13.
+
+Still required before a real public empirical release:
+
+- [ ] validate the same export against retained private evidence from Stage 7 or Stage 8;
+- [ ] review provider/model naming and any dated price source for public accuracy;
+- [ ] confirm every published count maps to a retained private source commitment;
+- [ ] publish limitations and negative outcomes alongside any empirical result;
+- [ ] keep `comparative_claim_permitted: false` until the repeated experiment supports cautious comparison.
+
+Exit condition: another reviewer can audit public counts, limitations and source commitments without receiving credentials, private prompts or raw provider payloads.
 
 ### Stage 10 — Broader task and tool coverage
 
