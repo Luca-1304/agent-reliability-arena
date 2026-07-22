@@ -129,7 +129,10 @@ class ModelCallResult:
     usage: ModelUsage
     raw_response_sha256: str
     refusal_text: str | None = None
+    incomplete_reason: str | None = None
+    client_request_id: str | None = None
     provider_request_id: str | None = None
+    provider_processing_ms: int | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -144,16 +147,18 @@ class ModelCallResult:
             object.__setattr__(self, name, _required_text(getattr(self, name), name))
         if not isinstance(self.output_text, str):
             raise ValueError("'output_text' must be a string.")
-        if self.refusal_text is not None:
-            object.__setattr__(self, "refusal_text", _required_content(self.refusal_text, "refusal_text"))
-        if not self.output_text and self.refusal_text is None:
-            raise ValueError("A model result must contain output_text or refusal_text.")
+        for name in ("refusal_text", "incomplete_reason", "client_request_id", "provider_request_id"):
+            value = getattr(self, name)
+            if value is not None:
+                object.__setattr__(self, name, _required_content(value, name))
+        if not self.output_text and self.refusal_text is None and self.incomplete_reason is None:
+            raise ValueError("A model result must contain output_text, refusal_text, or incomplete_reason.")
         object.__setattr__(self, "latency_ms", _non_negative_int(self.latency_ms, "latency_ms"))
-        if self.provider_request_id is not None:
+        if self.provider_processing_ms is not None:
             object.__setattr__(
                 self,
-                "provider_request_id",
-                _required_text(self.provider_request_id, "provider_request_id"),
+                "provider_processing_ms",
+                _non_negative_int(self.provider_processing_ms, "provider_processing_ms"),
             )
         if not isinstance(self.usage, ModelUsage):
             raise ValueError("'usage' must be a ModelUsage instance.")
@@ -167,10 +172,13 @@ class ModelCallResult:
             "model_id": self.model_id,
             "output_text": self.output_text,
             "refusal_text": self.refusal_text,
+            "incomplete_reason": self.incomplete_reason,
             "status": self.status,
             "latency_ms": self.latency_ms,
+            "provider_processing_ms": self.provider_processing_ms,
             "usage": self.usage.to_dict(),
             "raw_response_sha256": self.raw_response_sha256,
+            "client_request_id": self.client_request_id,
             "provider_request_id": self.provider_request_id,
         }
 
@@ -183,13 +191,23 @@ class TransportError(RuntimeError):
         category: str,
         retryable: bool,
         status_code: int | None = None,
+        provider_error_code: str | None = None,
+        client_request_id: str | None = None,
         provider_request_id: str | None = None,
     ) -> None:
         super().__init__(_required_content(message, "message"))
         self.category = _required_text(category, "category")
         self.retryable = bool(retryable)
         self.status_code = status_code
-        self.provider_request_id = provider_request_id
+        self.provider_error_code = (
+            _required_text(provider_error_code, "provider_error_code") if provider_error_code is not None else None
+        )
+        self.client_request_id = (
+            _required_text(client_request_id, "client_request_id") if client_request_id is not None else None
+        )
+        self.provider_request_id = (
+            _required_text(provider_request_id, "provider_request_id") if provider_request_id is not None else None
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -197,6 +215,8 @@ class TransportError(RuntimeError):
             "category": self.category,
             "retryable": self.retryable,
             "status_code": self.status_code,
+            "provider_error_code": self.provider_error_code,
+            "client_request_id": self.client_request_id,
             "provider_request_id": self.provider_request_id,
         }
 
