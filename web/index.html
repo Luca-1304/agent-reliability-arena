@@ -3,21 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A controlled reliability comparison between one general agent and a same-model specialist system.">
-  <title>Agent Reliability Arena</title>
+  <meta name="description" content="A controlled, evidence-first comparison between one general agent and a same-model specialist system.">
+  <title>Agent Reliability Arena — Evidence-first agent evaluation</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a class="skip-link" href="#comparison">Skip to comparison</a>
+  <a class="skip-link" href="#proof">Skip to project proof</a>
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Agent Reliability Arena home">
       <span class="brand-mark" aria-hidden="true">AR</span>
       <span>Agent Reliability Arena</span>
     </a>
     <nav aria-label="Primary navigation">
+      <a href="#proof">Proof</a>
       <a href="#comparison">Trace</a>
-      <a href="#results">Results</a>
-      <a href="#method">Method</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#verified-build">Verification</a>
+      <a href="#about">About</a>
     </nav>
   </header>
 
@@ -26,12 +28,13 @@
       <div class="hero-copy">
         <p class="eyebrow">Controlled agent-evaluation system</p>
         <h1 id="hero-title">Same model. Same tools. Same evidence rules. <span>Different orchestration.</span></h1>
-        <p class="hero-summary">Inspect how one general agent and a unified specialist system respond to identical failures—then follow the independent evidence behind every completion claim.</p>
+        <p class="hero-summary">Compare one general agent with a unified specialist system, inspect how each responds to identical failures, and follow the independent evidence behind every completion claim.</p>
         <div class="hero-actions">
-          <a class="button primary" href="#comparison">View a failure trace</a>
-          <a class="button secondary" href="#method">See the controls</a>
+          <a class="button primary" href="#comparison">Inspect a failure trace</a>
+          <a class="button secondary" href="https://github.com/Luca-1304/agent-reliability-arena">View the repository</a>
         </div>
-        <p id="fixture-note" class="fixture-note"><strong>Deterministic fixture:</strong> this release validates software behaviour and measurement plumbing. It is not an external-model leaderboard.</p>
+        <p id="fixture-note" class="fixture-note"><strong>Deterministic fixture:</strong> this release validates software behaviour, evidence separation and measurement plumbing. It is not an external-model leaderboard.</p>
+        <p class="release-boundary"><strong>No real-provider benchmark request or provider spend has been executed.</strong></p>
       </div>
       <div class="architecture-card" aria-label="Specialist system architecture">
         <div class="architecture-title">Unified specialist path</div>
@@ -46,10 +49,44 @@
       </div>
     </section>
 
+    <section id="proof" class="proof-section" aria-labelledby="proof-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">What this proves</p>
+          <h2 id="proof-title">A completion claim is not completion evidence.</h2>
+        </div>
+        <p>The system separates what an agent or tool reports from what independently observed state can actually support.</p>
+      </div>
+      <div class="proof-grid">
+        <article>
+          <span>01</span>
+          <h3>Controlled comparison</h3>
+          <p>The model label, task, seed, tools, mutation limit and completion contract remain fixed. Only orchestration changes.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Fail-closed execution</h3>
+          <p>Proposed actions must match the exact contract before mutation. Malformed, unsafe or scope-expanding outputs are rejected.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Independent verification</h3>
+          <p>Observed path, content, digest and confinement—not persuasive agent text—determine the final status.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>Visible trade-offs</h3>
+          <p>Reliability outcomes stay beside extra calls, recovery behaviour, failures and limitations.</p>
+        </article>
+      </div>
+    </section>
+
     <section id="results" class="results-section" aria-labelledby="results-title">
       <div class="section-heading">
-        <p class="eyebrow">Fixture results</p>
-        <h2 id="results-title">Reliability improved here—with measurable overhead.</h2>
+        <div>
+          <p class="eyebrow">Fixture results</p>
+          <h2 id="results-title">Reliability improved here—with measurable overhead.</h2>
+        </div>
         <p>Absolute counts stay beside every rate. Token use and latency are not invented for deterministic fixtures.</p>
       </div>
       <div class="metric-grid" aria-live="polite">
@@ -136,10 +173,57 @@
       </section>
     </section>
 
+    <section id="architecture" class="architecture-section" aria-labelledby="architecture-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">System architecture</p>
+          <h2 id="architecture-heading">Permission, execution and proof remain separate.</h2>
+        </div>
+        <p>The design keeps planning text, mutation authority and completion evidence from silently collapsing into one unreviewable agent action.</p>
+      </div>
+      <div class="system-flow" role="list" aria-label="Agent Reliability Arena system flow">
+        <article role="listitem"><span>Input</span><strong>Config + contract</strong><p>Exact task, seed, model label and permitted mutation.</p></article>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <article role="listitem"><span>Permission</span><strong>Preflight + gates</strong><p>Digest-pinned call plan and conservative reservations.</p></article>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <article role="listitem"><span>Execution</span><strong>General or specialists</strong><p>Same task and tools; different role organisation.</p></article>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <article role="listitem"><span>Observation</span><strong>Independent state</strong><p>Path, content, digest and confinement are checked.</p></article>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <article role="listitem"><span>Proof</span><strong>Verifier + evidence</strong><p>Final outcome and reproducible records.</p></article>
+      </div>
+    </section>
+
+    <section id="verified-build" class="verified-section" aria-labelledby="verified-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Built and verified</p>
+          <h2 id="verified-title">More than a multi-agent interface mock-up.</h2>
+        </div>
+        <p>Every layer is tested as an evidence boundary, including negative and terminal cases.</p>
+      </div>
+      <div class="verified-grid">
+        <article><strong>Six strict role schemas</strong><p>Unknown fields, duplicate keys, unsafe paths and malformed outputs fail closed.</p></article>
+        <article><strong>Tamper-evident records</strong><p>Requests, outcomes and append-only records are digest verified without replay.</p></article>
+        <article><strong>Guarded live boundary</strong><p>External execution requires an exact policy digest, explicit approvals and hard reservations.</p></article>
+        <article><strong>Repeated experiments</strong><p>Counterbalanced schedules, unique seeds, safe pause and terminal abort rules are preregistered.</p></article>
+        <article><strong>Disclosure-safe export</strong><p>Public aggregates retain failed outcomes while private prompts and raw payloads stay excluded.</p></article>
+        <article><strong>Cross-version release gate</strong><p>Source, wheel and clean-install verification run on Python 3.10 through 3.13.</p></article>
+      </div>
+      <div class="release-links">
+        <a href="https://github.com/Luca-1304/agent-reliability-arena/blob/main/docs/EMPLOYER_TECHNICAL_SUMMARY.md">Read the technical summary</a>
+        <a href="https://github.com/Luca-1304/agent-reliability-arena/blob/main/docs/SHOWCASE_DEMO_SCRIPT.md">Use the 90-second demo</a>
+        <a href="https://github.com/Luca-1304/agent-reliability-arena/blob/main/docs/PUBLICATION_BOUNDARY.md">Review the publication boundary</a>
+      </div>
+    </section>
+
     <section id="method" class="method-section" aria-labelledby="method-title">
       <div class="section-heading">
-        <p class="eyebrow">Experiment controls</p>
-        <h2 id="method-title">The comparison changes orchestration—not the task.</h2>
+        <div>
+          <p class="eyebrow">Experiment controls</p>
+          <h2 id="method-title">The comparison changes orchestration—not the task.</h2>
+        </div>
+        <p>Fairness metadata and exact contracts make accidental condition drift visible.</p>
       </div>
       <div class="method-grid">
         <article><span>Held constant</span><h3>Model label and version</h3><p id="model-control">Loading experiment metadata.</p></article>
@@ -150,13 +234,26 @@
       <div class="claims-boundary">
         <strong>Claims boundary</strong>
         <p id="claims-boundary">Loading.</p>
+        <code>comparative_claim_permitted: false</code>
+      </div>
+    </section>
+
+    <section id="about" class="about-section" aria-labelledby="about-title">
+      <div>
+        <p class="eyebrow">Authorship and review</p>
+        <h2 id="about-title">Built around a strict evidence standard.</h2>
+      </div>
+      <div class="about-copy">
+        <p><strong>Luca Panayiotou</strong> defined the project question, problem framing, acceptance standard and review direction.</p>
+        <p><strong>AI-assisted implementation</strong>, documentation and testing are disclosed rather than hidden. The repository records the distinction between human direction and assisted execution.</p>
+        <p>This showcase publishes verified outcomes and architecture while retaining private operational material.</p>
       </div>
     </section>
   </main>
 
   <footer>
-    <p>Built as an evidence-first agent reliability demonstration.</p>
-    <p>Fixture data is reproducible from the repository CLI.</p>
+    <p>Agent Reliability Arena · v0.2.0rc1 public showcase</p>
+    <p>Deterministic and provider-free evidence only.</p>
   </footer>
 
   <script src="app.js" defer></script>
