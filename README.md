@@ -29,16 +29,19 @@ The release candidate adds a complete provider-free live-model path and controll
 - an HTTPS OpenAI Responses adapter with credential, endpoint and explicit network-approval protections;
 - tamper-evident private transport ledgers;
 - a source-controlled six-role prompt catalogue;
-- deterministic request construction and permission manifests;
+- deterministic request construction and exact permission manifests;
 - fail-closed role-output parsing;
 - provider-neutral general and specialist orchestrators;
 - exact contract checks before bounded mutation;
 - independent observation, verification, audit, recovery and synthesis;
 - a secret-free pilot policy with hard call, token-reservation and monetary-reservation ceilings;
 - a provider-free `arena-preflight-pilot` command;
-- a second execution gate requiring the exact reviewed policy digest and separate explicit approval.
+- exact reviewed-policy, call-plan and duplicate-call enforcement;
+- a secure private paired runner with success and abort evidence;
+- a provider-free release rehearsal covering both conditions and five role calls;
+- a local-only real-provider script that refuses GitHub Actions, missing approvals and missing environment credentials.
 
-The release fixtures exercise this path with scripted provider responses. No benchmark request or provider spend is included.
+The release fixtures and private-pilot rehearsal use scripted provider responses. **No real-provider benchmark request or provider spend has been executed.**
 
 See [Project status](docs/PROJECT_STATUS.md), [Roadmap](ROADMAP.md), [Changelog](CHANGELOG.md), [Private pilot runbook](docs/PRIVATE_PILOT_RUNBOOK.md), [Disclosure boundary](docs/DISCLOSURE_BOUNDARY.md) and [RC checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md).
 
@@ -81,6 +84,8 @@ arena-preflight-pilot \
 
 The pilot preflight reads local files only, calls no provider, requires no API key and reports `provider_called: false`. The committed policy keeps external execution disabled.
 
+The test and release suites also execute a complete provider-free private-pilot rehearsal. It creates a fresh private evidence bundle, runs both conditions, records five role calls in a verified ledger and explicitly disallows a comparative claim.
+
 To inspect the deterministic viewer:
 
 ```bash
@@ -99,7 +104,7 @@ Experiment config + prompt catalogue + pilot policy
                          │
                 exact reviewed policy digest
                          │
-          explicit pilot gate + network approval
+        exact call plan + explicit execution approvals
                          │
               ┌──────────┴──────────┐
               │                     │
@@ -139,7 +144,9 @@ The Arena vendors Agent Completion Verifier v0.6.0 at commit `f65fb3450e3c1d7db1
 - Synthesiser cannot claim completion unless the verifier status is `VERIFIED_COMPLETE`.
 - Canonical evidence comes from independently observed state, not a success-shaped receipt.
 - Provider-shaped calls can be recorded in a private ledger and verified without re-execution.
-- Real network execution is disabled unless approved independently at the pilot gate and adapter.
+- Real network execution is disabled unless approved independently at the local script, pilot gate and adapter.
+- Unplanned or duplicate calls are rejected before provider invocation.
+- Aborted runs preserve an `abort.json` record and any independently verifiable partial ledger.
 
 ## Commands
 
@@ -150,7 +157,7 @@ The Arena vendors Agent Completion Verifier v0.6.0 at commit `f65fb3450e3c1d7db1
 | `arena-export-web` | Produce a reduced public fixture bundle. | Never |
 | `arena-preflight-pilot` | Validate an exact pilot policy and print permission/budget evidence. | Never |
 
-A public live-provider execution command is deliberately absent. Real-provider execution remains a separately gated private experiment tracked in issue #14.
+A public installed live-provider command is deliberately absent. `scripts/run_private_pilot.py` is a local-only, explicitly approved path documented in the [Private pilot runbook](docs/PRIVATE_PILOT_RUNBOOK.md). It is never invoked by GitHub Actions or the release verifier.
 
 ## Release verification
 
@@ -165,10 +172,13 @@ The release gate covers:
 - provider response, refusal, incomplete and failure handling;
 - disabled-by-default adapter network execution;
 - secret-free pilot policy and provider-free preflight;
-- exact policy-digest approval and hard pre-call reservations;
+- exact policy-digest approval, exact call-plan enforcement and hard pre-call reservations;
 - request, result, record and ledger digests;
 - tamper, traversal, symlink and unlisted-file rejection;
 - three provider-free live orchestration scenarios;
+- one complete provider-free private paired rehearsal;
+- secure success artifacts, preserved abort evidence and dirty-directory rejection;
+- local script refusal in GitHub Actions and without approvals or environment credentials;
 - installed command execution;
 - wheel build and clean-wheel verification;
 - dependency validation and vendored verifier integrity.
@@ -183,10 +193,11 @@ python scripts/verify_release.py
 ## Repository map
 
 ```text
-src/agent_reliability_arena/   experiment, live boundaries, pilot controls and replay
+src/agent_reliability_arena/   experiment, live boundaries, pilot runner, controls and replay
 src/completion_verifier/       digest-pinned verifier snapshot
 examples/                      fixture, prompt catalogue and disabled pilot policy
 docs/                          status, methodology, runbook, disclosure and release checks
+scripts/                        release verifier and guarded local pilot entry point
 reference_runs/fixture-v1/     reproducible public fixture evidence
 web/                           static trace viewer
 web/data/                      reduced verified public fixture export
@@ -195,9 +206,16 @@ tests/                         fairness, transport, pilot, ledger, orchestration
 
 ## Next empirical step
 
-After the final release-candidate matrix is green, issue #14 permits one tightly bounded private paired run using one provider, one dated model snapshot, one scenario and the reviewed ceilings. One pilot remains operational evidence only; repeated trials and a disclosure-safe export are required before comparative publication.
+Issue #14 is prepared up to the real-provider boundary. The remaining step is one deliberate local paired run using:
 
-No single live-model result should be described as representative.
+- one explicitly dated model snapshot;
+- one reviewed scenario;
+- an enabled private policy;
+- the exact preflight digest;
+- an approved worst-case monetary reservation;
+- `OPENAI_API_KEY` supplied through the local process environment only.
+
+One pilot remains operational evidence only. Repeated trials and a disclosure-safe export are required before comparative publication. No single live-model result should be described as representative.
 
 ## Authorship and AI assistance
 
