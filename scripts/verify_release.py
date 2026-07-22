@@ -9,6 +9,7 @@ from pathlib import Path
 from agent_reliability_arena.artifacts import verify_manifest
 from agent_reliability_arena.config import ExperimentConfig
 from agent_reliability_arena.experiment import execute_fixture_experiment
+from agent_reliability_arena.live_requests import PromptCatalog, build_live_request_preflight
 from agent_reliability_arena.public_export import build_public_export
 from agent_reliability_arena.replay import replay_experiment
 from agent_reliability_arena.transports import (
@@ -18,6 +19,7 @@ from agent_reliability_arena.transports import (
     RecordingTransport,
     verify_transport_ledger,
 )
+from agent_reliability_arena.transports.base import canonical_json_sha256
 
 ROOT = Path(__file__).resolve().parents[1]
 MINIMUM_DISCOVERED_TESTS = 50
@@ -88,6 +90,27 @@ def verify_transport_ledger_release(directory: Path) -> dict[str, object]:
     return summary
 
 
+def verify_live_request_preflight_release(config: ExperimentConfig) -> dict[str, object]:
+    catalog = PromptCatalog.from_dict(
+        json.loads((ROOT / "examples" / "live_prompt_catalog.json").read_text(encoding="utf-8"))
+    )
+    manifest = build_live_request_preflight(config, catalog)
+    unsigned = dict(manifest)
+    manifest_digest = unsigned.pop("manifest_digest")
+    assert canonical_json_sha256(unsigned) == manifest_digest
+    assert manifest["config_digest"] == config.digest
+    assert manifest["contract_digest"] == config.contract.digest
+    assert manifest["prompt_catalog_digest"] == catalog.digest
+    assert manifest["held_constant"] == config.fairness_fingerprint("general")
+    template_count = sum(len(scenario["calls"]) for scenario in manifest["scenarios"])
+    assert template_count == len(config.scenarios) * 8
+    assert all(len(scenario["calls"]) == 8 for scenario in manifest["scenarios"])
+    return {
+        "templates": template_count,
+        "manifest_digest": manifest_digest,
+    }
+
+
 def main() -> None:
     config = ExperimentConfig.from_dict(json.loads((ROOT / "examples" / "fixture_experiment.json").read_text(encoding="utf-8")))
     reference = ROOT / "reference_runs" / "fixture-v1"
@@ -106,6 +129,7 @@ def main() -> None:
     public = build_public_export(reference)
     assert len(public["scenarios"]) == 8
     assert public["evidence_status"] == "deterministic_fixture"
+    live_preflight = verify_live_request_preflight_release(config)
     with tempfile.TemporaryDirectory() as directory:
         temporary = Path(directory)
         fresh = temporary / "fresh"
@@ -129,6 +153,8 @@ def main() -> None:
         "additional_logical_model_calls": 36,
         "transport_ledger_records_verified": ledger_summary["records"],
         "transport_ledger_digest_verified": True,
+        "live_request_templates_verified": live_preflight["templates"],
+        "live_request_preflight_digest_verified": True,
         "evidence_status": "deterministic_fixture",
     }, indent=2, sort_keys=True))
 
