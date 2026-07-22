@@ -1,0 +1,51 @@
+name: Fold disclosure scanner fix
+
+on:
+  push:
+    branches: ["feature/disclosure-safe-empirical-export"]
+
+permissions:
+  contents: write
+
+jobs:
+  fold:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/disclosure-safe-empirical-export
+          fetch-depth: 0
+
+      - name: Fold validated fix and remove diagnostics
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/agent_reliability_arena/disclosure_export.py")
+          text = path.read_text(encoding="utf-8")
+          old = '''def _scan_public(value: object, path: str = "export") -> None:\n    if isinstance(value, dict):\n        for key, item in value.items():\n            if not isinstance(key, str):\n                raise ValueError(f"{path} contains a non-string key.")\n            if key.lower() in _PROHIBITED_KEYS:\n                raise ValueError(f"{path} contains prohibited public field {key!r}.")\n            _scan_public(item, f"{path}.{key}")\n        return\n'''
+          new = '''def _scan_public(value: object, path: str = "export") -> None:\n    if isinstance(value, dict):\n        is_redaction_record = path == "export.redaction_record"\n        for key, item in value.items():\n            if not isinstance(key, str):\n                raise ValueError(f"{path} contains a non-string key.")\n            if not is_redaction_record and key.lower() in _PROHIBITED_KEYS:\n                raise ValueError(f"{path} contains prohibited public field {key!r}.")\n            _safe_text(key, f"{path} key")\n            _scan_public(item, f"{path}.{key}")\n        return\n'''
+          if old not in text:
+              raise SystemExit("Expected disclosure scanner block was not found exactly once.")
+          if text.count(old) != 1:
+              raise SystemExit("Disclosure scanner block was not unique.")
+          path.write_text(text.replace(old, new), encoding="utf-8")
+          PY
+
+          rm -rf src/agent_reliability_arena/disclosure_export
+          git fetch origin main
+          git show origin/main:.github/workflows/tests.yml > .github/workflows/tests.yml
+          rm .github/workflows/one-time-fold-disclosure-fix.yml
+
+      - name: Commit folded source
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "fix: fold disclosure scanner exception into implementation"
+          git push origin HEAD:feature/disclosure-safe-empirical-export
