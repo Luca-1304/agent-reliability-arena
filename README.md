@@ -23,7 +23,7 @@ The published reference run proves that experiment plumbing, role boundaries, ev
 
 ### v0.2.0rc1 release candidate
 
-The release candidate adds a complete provider-free live-model path and controlled pilot safeguards:
+The release candidate adds a complete provider-free live-model path and controlled empirical safeguards:
 
 - versioned provider-neutral request and result contracts;
 - an HTTPS OpenAI Responses adapter with credential, endpoint and explicit network-approval protections;
@@ -39,9 +39,11 @@ The release candidate adds a complete provider-free live-model path and controll
 - exact reviewed-policy, call-plan and duplicate-call enforcement;
 - a secure private paired runner with success and abort evidence;
 - a provider-free release rehearsal covering both conditions and five role calls;
-- a local-only real-provider script that refuses GitHub Actions, missing approvals and missing environment credentials.
+- a local-only real-provider script that refuses GitHub Actions, missing approvals and missing environment credentials;
+- an immutable private evidence-set index covering completed and aborted runs;
+- a disclosure-safe allow-list exporter and provider-free public replay verifier.
 
-The release fixtures and private-pilot rehearsal use scripted provider responses. **No real-provider benchmark request or provider spend has been executed.**
+The release fixtures, private-pilot rehearsal and disclosure reproduction use scripted provider responses. **No real-provider benchmark request or provider spend has been executed.**
 
 See [Project status](docs/PROJECT_STATUS.md), [Roadmap](ROADMAP.md), [Changelog](CHANGELOG.md), [Private pilot runbook](docs/PRIVATE_PILOT_RUNBOOK.md), [Disclosure boundary](docs/DISCLOSURE_BOUNDARY.md) and [RC checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md).
 
@@ -84,7 +86,12 @@ arena-preflight-pilot \
 
 The pilot preflight reads local files only, calls no provider, requires no API key and reports `provider_called: false`. The committed policy keeps external execution disabled.
 
-The test and release suites also execute a complete provider-free private-pilot rehearsal. It creates a fresh private evidence bundle, runs both conditions, records five role calls in a verified ledger and explicitly disallows a comparative claim.
+The test and release suites also execute:
+
+- a complete provider-free private-pilot rehearsal that records both conditions and five verified role calls;
+- a disclosure reproduction containing one completed and one aborted private run;
+- private marker, prompt, note and machine-path leak checks;
+- public bundle and aggregate replay verification without provider access.
 
 To inspect the deterministic viewer:
 
@@ -93,6 +100,26 @@ python -m http.server 8000 --directory web
 ```
 
 Open `http://localhost:8000`.
+
+## Disclosure-safe empirical export
+
+Real-provider evidence remains private by default. Before export, the operator commits the exact private run set with `write_private_evidence_index(...)`. After that point, adding, removing or changing any private run causes export to fail.
+
+The public commands are:
+
+```bash
+arena-export-live-evidence \
+  --private-root private-evidence/experiment-1 \
+  --index private-evidence/experiment-1/private-evidence-index.json \
+  --output public-evidence/experiment-1.json
+
+arena-verify-live-export \
+  --input public-evidence/experiment-1.json
+```
+
+These commands make no provider request and do not need credentials. The exporter permits only explicit public fields and excludes complete prompts, role inputs, outputs, provider request identifiers, private notes and local machine paths. It preserves completed and aborted run counts, measured usage, verified outcomes, limitations and stable private source commitments.
+
+A dated price-source file may be supplied separately with `--price-source`. It is metadata for later calculation, not measured provider billing.
 
 ## Architecture
 
@@ -130,6 +157,12 @@ Experiment config + prompt catalogue + pilot policy
               Agent Completion Verifier v0.6.0
                          │
                Evidence-derived final outcome
+                         │
+              Immutable private evidence index
+                         │
+               Disclosure-safe allow-list export
+                         │
+                Provider-free public replay
 ```
 
 The Arena vendors Agent Completion Verifier v0.6.0 at commit `f65fb3450e3c1d7db17f0192667b854d126cd190`; every vendored Python file is recorded in [vendor_snapshot.json](vendor_snapshot.json).
@@ -147,6 +180,8 @@ The Arena vendors Agent Completion Verifier v0.6.0 at commit `f65fb3450e3c1d7db1
 - Real network execution is disabled unless approved independently at the local script, pilot gate and adapter.
 - Unplanned or duplicate calls are rejected before provider invocation.
 - Aborted runs preserve an `abort.json` record and any independently verifiable partial ledger.
+- Indexed failed or aborted runs cannot be silently omitted from a later public export.
+- Public aggregates are reconstructed during replay rather than trusted as supplied.
 
 ## Commands
 
@@ -156,6 +191,8 @@ The Arena vendors Agent Completion Verifier v0.6.0 at commit `f65fb3450e3c1d7db1
 | `arena-replay` | Verify and summarise an artifact directory without executing tools. | Never |
 | `arena-export-web` | Produce a reduced public fixture bundle. | Never |
 | `arena-preflight-pilot` | Validate an exact pilot policy and print permission/budget evidence. | Never |
+| `arena-export-live-evidence` | Derive an allow-listed public bundle from an indexed private evidence set. | Never |
+| `arena-verify-live-export` | Verify a public live-evidence bundle and reconstruct its aggregates. | Never |
 
 A public installed live-provider command is deliberately absent. `scripts/run_private_pilot.py` is a local-only, explicitly approved path documented in the [Private pilot runbook](docs/PRIVATE_PILOT_RUNBOOK.md). It is never invoked by GitHub Actions or the release verifier.
 
@@ -179,6 +216,10 @@ The release gate covers:
 - one complete provider-free private paired rehearsal;
 - secure success artifacts, preserved abort evidence and dirty-directory rejection;
 - local script refusal in GitHub Actions and without approvals or environment credentials;
+- complete and aborted private runs retained in disclosure aggregates;
+- secret, prompt, provider-payload, note and machine-path exclusion;
+- private run-set and source-commitment tamper rejection;
+- public bundle-digest and aggregate reconstruction checks;
 - installed command execution;
 - wheel build and clean-wheel verification;
 - dependency validation and vendored verifier integrity.
@@ -188,20 +229,21 @@ Run locally:
 ```bash
 python -m unittest discover -s tests -p "test_*.py" -v
 python scripts/verify_release.py
+python scripts/verify_disclosure_release.py
 ```
 
 ## Repository map
 
 ```text
-src/agent_reliability_arena/   experiment, live boundaries, pilot runner, controls and replay
+src/agent_reliability_arena/   experiment, live boundaries, pilot runner, disclosure and replay
 src/completion_verifier/       digest-pinned verifier snapshot
 examples/                      fixture, prompt catalogue and disabled pilot policy
 docs/                          status, methodology, runbook, disclosure and release checks
-scripts/                        release verifier and guarded local pilot entry point
+scripts/                        release verifiers and guarded local pilot entry point
 reference_runs/fixture-v1/     reproducible public fixture evidence
 web/                           static trace viewer
 web/data/                      reduced verified public fixture export
-tests/                         fairness, transport, pilot, ledger, orchestration and UI tests
+tests/                         fairness, transport, pilot, ledger, orchestration, disclosure and UI tests
 ```
 
 ## Next empirical step
@@ -215,7 +257,7 @@ Issue #14 is prepared up to the real-provider boundary. The remaining step is on
 - an approved worst-case monetary reservation;
 - `OPENAI_API_KEY` supplied through the local process environment only.
 
-One pilot remains operational evidence only. Repeated trials and a disclosure-safe export are required before comparative publication. No single live-model result should be described as representative.
+One pilot remains operational evidence only. The disclosure mechanism is ready to process retained private evidence, but repeated trials are still required before comparative publication. No single live-model result should be described as representative.
 
 ## Authorship and AI assistance
 
