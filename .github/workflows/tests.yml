@@ -45,12 +45,14 @@ jobs:
           python scripts/verify_release.py
           python scripts/verify_disclosure_release.py
           python scripts/verify_repeated_release.py
+          python scripts/verify_showcase_release.py
 
       - name: Run installed commands
         run: |
           arena-run --config examples/fixture_experiment.json --output /tmp/arena-editable
           arena-replay --input /tmp/arena-editable > /tmp/editable-replay.json
           arena-export-web --input /tmp/arena-editable --output /tmp/editable-public.json
+          arena-verify-showcase --root . > /tmp/editable-showcase.json
 
       - name: Build wheel
         run: python -m pip wheel . --no-deps --no-build-isolation --wheel-dir dist
@@ -63,9 +65,11 @@ jobs:
           /tmp/arena-wheel/bin/python scripts/verify_release.py
           /tmp/arena-wheel/bin/python scripts/verify_disclosure_release.py
           /tmp/arena-wheel/bin/python scripts/verify_repeated_release.py
+          /tmp/arena-wheel/bin/python scripts/verify_showcase_release.py
           /tmp/arena-wheel/bin/arena-run --config examples/fixture_experiment.json --output /tmp/arena-wheel-run
           /tmp/arena-wheel/bin/arena-replay --input /tmp/arena-wheel-run > /tmp/wheel-replay.json
           /tmp/arena-wheel/bin/arena-export-web --input /tmp/arena-wheel-run --output /tmp/wheel-public.json
+          /tmp/arena-wheel/bin/arena-verify-showcase --root . > /tmp/wheel-showcase.json
           /tmp/arena-wheel/bin/python - <<'PY'
           from pathlib import Path
           import json
@@ -79,6 +83,10 @@ jobs:
           assert public["metrics"]["conditions"]["general"]["verified_complete"] == 2
           assert public["metrics"]["conditions"]["specialist"]["verified_complete"] == 6
           assert public["metrics"]["paired"]["additional_logical_model_calls"] == 36
+          showcase = json.loads(Path("/tmp/wheel-showcase.json").read_text(encoding="utf-8"))
+          assert showcase["files_verified"] == 7
+          assert showcase["provider_called"] is False
+          assert showcase["comparative_claim_permitted"] is False
           PY
           /tmp/arena-wheel/bin/python -m pip check
 
