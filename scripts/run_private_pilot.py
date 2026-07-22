@@ -88,7 +88,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--reviewed-policy-digest", required=True)
     parser.add_argument("--approve-external-execution", action="store_true")
-    parser.add_argument("--operator-confirmation", required=True)
+    parser.add_argument("--operator-confirmation", default="")
     return parser
 
 
