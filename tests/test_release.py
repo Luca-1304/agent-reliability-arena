@@ -41,6 +41,11 @@ class ReleaseTests(unittest.TestCase):
         self.assertTrue(payload["live_request_preflight_digest_verified"])
         self.assertEqual(payload["live_role_outputs_verified"], 6)
         self.assertTrue(payload["live_role_output_digests_verified"])
+        self.assertEqual(payload["live_orchestration_scenarios_verified"], 3)
+        self.assertEqual(payload["live_orchestration_role_calls_verified"], 12)
+        self.assertEqual(payload["live_orchestration_ledgers_verified"], 3)
+        self.assertTrue(payload["live_orchestration_recovery_verified"])
+        self.assertTrue(payload["live_orchestration_terminal_security_verified"])
 
 
 if __name__ == "__main__":

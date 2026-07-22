@@ -12,6 +12,7 @@ from agent_reliability_arena.experiment import execute_fixture_experiment
 from agent_reliability_arena.live_requests import PromptCatalog, build_live_request_preflight
 from agent_reliability_arena.live_role_outputs import parse_live_role_output
 from agent_reliability_arena.public_export import build_public_export
+from agent_reliability_arena.release_live_fixture import verify_provider_free_live_orchestration_release
 from agent_reliability_arena.replay import replay_experiment
 from agent_reliability_arena.transports import (
     ModelCallRequest,
@@ -182,6 +183,9 @@ def verify_live_role_outputs_release() -> dict[str, object]:
 
 def main() -> None:
     config = ExperimentConfig.from_dict(json.loads((ROOT / "examples" / "fixture_experiment.json").read_text(encoding="utf-8")))
+    catalog = PromptCatalog.from_dict(
+        json.loads((ROOT / "examples" / "live_prompt_catalog.json").read_text(encoding="utf-8"))
+    )
     reference = ROOT / "reference_runs" / "fixture-v1"
     if not reference.exists():
         raise AssertionError("Reference fixture artifacts are missing.")
@@ -211,6 +215,11 @@ def main() -> None:
         ):
             assert (fresh / relative).read_bytes() == (reference / relative).read_bytes(), relative
         ledger_summary = verify_transport_ledger_release(temporary)
+        live_orchestration = verify_provider_free_live_orchestration_release(
+            config,
+            catalog,
+            temporary / "live-orchestration",
+        )
     total = count_tests()
     assert total >= MINIMUM_DISCOVERED_TESTS, total
     print(json.dumps({
@@ -227,6 +236,11 @@ def main() -> None:
         "live_request_preflight_digest_verified": True,
         "live_role_outputs_verified": role_outputs["outputs"],
         "live_role_output_digests_verified": role_outputs["digests_verified"],
+        "live_orchestration_scenarios_verified": live_orchestration["scenarios"],
+        "live_orchestration_role_calls_verified": live_orchestration["role_calls"],
+        "live_orchestration_ledgers_verified": live_orchestration["ledgers"],
+        "live_orchestration_recovery_verified": live_orchestration["recovery_verified"],
+        "live_orchestration_terminal_security_verified": live_orchestration["terminal_security_verified"],
         "evidence_status": "deterministic_fixture",
     }, indent=2, sort_keys=True))
 
