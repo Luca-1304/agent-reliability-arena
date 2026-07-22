@@ -67,46 +67,55 @@ Status: **complete**
 - scripted success, recovery and terminal-failure release fixtures;
 - private ledger verification for every scripted run.
 
-## Current stage
-
 ### Stage 6 — v0.2.0rc1 release candidate
 
-Status: **safeguards implemented; final matrix pending**  
+Status: **complete and merged**  
 Tracking: [#13 — Prepare Agent Reliability Arena v0.2 release candidate](https://github.com/Luca-1304/agent-reliability-arena/issues/13)
 
-- [x] align package, README, changelog and release metadata;
-- [x] provide a provider-free pilot preflight command;
-- [x] define private run-directory and secret-handling rules;
-- [x] define hard call, requested-output-token, reserved-total-token and monetary ceilings;
-- [x] require an exact reviewed policy digest and separate execution approval;
-- [x] ensure the real adapter network opener is disabled by default;
-- [x] define abort conditions for provider, parser, ledger, contract and verifier failures;
-- [x] define a disclosure-safe public/private evidence boundary;
-- [x] verify the safeguard core on Python 3.10–3.13;
-- [ ] run the full Python 3.10–3.13 matrix on the final candidate tree;
-- [ ] merge the unchanged green candidate and close #13.
+- package, installed distribution and documentation versions aligned;
+- provider-free pilot preflight command;
+- private run-directory and secret-handling rules;
+- hard call, requested-output-token, reserved-total-token and monetary ceilings;
+- exact reviewed-policy digest and separate execution approval;
+- real adapter network opener disabled by default;
+- explicit abort conditions;
+- disclosure-safe public/private evidence boundary;
+- complete Python 3.10–3.13 source, release, wheel and clean-wheel verification.
 
-Exit condition: a reviewer can reproduce every non-paid path, understand every limitation and see exactly what a private pilot would do before credentials are supplied.
-
-## Planned empirical stages
+## Current stage
 
 ### Stage 7 — Minimal private provider pilot
 
-Status: **not started; blocked by #13**  
+Status: **runner implemented and provider-free rehearsed; real provider execution not yet performed**  
 Tracking: [#14 — Run a minimal private real-provider pilot](https://github.com/Luca-1304/agent-reliability-arena/issues/14)
 
-Scope:
+Completed preparation:
 
-- one explicitly named provider and dated model snapshot;
-- one controlled scenario first;
-- both conditions use the same model, task, contract and seed;
-- reviewed policy digest and two explicit execution approvals;
-- strict token and monetary reservations;
-- no automatic retries;
-- private tamper-evident evidence only;
-- immediate stop on parser, ledger, contract or verifier inconsistency.
+- [x] exactly one reviewed scenario per pilot;
+- [x] both conditions use the same model, task, contract, seed and tool boundary;
+- [x] exact preflight call-plan enforcement;
+- [x] duplicate and unplanned calls rejected before provider invocation;
+- [x] strict call, token and monetary reservations;
+- [x] fresh private run directory required and reuse rejected;
+- [x] preflight, policy, start, condition-result, ledger and verification artifacts;
+- [x] abort evidence and partial ledger preserved on failure;
+- [x] provider-free paired rehearsal covering both conditions and five role calls;
+- [x] local-only execution script refuses GitHub Actions, missing approvals and missing environment credentials;
+- [x] complete Python 3.10–3.13 source, release, wheel and clean-wheel verification.
 
-Exit condition: one complete paired run with verified private evidence and no public performance claim.
+Still required to complete Stage 7:
+
+- [ ] choose one explicitly dated real model snapshot;
+- [ ] create and privately review an enabled one-scenario policy;
+- [ ] approve an exact worst-case monetary ceiling;
+- [ ] supply `OPENAI_API_KEY` through the local process environment only;
+- [ ] execute one local paired pilot;
+- [ ] verify the resulting private ledger and final manifest independently;
+- [ ] retain failures and make no public comparative performance claim.
+
+Exit condition: one real-provider paired run completes or aborts with preserved, independently verified private evidence. One pilot remains insufficient for a representative performance conclusion.
+
+## Planned empirical stages
 
 ### Stage 8 — Repeated paired experiment
 
