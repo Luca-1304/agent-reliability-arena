@@ -1,24 +1,375 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Luca Panayiotou — AI evaluation, agent reliability and workflow systems portfolio.">
-<title>Luca × ACE — Developer & AI Systems Portfolio</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Luca Panayiotou × ACE — AI evaluation, agent reliability, workflow architecture and evidence-led human–AI systems.">
+  <meta name="theme-color" content="#050712">
+  <meta property="og:title" content="Luca × ACE — Evidence-led AI systems">
+  <meta property="og:description" content="Human direction, AI leverage and independently verifiable execution.">
+  <title>Luca × ACE — AI Evaluation & Agent Reliability</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
 </head>
 <body>
-<header><div class="wrap nav"><a class="brand" href="#top"><span class="mark">A/N</span>Luca × ACE</a><nav><a href="#evidence">Evidence</a><a href="#nexus">Nexus</a><a href="#work">Work</a><a href="#about">About</a><button onclick="openCV()">Developer CV</button></nav></div></header>
-<main>
-<section id="top" class="hero"><div class="wrap hero-grid"><div><p class="eyebrow">Developer profile · AI evaluation · Agent reliability</p><h1>Human direction.<br><span>AI leverage.</span><br>Evidence-led systems.</h1><p class="lead">A developer and AI systems portfolio showing how I structure difficult problems, evaluate AI behaviour, design human-led workflows and turn uncertain ideas into testable artefacts.</p><div class="actions"><a class="primary" href="#evidence">See verified evidence</a><a href="#nexus">Explore ACE Master Nexus</a></div><div class="cred"><b>Systems thinking</b><b>Iterative evaluation</b><b>Cross-domain research</b><b>Responsible oversight</b></div></div><div class="map card"><div class="core">ACE MASTER<br>NEXUS<small>Human-led coordination</small></div><div class="node n1"><b>Objective</b>Purpose, limits, owner</div><div class="node n2"><b>Context</b>Sources and decisions</div><div class="node n3"><b>AI Capability</b>Reasoning and generation</div><div class="node n4"><b>Validation</b>Evidence and risk gates</div><div class="node n5"><b>Outputs</b>Plans and prototypes</div><div class="node n6"><b>Learning</b>Outcomes and corrections</div></div></div></section>
-<section id="evidence"><div class="wrap"><p class="eyebrow">Verified evidence</p><h2>Proof before positioning.</h2><div class="two"><article class="card"><span class="badge verified">Verified prototype evidence</span><h3>Human–AI Progress Evaluation Benchmark</h3><p>A structured benchmark for testing whether an AI system genuinely improves across repeated interactions rather than simply sounding more polished.</p><div class="metrics"><div><strong>42</strong><small>diagnostic cases</small></div><div><strong>35/35</strong><small>Python unit tests passed</small></div><div><strong>11/11</strong><small>contribution records validated</small></div><div><strong>34/34</strong><small>evidence anchors validated</small></div></div></article><article class="card"><span class="badge prototype">Boundary stated</span><h3>What the evidence means.</h3><p><b>Proven:</b> benchmark structure, records, implementation logic and automated tests are internally validated.</p><p><b>Not yet proven:</b> broad performance across live external models. Those trials remain pending.</p><p><b>Not claimed:</b> training, modifying or owning a foundation model.</p></article></div></div></section>
-<section id="nexus"><div class="wrap"><p class="eyebrow">ACE Master Nexus</p><h2>A coordination framework, not an autonomy claim.</h2><p class="lead">An independent developing framework for connecting objectives, context, AI capability, tools, validation, outputs, outcomes and reusable learning.</p><div class="tabs"><button class="active" data-view="simple">Simple</button><button data-view="technical">Technical</button><button data-view="status">Status</button></div><div id="nexus-panel" class="card panel"></div></div></section>
-<section id="work"><div class="wrap"><p class="eyebrow">Selected work</p><h2>Case studies with honest boundaries.</h2><div class="work"><article class="card"><span class="badge verified">Verified practice</span><h3>Complex Research Decomposition</h3><p>Turning broad scientific, technical or business questions into testable sub-claims with explicit uncertainty.</p></article><article class="card"><span class="badge prototype">Prototype</span><h3>Continuous Learning Record</h3><p>Capturing observations, decisions, actions, outcomes, errors, corrections, provenance and next actions.</p></article><article class="card"><span class="badge framework">Framework</span><h3>Capability Mapping</h3><p>Separating what a system demonstrably does from what is possible, planned or marketed.</p></article><article class="card"><span class="badge framework">Framework</span><h3>Responsible Automation</h3><p>Human approval, reversibility, risk classification and audit-oriented workflow design.</p></article><article class="card"><span class="badge prototype">Prototype evidence</span><h3>False Completion → Testable Rule</h3><p>Converting vague claims of success into observable completion criteria and required evidence.</p></article><article class="card"><span class="badge framework">Framework</span><h3>ACE Master Nexus</h3><p>A human-led operating model—not a proprietary model or completed autonomous platform.</p></article></div></div></section>
-<section id="about"><div class="wrap"><p class="eyebrow">Developer profile</p><h2>AI systems thinking grounded in real operations.</h2><div class="timeline"><article class="card"><b>Education</b><h3>BTEC Diploma in Information Technology — Merit</h3><p>Technical foundation spanning systems, digital tools and structured problem-solving.</p></article><article class="card"><b>Operations</b><h3>Insurance operations</h3><p>Information handling, customer needs, process accuracy and operational responsibility.</p></article><article class="card"><b>Safety-critical work</b><h3>Fire-safety technician work</h3><p>Experience where procedures, documentation and consequences matter.</p></article><article class="card"><b>Additional background</b><h3>Construction, customer service and Level 3 Personal Training</h3><p>A varied background supporting communication, adaptability and practical delivery.</p></article></div></div></section>
-<section class="contact"><div class="wrap"><p class="eyebrow">Contact</p><h2>Bring me a problem that is unclear, cross-functional or difficult to structure.</h2><p class="lead">This site is the primary developer profile. The main employment CV is available separately on request.</p><div class="actions center"><button class="primary" onclick="openCV()">View developer CV</button><a href="https://github.com/Luca-1304" target="_blank" rel="noreferrer">GitHub profile</a></div></div></section>
-</main>
-<footer><div class="wrap">Luca × ACE · Developer & AI Systems Portfolio · Claims labelled by current evidence status.</div></footer>
-<div class="modal" id="cv"><div class="overlay" onclick="closeCV()"></div><article class="cv"><button class="close" onclick="closeCV()">×</button><button class="primary print" onclick="window.print()">Print / Save PDF</button><h1>Luca Panayiotou</h1><h3>AI Evaluation, Agent Reliability & Workflow Systems</h3><p>Systems-oriented builder with technical operations and safety-critical experience, focused on structured AI-assisted evaluation, workflow design and evidence-led problem solving.</p><h3>Verified project evidence</h3><ul><li>42 diagnostic benchmark cases</li><li>35/35 Python unit tests passed</li><li>11/11 contribution records validated</li><li>34/34 evidence anchors validated</li><li>Live external-model trials remain pending</li></ul><h3>Core capabilities</h3><ul><li>AI evaluation and reliability thinking</li><li>Prompt and context design</li><li>Workflow architecture and human-in-the-loop design</li><li>Problem decomposition and cross-domain synthesis</li><li>Evidence boundaries, provenance and risk separation</li></ul><h3>Background</h3><ul><li>BTEC Diploma in Information Technology — Merit</li><li>Insurance operations</li><li>Fire-safety technician work</li><li>Construction and customer service</li><li>Level 3 Personal Training qualification</li></ul><h3>Contact</h3><p>Contact details and main employment CV available on request.</p></article></div>
-<script src="script.js"></script>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="cursor-glow" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="shell nav-wrap">
+      <a class="brand" href="#top" aria-label="Luca and ACE home">
+        <span class="brand-mark" aria-hidden="true"><span>L</span><i></i><span>A</span></span>
+        <span class="brand-copy"><strong>Luca × ACE</strong><small>Human-led AI systems</small></span>
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">Menu</button>
+      <nav id="primary-nav" class="primary-nav" aria-label="Primary navigation">
+        <a href="#partnership">Partnership</a>
+        <a href="#proof">Proof</a>
+        <a href="#lab">Challenge Lab</a>
+        <a href="#projects">Projects</a>
+        <a href="#nexus">Nexus</a>
+        <a href="#about">About</a>
+        <button class="nav-cta" type="button" data-open-cv>Developer CV</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="top" class="hero section-dark">
+      <div class="hero-aurora" aria-hidden="true"></div>
+      <div class="shell hero-grid">
+        <div class="hero-copy reveal">
+          <p class="hero-index">AI evaluation · agent reliability · workflow architecture</p>
+          <h1>Build systems that <em>know</em> when they are right.</h1>
+          <p class="hero-lead">Luca defines the real problem, acceptance standard and risk boundary. ACE brings advanced AI speed across research, coding, comparison, testing and documentation. Together, we turn ambiguous ideas into evidence-backed systems people can inspect and use.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#lab">Give us a problem</a>
+            <a class="button button-ghost" href="#proof">See the evidence</a>
+          </div>
+          <div class="hero-proof" aria-label="Portfolio proof summary">
+            <div><strong>2</strong><span>public technical projects</span></div>
+            <div><strong>8</strong><span>controlled reliability scenarios</span></div>
+            <div><strong>0</strong><span>false completions in specialist fixture</span></div>
+          </div>
+        </div>
+
+        <div class="system-stage reveal" aria-label="Human and AI collaboration architecture">
+          <div class="stage-grid" aria-hidden="true"></div>
+          <div class="stage-orbit orbit-one" aria-hidden="true"></div>
+          <div class="stage-orbit orbit-two" aria-hidden="true"></div>
+          <div class="stage-core">
+            <span class="core-signal"></span>
+            <small>ACE MASTER NEXUS</small>
+            <strong>Direction → Evidence → Action</strong>
+            <p>Human accountability remains central.</p>
+          </div>
+          <button class="stage-node node-human" type="button" data-stage="human"><b>Luca</b><span>Objective, judgement, acceptance</span></button>
+          <button class="stage-node node-ai" type="button" data-stage="ai"><b>ACE</b><span>Reasoning, generation, acceleration</span></button>
+          <button class="stage-node node-tools" type="button" data-stage="tools"><b>Tools</b><span>Code, search, files, workflows</span></button>
+          <button class="stage-node node-proof" type="button" data-stage="proof"><b>Verifier</b><span>Independent evidence checks</span></button>
+          <div id="stage-detail" class="stage-detail" aria-live="polite">Select a node to inspect the role it plays.</div>
+        </div>
+      </div>
+      <div class="signal-strip" aria-hidden="true"><span>DEFINE</span><i></i><span>DECOMPOSE</span><i></i><span>BUILD</span><i></i><span>VERIFY</span><i></i><span>LEARN</span></div>
+    </section>
+
+    <section id="partnership" class="partnership">
+      <div class="shell">
+        <div class="section-heading reveal">
+          <p class="section-number">01 / THE PARTNERSHIP</p>
+          <h2>Not “AI does everything.”<br><span>A better division of intelligence.</span></h2>
+          <p>Luca and ACE contribute different strengths. The value is in the interface between them: human judgement directing machine breadth and speed through explicit standards.</p>
+        </div>
+
+        <div class="partnership-board reveal">
+          <article class="role-column role-human">
+            <div class="role-top"><span>HUMAN DIRECTION</span><b>Luca</b></div>
+            <ul>
+              <li><strong>Frames the actual problem</strong><span>Separates the requested task from the deeper operational failure.</span></li>
+              <li><strong>Defines what counts as done</strong><span>Creates acceptance contracts, evidence requirements and risk boundaries.</span></li>
+              <li><strong>Challenges the first answer</strong><span>Pushes beyond polished language toward observable results.</span></li>
+              <li><strong>Owns consequential judgement</strong><span>Keeps legal, financial, reputational and public-facing decisions human-led.</span></li>
+            </ul>
+          </article>
+
+          <div class="partnership-axis" aria-hidden="true"><span>×</span><i></i><small>structured collaboration</small><i></i></div>
+
+          <article class="role-column role-ai">
+            <div class="role-top"><span>AI LEVERAGE</span><b>ACE</b></div>
+            <ul>
+              <li><strong>Expands the search space</strong><span>Generates options, comparisons, counterarguments and adjacent possibilities quickly.</span></li>
+              <li><strong>Translates intent into artefacts</strong><span>Supports code, test plans, diagrams, documentation, prototypes and structured analysis.</span></li>
+              <li><strong>Maintains complex context</strong><span>Connects decisions, constraints, prior failures and reusable patterns across a project.</span></li>
+              <li><strong>Accelerates iteration</strong><span>Tests multiple representations and implementation paths without losing the core objective.</span></li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="combined-output reveal">
+          <span class="combined-label">TOGETHER WE CAN</span>
+          <div class="capability-ribbon">
+            <button data-capability="agent">Evaluate AI agents</button>
+            <button data-capability="workflow">Design safer workflows</button>
+            <button data-capability="research">Decompose difficult research</button>
+            <button data-capability="prototype">Build credible prototypes</button>
+            <button data-capability="operations">Improve operations</button>
+            <button data-capability="governance">Make AI decisions reviewable</button>
+          </div>
+          <div id="capability-detail" class="capability-detail" aria-live="polite">
+            <strong>Choose a capability.</strong>
+            <p>See the concrete contribution Luca and ACE can make for a company or project.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="proof" class="proof-section section-light">
+      <div class="shell">
+        <div class="proof-heading reveal">
+          <p class="section-number">02 / PUBLIC EVIDENCE</p>
+          <h2>Claims tied to artefacts,<br>not confidence.</h2>
+          <p>The strongest portfolio evidence is public, reproducible and deliberately narrow about what it proves.</p>
+        </div>
+
+        <div class="proof-layout">
+          <article class="metric-feature reveal">
+            <span class="status status-verified">Deterministic fixture result</span>
+            <div class="metric-versus">
+              <div><small>GENERAL AGENT</small><strong>2<sup>/8</sup></strong><span>independently verified outcomes</span></div>
+              <i>VS</i>
+              <div><small>UNIFIED SPECIALISTS</small><strong>6<sup>/8</sup></strong><span>independently verified outcomes</span></div>
+            </div>
+            <p>Same task, tools, evidence rules and failure scenarios. Different orchestration. The specialist fixture improved four paired outcomes while requiring more logical role calls.</p>
+          </article>
+
+          <div class="proof-stack reveal">
+            <article><strong>3 → 0</strong><span>false completion claims</span><p>Source-reported success was kept separate from independent observation.</p></article>
+            <article><strong>0.25 → 1.00</strong><span>claim precision</span><p>The specialist synthesiser could not claim success without a verified completion status.</p></article>
+            <article><strong>4</strong><span>recovered scenarios</span><p>Recovery ran only after an evidence-backed mismatch and remained bounded.</p></article>
+            <article><strong>3.10–3.13</strong><span>Python verification range</span><p>Release checks cover compilation, tests, deterministic artifacts, integrity and static-viewer requirements.</p></article>
+          </div>
+        </div>
+
+        <div class="evidence-boundary reveal">
+          <div><span>PROVEN</span><p>Experiment plumbing, role boundaries, evidence separation, replay, deterministic fixtures and public trace-viewer behaviour.</p></div>
+          <div><span>NOT YET PROVEN</span><p>Representative performance across live external models, production infrastructure, latency, token use or monetary cost.</p></div>
+          <div><span>NOT CLAIMED</span><p>Training a foundation model, changing model weights, owning a proprietary model or removing the need for human accountability.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="lab" class="challenge-lab">
+      <div class="shell lab-grid">
+        <div class="lab-intro reveal">
+          <p class="section-number">03 / INTERACTIVE CHALLENGE LAB</p>
+          <h2>Give the system a messy problem.</h2>
+          <p>This transparent client-side simulation shows the workflow shape Luca and ACE would use. It does not call a live model or pretend to solve your organisation from one text box.</p>
+          <div class="lab-presets" role="group" aria-label="Example challenges">
+            <button data-preset="completion">An AI agent says a task is finished, but we cannot prove it.</button>
+            <button data-preset="operations">A business process is slow and breaks across handoffs.</button>
+            <button data-preset="research">A technical research question is too broad to act on.</button>
+            <button data-preset="adoption">We want to use AI but do not know where it adds real value.</button>
+          </div>
+          <label for="challenge-input">Your challenge</label>
+          <textarea id="challenge-input" rows="5" placeholder="Describe the unclear, risky or cross-functional problem..."></textarea>
+          <button id="run-lab" class="button button-primary" type="button">Run the workflow</button>
+          <small class="lab-disclaimer">Illustrative rule-based output · no live AI model call</small>
+        </div>
+
+        <div class="lab-output reveal" aria-live="polite">
+          <div class="lab-output-top"><span>ACE WORKFLOW TRACE</span><b id="lab-state">READY</b></div>
+          <ol id="lab-steps" class="lab-steps">
+            <li><i>01</i><div><small>Objective</small><strong>Waiting for a challenge</strong><p>The system will first clarify what outcome actually matters.</p></div></li>
+            <li><i>02</i><div><small>Acceptance</small><strong>Define observable completion</strong><p>Replace success-shaped language with testable criteria.</p></div></li>
+            <li><i>03</i><div><small>Evidence</small><strong>Identify proof sources</strong><p>Decide what data, state or artefact can independently support the claim.</p></div></li>
+            <li><i>04</i><div><small>Design</small><strong>Choose the smallest useful workflow</strong><p>Allocate human, AI and tool responsibilities explicitly.</p></div></li>
+            <li><i>05</i><div><small>Verification</small><strong>Test failure and recovery paths</strong><p>Check the system against mismatch, partial success and rollback.</p></div></li>
+            <li><i>06</i><div><small>Delivery</small><strong>Create a usable next artefact</strong><p>Produce a prototype, decision record, test plan or implementation map.</p></div></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="projects" class="projects-section">
+      <div class="shell">
+        <div class="section-heading reveal">
+          <p class="section-number">04 / PUBLIC PROJECTS</p>
+          <h2>Two projects. One reliability thesis.</h2>
+          <p>An AI agent should not be trusted because it sounds certain. Completion and orchestration should be evaluated against observable evidence.</p>
+        </div>
+
+        <article class="project-feature project-verifier reveal">
+          <div class="project-copy">
+            <div class="project-meta"><span>PUBLIC · PYTHON · MODEL-AGNOSTIC</span><b>01</b></div>
+            <h3>Agent Completion Verifier</h3>
+            <p>A small evaluation harness for detecting false completion—when an agent says a task is finished without enough evidence that the required external action succeeded.</p>
+            <ul class="project-points">
+              <li>Four explicit outcomes: verified, partial, unverified and failed</li>
+              <li>Ordered retry, recovery, regression and rollback handling</li>
+              <li>Generic and OpenAI-style trace adapters</li>
+              <li>Controlled failure-injection benchmark</li>
+              <li>Confined sandbox with independently observed file postconditions</li>
+            </ul>
+            <div class="project-links"><a class="button button-primary" href="https://github.com/Luca-1304/agent-completion-verifier" target="_blank" rel="noreferrer">View repository</a><button class="button button-ghost" type="button" data-project-detail="verifier">Read contribution split</button></div>
+          </div>
+          <div class="project-visual verifier-visual" aria-label="Completion verifier outcome flow">
+            <div class="trace-request">TASK CLAIMED COMPLETE</div>
+            <div class="trace-line"></div>
+            <div class="trace-contract"><small>ACCEPTANCE CONTRACT</small><b>Required action + evidence fields</b></div>
+            <div class="trace-line"></div>
+            <div class="trace-events"><span>tool call</span><span>result</span><span>observed state</span></div>
+            <div class="trace-line"></div>
+            <div class="trace-result"><i></i><b>VERIFIED_COMPLETE</b><small>Only when every requirement is proven</small></div>
+          </div>
+        </article>
+
+        <article class="project-feature project-arena reveal">
+          <div class="project-copy">
+            <div class="project-meta"><span>PUBLIC · CONTROLLED COMPARISON · STATIC VIEWER</span><b>02</b></div>
+            <h3>Agent Reliability Arena</h3>
+            <p>A controlled evaluation system comparing one general agent with a unified specialist system under the same task, sandbox, failure scenario and acceptance contract.</p>
+            <ul class="project-points">
+              <li>Strategist, Operator, Auditor, Recovery and Synthesiser roles</li>
+              <li>Bounded permissions and independent state observation</li>
+              <li>Paired metrics, deterministic replay and SHA-256 evidence manifests</li>
+              <li>Static employer-facing trace viewer</li>
+              <li>Transparent reliability-versus-complexity trade-off</li>
+            </ul>
+            <div class="project-links"><a class="button button-primary" href="https://github.com/Luca-1304/agent-reliability-arena" target="_blank" rel="noreferrer">View repository</a><button class="button button-ghost" type="button" data-project-detail="arena">Read contribution split</button></div>
+          </div>
+          <div class="project-visual arena-visual" aria-label="General versus specialist agent comparison">
+            <div class="arena-head"><span>GENERAL</span><i>same conditions</i><span>SPECIALISTS</span></div>
+            <div class="arena-columns">
+              <div class="general-path"><b>One agent</b><small>plan · act · check · report</small><em>2 / 8 verified</em></div>
+              <div class="specialist-path"><span>Strategist</span><span>Operator</span><span>Auditor</span><span>Recovery</span><span>Synthesiser</span><em>6 / 8 verified</em></div>
+            </div>
+            <div class="arena-foot">Independent verifier judges both conditions.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="nexus" class="nexus-section section-dark">
+      <div class="shell nexus-grid">
+        <div class="nexus-copy reveal">
+          <p class="section-number">05 / ACE MASTER NEXUS</p>
+          <h2>A shared operating framework for complex work.</h2>
+          <p>ACE Master Nexus connects projects, objectives, evidence, tools, decisions, errors and next actions. It is a developing human-led architecture—not a claim that every system is already integrated or running autonomously.</p>
+          <div class="nexus-tabs" role="tablist" aria-label="ACE Master Nexus views">
+            <button class="active" data-nexus-view="flow" type="button">Operating flow</button>
+            <button data-nexus-view="record" type="button">Learning record</button>
+            <button data-nexus-view="status" type="button">Capability status</button>
+          </div>
+          <div id="nexus-detail" class="nexus-detail" aria-live="polite"></div>
+        </div>
+
+        <div class="nexus-canvas reveal" aria-label="ACE Master Nexus architecture map">
+          <svg viewBox="0 0 700 700" role="img" aria-labelledby="nexus-title nexus-desc">
+            <title id="nexus-title">ACE Master Nexus architecture</title>
+            <desc id="nexus-desc">Eight connected nodes around a central human-led Nexus.</desc>
+            <defs>
+              <radialGradient id="coreGradient"><stop offset="0" stop-color="#62ddff" stop-opacity=".45"/><stop offset="1" stop-color="#0b1020" stop-opacity="1"/></radialGradient>
+              <linearGradient id="lineGradient"><stop stop-color="#62ddff" stop-opacity=".7"/><stop offset="1" stop-color="#a67cff" stop-opacity=".2"/></linearGradient>
+            </defs>
+            <circle cx="350" cy="350" r="245" class="orbit-ring"/>
+            <circle cx="350" cy="350" r="165" class="orbit-ring orbit-ring-inner"/>
+            <g class="nexus-lines">
+              <line x1="350" y1="350" x2="350" y2="92"/><line x1="350" y1="350" x2="532" y2="168"/><line x1="350" y1="350" x2="608" y2="350"/><line x1="350" y1="350" x2="532" y2="532"/><line x1="350" y1="350" x2="350" y2="608"/><line x1="350" y1="350" x2="168" y2="532"/><line x1="350" y1="350" x2="92" y2="350"/><line x1="350" y1="350" x2="168" y2="168"/>
+            </g>
+            <g class="nexus-core"><circle cx="350" cy="350" r="82" fill="url(#coreGradient)"/><text x="350" y="340">ACE MASTER</text><text x="350" y="366">NEXUS</text><text class="core-caption" x="350" y="393">human-led</text></g>
+            <g class="nexus-node" data-node="objective"><circle cx="350" cy="92" r="55"/><text x="350" y="88">OBJECTIVE</text><text class="node-caption" x="350" y="106">& constraints</text></g>
+            <g class="nexus-node" data-node="context"><circle cx="532" cy="168" r="55"/><text x="532" y="164">CONTEXT</text><text class="node-caption" x="532" y="182">& knowledge</text></g>
+            <g class="nexus-node" data-node="reasoning"><circle cx="608" cy="350" r="55"/><text x="608" y="346">AI</text><text class="node-caption" x="608" y="364">reasoning</text></g>
+            <g class="nexus-node" data-node="tools"><circle cx="532" cy="532" r="55"/><text x="532" y="528">TOOLS</text><text class="node-caption" x="532" y="546">& actions</text></g>
+            <g class="nexus-node" data-node="validation"><circle cx="350" cy="608" r="55"/><text x="350" y="604">VALIDATION</text><text class="node-caption" x="350" y="622">& risk</text></g>
+            <g class="nexus-node" data-node="outputs"><circle cx="168" cy="532" r="55"/><text x="168" y="528">OUTPUTS</text><text class="node-caption" x="168" y="546">& delivery</text></g>
+            <g class="nexus-node" data-node="outcomes"><circle cx="92" cy="350" r="55"/><text x="92" y="346">OUTCOMES</text><text class="node-caption" x="92" y="364">& feedback</text></g>
+            <g class="nexus-node" data-node="patterns"><circle cx="168" cy="168" r="55"/><text x="168" y="164">PATTERNS</text><text class="node-caption" x="168" y="182">& continuity</text></g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section id="company" class="company-section section-light">
+      <div class="shell">
+        <div class="section-heading reveal">
+          <p class="section-number">06 / VALUE TO A COMPANY</p>
+          <h2>Where this becomes useful at work.</h2>
+          <p>The portfolio is not only an AI concept. It shows a way to approach product, operations, research and automation problems with more structure and less unsupported confidence.</p>
+        </div>
+        <div class="company-list reveal">
+          <article><span>01</span><div><h3>AI evaluation and red-teaming</h3><p>Define failure modes, acceptance tests, evidence contracts and reproducible cases before an agent reaches users or important systems.</p></div><b>Evaluation · QA · Reliability</b></article>
+          <article><span>02</span><div><h3>Workflow discovery and automation design</h3><p>Map a messy process, identify where AI helps, preserve human approval and keep risky actions reversible while evidence accumulates.</p></div><b>Operations · Automation · Product</b></article>
+          <article><span>03</span><div><h3>Research and decision support</h3><p>Break complex questions into testable sub-claims, gather source-backed evidence, compare paths and expose uncertainty clearly.</p></div><b>Research · Strategy · R&D</b></article>
+          <article><span>04</span><div><h3>Rapid technical prototyping</h3><p>Translate an operating idea into a web demonstration, Python harness, test suite, architecture map or decision-ready specification.</p></div><b>Prototype · Documentation · Delivery</b></article>
+          <article><span>05</span><div><h3>Responsible AI implementation</h3><p>Separate experimental capability from production claims, preserve provenance and make consequential decisions reviewable by a named human.</p></div><b>Governance · Risk · Trust</b></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="about-section">
+      <div class="shell about-grid">
+        <div class="about-copy reveal">
+          <p class="section-number">07 / ABOUT LUCA</p>
+          <h2>Systems thinking grounded in real operations.</h2>
+          <p>Luca is strongest where a problem is unclear, cross-functional and resistant to a neat job description. His background spans information technology, insurance operations, fire-safety work, construction, customer service and personal training—different environments connected by responsibility, communication and practical delivery.</p>
+          <p>The AI work began from a repeated real-world frustration: systems could sound complete while the underlying action was missing, partial or unverified. That problem became an acceptance standard, then executable tests, public repositories and a wider reliability framework.</p>
+          <div class="about-actions"><a class="button button-primary" href="https://github.com/Luca-1304" target="_blank" rel="noreferrer">Open GitHub profile</a><button class="button button-ghost" type="button" data-open-cv>View developer CV</button></div>
+        </div>
+        <div class="background-ledger reveal">
+          <article><small>EDUCATION</small><h3>BTEC Diploma in Information Technology</h3><span>Merit</span></article>
+          <article><small>OPERATIONS</small><h3>Insurance and customer-facing work</h3><span>Accuracy · communication · process</span></article>
+          <article><small>SAFETY-CRITICAL</small><h3>Fire-safety technician experience</h3><span>Procedure · evidence · consequence</span></article>
+          <article><small>ADDITIONAL</small><h3>Construction + Level 3 Personal Training</h3><span>Adaptability · discipline · delivery</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta section-dark">
+      <div class="shell final-cta-inner reveal">
+        <p>Have a problem that is unclear, high-friction or difficult to verify?</p>
+        <h2>Bring the mess.<br>We’ll build the structure.</h2>
+        <div><a class="button button-primary" href="https://github.com/Luca-1304" target="_blank" rel="noreferrer">Connect through GitHub</a><button class="button button-ghost" type="button" data-open-cv>Developer CV</button></div>
+        <small>Main employment CV and direct contact details are available separately.</small>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-grid">
+      <div><strong>Luca × ACE</strong><p>Human direction. AI leverage. Evidence-led systems.</p></div>
+      <div class="footer-status"><span class="status status-verified">Verified practice</span><span class="status status-prototype">Prototype</span><span class="status status-framework">Framework</span><span class="status status-planned">Planned</span></div>
+      <p>Claims are intentionally bounded by current evidence. External-model comparative trials remain a future empirical phase.</p>
+    </div>
+  </footer>
+
+  <div id="project-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+      <button class="modal-close" type="button" data-close-modal aria-label="Close">×</button>
+      <div id="project-modal-content"></div>
+    </section>
+  </div>
+
+  <div id="cv-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-cv></div>
+    <section class="modal-panel cv-panel" role="dialog" aria-modal="true" aria-labelledby="cv-title">
+      <div class="cv-toolbar no-print"><span>Developer profile CV</span><div><button type="button" id="print-cv">Print / Save PDF</button><button type="button" data-close-cv aria-label="Close">×</button></div></div>
+      <article id="cv-document">
+        <header class="cv-header"><div><p>DEVELOPER PROFILE</p><h1 id="cv-title">Luca Panayiotou</h1><h2>AI Evaluation · Agent Reliability · Workflow Systems</h2></div><div class="cv-monogram">L×A</div></header>
+        <section><h3>Profile</h3><p>Systems-oriented builder focused on evidence-led AI evaluation, agent reliability, workflow architecture and responsible human–AI collaboration. Combines real operational experience with public technical prototypes that convert vague success claims into testable completion standards.</p></section>
+        <div class="cv-columns">
+          <section><h3>Public projects</h3><ul><li><b>Agent Completion Verifier:</b> model-agnostic false-completion evaluation harness with trace adapters, controlled failure injection and independent local postconditions.</li><li><b>Agent Reliability Arena:</b> controlled general-agent versus specialist-orchestration comparison with deterministic replay, paired metrics and public trace viewer.</li><li><b>ACE Master Nexus:</b> developing human-led framework connecting objectives, context, tools, validation, outcomes and reusable learning.</li></ul></section>
+          <section><h3>Core capabilities</h3><ul><li>AI-agent evaluation and reliability thinking</li><li>Acceptance contracts and evidence requirements</li><li>Prompt, context and workflow design</li><li>Problem decomposition and research synthesis</li><li>Human-in-the-loop and reversible-action design</li><li>Technical documentation and interactive prototypes</li></ul></section>
+        </div>
+        <section><h3>Selected evidence</h3><ul><li>Controlled eight-scenario Agent Reliability Arena fixture: 2/8 general versus 6/8 specialist independently verified outcomes.</li><li>False completion claims reduced from 3 to 0 in the reference fixture, with the extra logical-call cost disclosed.</li><li>Python release verification across versions 3.10–3.13, deterministic artifacts, integrity checks and static-viewer requirements.</li><li>Evidence boundaries state that deterministic fixture results are software validation, not representative external-model performance.</li></ul></section>
+        <div class="cv-columns">
+          <section><h3>Background</h3><ul><li>BTEC Diploma in Information Technology — Merit</li><li>Insurance operations and customer-facing experience</li><li>Fire-safety technician experience</li><li>Construction experience</li><li>Level 3 Personal Training qualification</li></ul></section>
+          <section><h3>Responsible AI approach</h3><ul><li>No invented capability claims</li><li>Human approval for consequential actions</li><li>Observable evidence before completion claims</li><li>Experimental and production claims separated</li><li>Legal, financial, reputational and platform risk treated explicitly</li></ul></section>
+        </div>
+        <section><h3>Links</h3><p>GitHub: github.com/Luca-1304 · Main employment CV and direct contact details available separately.</p></section>
+      </article>
+    </section>
+  </div>
 </body>
 </html>
