@@ -37,13 +37,18 @@ The project distinguishes deterministic fixture evidence, provider-free integrat
 - preserved `abort.json` and partial ledger verification when a private run fails;
 - provider-free private-pilot release rehearsal covering one scenario, both conditions and five role calls;
 - a local-only `scripts/run_private_pilot.py` entry point that refuses GitHub Actions, missing approvals, disabled policy, digest drift and missing environment credentials;
+- an immutable private evidence-set index covering every completed and aborted run;
+- a disclosure-safe allow-list exporter with per-run private source commitments;
+- provider-free `arena-export-live-evidence` and `arena-verify-live-export` commands;
+- public reconstruction of outcome, token and latency aggregates from verified private ledgers;
+- optional dated price-source metadata kept separate from measured usage and provider billing;
 - project status and evidence-gated roadmap documentation.
 
 ### Verified
 
 - Python 3.10, 3.11, 3.12 and 3.13;
 - complete source suite;
-- release verifier;
+- release verifier and disclosure release reproduction;
 - installed commands;
 - wheel build and clean-wheel tests;
 - deterministic reference equality;
@@ -57,21 +62,28 @@ The project distinguishes deterministic fixture evidence, provider-free integrat
 - one provider-free private paired rehearsal creates seven private artifacts and five verified ledger records;
 - parser failure preserves abort evidence and prevents dirty-directory reuse;
 - the local script help and refusal paths require no provider credential and leak no test secret;
-- a script-argument handling failure found during CI was corrected and the complete matrix rerun successfully.
+- a script-argument handling failure found during CI was corrected and the complete matrix rerun successfully;
+- one synthetic completed and one synthetic aborted private run remain represented in the public export;
+- private prompts, outputs, notes, provider identifiers and machine paths are excluded;
+- added, removed or modified private runs are rejected after the evidence index is committed;
+- public bundle and aggregate mutation is detected during replay;
+- disclosure export and replay make no provider request;
+- disclosure release reproduction passes editable and clean-wheel verification on every supported Python version.
 
 ### Not included
 
 - an executed real-provider pilot;
 - benchmark results from any hosted or local model;
+- validation of the disclosure export against retained real-provider evidence;
 - a public installed live-provider command;
 - automatic retry or built-in price estimation;
 - concurrent ledger writers;
-- prompt-redacted public live-evidence publication;
+- a representative public live-model comparison;
 - arbitrary tool execution.
 
 ### Evidence boundary
 
-`v0.2.0rc1` is a reviewable release candidate with a provider-free rehearsed private-pilot runner. It does not establish real-model performance, cost efficiency, statistical significance, production readiness or safety for arbitrary tools.
+`v0.2.0rc1` is a reviewable release candidate with a provider-free rehearsed private-pilot runner and disclosure-safe export mechanism. It does not establish real-model performance, cost efficiency, statistical significance, production readiness or safety for arbitrary tools.
 
 ## v0.1.0 — 21 July 2026
 
