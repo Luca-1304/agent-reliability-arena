@@ -11,7 +11,7 @@ The release candidate has two independent execution barriers:
 1. `PilotExecutionGate` requires an enabled policy, the exact reviewed policy digest and explicit external-execution approval.
 2. `OpenAIResponsesTransport` refuses its real network opener unless `external_execution_approved=True` is supplied explicitly.
 
-Injected test openers remain available for provider-free tests and release fixtures.
+**External network execution is disabled by default.** Injected test openers remain available for provider-free tests and release fixtures.
 
 ## Preflight-only procedure
 
