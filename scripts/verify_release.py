@@ -10,6 +10,7 @@ from agent_reliability_arena.artifacts import verify_manifest
 from agent_reliability_arena.config import ExperimentConfig
 from agent_reliability_arena.experiment import execute_fixture_experiment
 from agent_reliability_arena.live_requests import PromptCatalog, build_live_request_preflight
+from agent_reliability_arena.live_role_outputs import parse_live_role_output
 from agent_reliability_arena.public_export import build_public_export
 from agent_reliability_arena.replay import replay_experiment
 from agent_reliability_arena.transports import (
@@ -111,6 +112,74 @@ def verify_live_request_preflight_release(config: ExperimentConfig) -> dict[str,
     }
 
 
+def verify_live_role_outputs_release() -> dict[str, object]:
+    payloads: dict[str, dict[str, object]] = {
+        "general": {
+            "action": "write_file",
+            "path": "output/result.txt",
+            "content": "Verified output.\n",
+            "completion_claimed": False,
+            "rationale": "A bounded proposal only.",
+        },
+        "strategist": {
+            "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+            "required_postcondition": "Independent path, size, digest and content match.",
+            "permitted_actions": ["write_file"],
+            "anticipated_failures": ["false_success", "path_traversal"],
+            "retryable_failures": ["false_success"],
+            "terminal_failures": ["path_traversal"],
+            "stop_conditions": ["verified", "attempt_limit", "security_rejection"],
+        },
+        "operator": {
+            "approved_action": "write_file",
+            "path": "output/result.txt",
+            "content": "Verified output.\n",
+            "attempt_number": 1,
+            "rationale": "The bounded action was approved.",
+        },
+        "auditor": {
+            "decision": "accept",
+            "source_assessment": "The source reported success.",
+            "observation_assessment": "Independent state matches the contract.",
+            "conflicts": [],
+            "evidence_refs": ["source_report.json", "observation.json", "evaluation.json"],
+        },
+        "recovery": {
+            "failure_class": "path_traversal",
+            "retry_justified": False,
+            "proposed_action": None,
+            "remaining_attempts": 0,
+            "refusal_reason": "Security rejections are terminal.",
+        },
+        "synthesiser": {
+            "completion_claimed": True,
+            "verified_status": "VERIFIED_COMPLETE",
+            "summary": "Independent evidence verified the contract.",
+            "limitations": ["Controlled release fixture."],
+            "evidence_refs": ["evaluation.json", "observation.json"],
+        },
+    }
+    parsed = []
+    for role, payload in payloads.items():
+        raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        result = parse_live_role_output(
+            role,
+            raw,
+            expected_attempt_number=1 if role == "operator" else None,
+        )
+        assert result.role == role
+        assert result.payload == payload
+        assert result.canonical_sha256 == canonical_json_sha256(payload)
+        assert len(result.raw_sha256) == 64
+        assert len(result.canonical_sha256) == 64
+        parsed.append(result)
+    assert len({item.role for item in parsed}) == 6
+    return {
+        "outputs": len(parsed),
+        "digests_verified": True,
+    }
+
+
 def main() -> None:
     config = ExperimentConfig.from_dict(json.loads((ROOT / "examples" / "fixture_experiment.json").read_text(encoding="utf-8")))
     reference = ROOT / "reference_runs" / "fixture-v1"
@@ -130,6 +199,7 @@ def main() -> None:
     assert len(public["scenarios"]) == 8
     assert public["evidence_status"] == "deterministic_fixture"
     live_preflight = verify_live_request_preflight_release(config)
+    role_outputs = verify_live_role_outputs_release()
     with tempfile.TemporaryDirectory() as directory:
         temporary = Path(directory)
         fresh = temporary / "fresh"
@@ -155,6 +225,8 @@ def main() -> None:
         "transport_ledger_digest_verified": True,
         "live_request_templates_verified": live_preflight["templates"],
         "live_request_preflight_digest_verified": True,
+        "live_role_outputs_verified": role_outputs["outputs"],
+        "live_role_output_digests_verified": role_outputs["digests_verified"],
         "evidence_status": "deterministic_fixture",
     }, indent=2, sort_keys=True))
 
