@@ -37,6 +37,8 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(payload["specialist_verified"], 6)
         self.assertEqual(payload["transport_ledger_records_verified"], 1)
         self.assertTrue(payload["transport_ledger_digest_verified"])
+        self.assertEqual(payload["live_request_templates_verified"], 64)
+        self.assertTrue(payload["live_request_preflight_digest_verified"])
 
 
 if __name__ == "__main__":
