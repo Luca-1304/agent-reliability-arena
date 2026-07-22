@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 from agent_reliability_arena.artifacts import verify_manifest
@@ -10,13 +11,81 @@ from agent_reliability_arena.config import ExperimentConfig
 from agent_reliability_arena.experiment import execute_fixture_experiment
 from agent_reliability_arena.public_export import build_public_export
 from agent_reliability_arena.replay import replay_experiment
+from agent_reliability_arena.transports import (
+    ModelCallRequest,
+    ModelCallResult,
+    ModelUsage,
+    RecordingTransport,
+    verify_transport_ledger,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
+MINIMUM_DISCOVERED_TESTS = 50
+
+
+class _ReleaseFixtureTransport:
+    provider = "release-fixture-provider"
+
+    def __init__(self, result: ModelCallResult) -> None:
+        self.result = result
+        self.calls = 0
+
+    def complete(self, request: ModelCallRequest) -> ModelCallResult:
+        self.calls += 1
+        return self.result
 
 
 def count_tests() -> int:
     suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_*.py")
     return suite.countTestCases()
+
+
+def verify_transport_ledger_release(directory: Path) -> dict[str, object]:
+    request = ModelCallRequest(
+        call_id="release-ledger-call-1",
+        condition="general",
+        role="general",
+        model_id="release-fixture-model",
+        model_version="1",
+        prompt_version="release-ledger-prompts-v1",
+        instructions="Return the fixed release-verification response.",
+        input_text="Verify the transport ledger release path.",
+        max_output_tokens=64,
+        seed=1304,
+        metadata={"verification": "release"},
+    )
+    result = ModelCallResult(
+        call_id=request.call_id,
+        request_digest=request.digest,
+        provider="release-fixture-provider",
+        response_id="release-ledger-response-1",
+        model_id=request.model_id,
+        output_text="release-ledger-verified",
+        status="completed",
+        latency_ms=1,
+        usage=ModelUsage(input_tokens=6, output_tokens=3, total_tokens=9),
+        raw_response_sha256="a" * 64,
+        client_request_id=f"arena-{request.digest}",
+        provider_request_id="release-provider-request-1",
+        provider_processing_ms=1,
+    )
+    transport = _ReleaseFixtureTransport(result)
+    ledger = directory / "transport-calls.jsonl"
+    recorder = RecordingTransport(
+        transport,
+        ledger,
+        clock=lambda: datetime(2026, 7, 22, 18, 0, tzinfo=timezone.utc),
+    )
+    returned = recorder.complete(request)
+    assert returned is result
+    assert transport.calls == 1
+    summary = verify_transport_ledger(ledger)
+    assert summary["records"] == 1
+    assert summary["results"] == 1
+    assert summary["errors"] == 0
+    assert isinstance(summary["ledger_sha256"], str)
+    assert len(summary["ledger_sha256"]) == 64
+    return summary
 
 
 def main() -> None:
@@ -38,7 +107,8 @@ def main() -> None:
     assert len(public["scenarios"]) == 8
     assert public["evidence_status"] == "deterministic_fixture"
     with tempfile.TemporaryDirectory() as directory:
-        fresh = Path(directory) / "fresh"
+        temporary = Path(directory)
+        fresh = temporary / "fresh"
         execute_fixture_experiment(config, fresh)
         for relative in (
             "aggregate_metrics.json",
@@ -46,16 +116,19 @@ def main() -> None:
             "report.md",
         ):
             assert (fresh / relative).read_bytes() == (reference / relative).read_bytes(), relative
+        ledger_summary = verify_transport_ledger_release(temporary)
     total = count_tests()
-    assert total >= 30, total
+    assert total >= MINIMUM_DISCOVERED_TESTS, total
     print(json.dumps({
-        "tests_expected_minimum": 30,
+        "tests_expected_minimum": MINIMUM_DISCOVERED_TESTS,
         "tests_discovered": total,
         "reference_manifest_verified": True,
         "general_verified": 2,
         "specialist_verified": 6,
         "false_completion_reduction": 3,
         "additional_logical_model_calls": 36,
+        "transport_ledger_records_verified": ledger_summary["records"],
+        "transport_ledger_digest_verified": True,
         "evidence_status": "deterministic_fixture",
     }, indent=2, sort_keys=True))
 

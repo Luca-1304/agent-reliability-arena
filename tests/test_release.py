@@ -31,9 +31,12 @@ class ReleaseTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual(payload["tests_expected_minimum"], 30)
+        self.assertEqual(payload["tests_expected_minimum"], 50)
+        self.assertGreaterEqual(payload["tests_discovered"], 50)
         self.assertTrue(payload["reference_manifest_verified"])
         self.assertEqual(payload["specialist_verified"], 6)
+        self.assertEqual(payload["transport_ledger_records_verified"], 1)
+        self.assertTrue(payload["transport_ledger_digest_verified"])
 
 
 if __name__ == "__main__":
