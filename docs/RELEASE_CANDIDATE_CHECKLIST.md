@@ -1,6 +1,6 @@
 # v0.2.0rc1 release checklist
 
-This checklist is evidence-gated. A box is complete only when the final candidate tree—not an earlier branch state—passes the stated verification.
+This checklist is evidence-gated. A box is complete only when the candidate tree—not an earlier implementation stage—passes the stated verification.
 
 ## Metadata
 
@@ -38,18 +38,19 @@ This checklist is evidence-gated. A box is complete only when the final candidat
 - [x] disclosure-safe field and redaction boundaries are documented;
 - [x] release claims state that no real-model benchmark has been established.
 
-## Final verification required before merge
+## Candidate verification
 
-- [ ] source compilation succeeds on Python 3.10–3.13;
-- [ ] complete source suite succeeds on Python 3.10–3.13;
-- [ ] release verifier succeeds on Python 3.10–3.13;
-- [ ] all installed commands, including `arena-preflight-pilot`, succeed;
-- [ ] wheel builds and installs in a clean environment on Python 3.10–3.13;
-- [ ] clean-wheel tests and deterministic reference checks succeed;
-- [ ] dependency validation succeeds;
-- [ ] final PR head is unchanged after the green matrix;
-- [ ] issue #13 is closed only after the final merged state is verified.
+- [x] source compilation succeeds on Python 3.10–3.13;
+- [x] complete source suite succeeds on Python 3.10–3.13;
+- [x] release verifier succeeds on Python 3.10–3.13;
+- [x] all installed commands, including `arena-preflight-pilot`, succeed;
+- [x] wheel builds and installs in a clean environment on Python 3.10–3.13;
+- [x] clean-wheel tests and deterministic reference checks succeed;
+- [x] dependency validation succeeds;
+- [x] safeguard and release-candidate matrices completed without a provider request;
+- [ ] the final documentation-closure head passes the same complete matrix;
+- [ ] PR #18 is merged and issue #13 is closed.
 
 ## Claims boundary
 
-Passing this checklist establishes a reviewable release candidate and a controlled path toward a private pilot. It does not establish hosted-model performance, cost efficiency, statistical significance, production readiness or safety for arbitrary tools.
+Passing the technical checks establishes a reviewable release candidate and a controlled path toward a private pilot. It does not establish hosted-model performance, cost efficiency, statistical significance, production readiness or safety for arbitrary tools.
