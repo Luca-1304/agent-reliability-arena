@@ -1,0 +1,57 @@
+# Live-model transport boundary
+
+Status: development scaffold for the next empirical phase. It does not change the published deterministic fixture results and it does not claim external-model performance.
+
+## Purpose
+
+The transport boundary separates provider communication from orchestration, independent verification, metrics and public export. A live experiment can therefore keep the general and specialist conditions on the same versioned model request while recording the cost side of the comparison.
+
+## Included contracts
+
+- `ModelCallRequest` records the condition, role, model identifier and version, prompt version, instructions, input, output limit, seed and local metadata.
+- Each request has a canonical SHA-256 digest so paired conditions can prove which versioned request was issued.
+- `ModelCallResult` records the provider response identifier, returned model identifier, status, output text, measured wall-clock latency, token usage, provider request ID and a digest of the raw response.
+- `TransportError` separates retryable network and provider failures from terminal invalid responses.
+- `ModelTransport` is the provider-neutral protocol used by later orchestration work.
+
+## OpenAI Responses adapter
+
+`OpenAIResponsesTransport` uses the HTTPS Responses endpoint with:
+
+- the model, instructions, input and maximum output-token limit from the versioned request;
+- `store: false`;
+- local Arena identifiers in request metadata;
+- `OPENAI_API_KEY` read from the environment unless explicitly supplied by a caller;
+- no SDK dependency and no automatic retries;
+- provider request-ID capture from the `x-request-id` response header;
+- input, output, total, cached-input and reasoning-token accounting when returned;
+- output extraction from all `output_text` message blocks;
+- SHA-256 recording of the parsed provider response without persisting the API key.
+
+The adapter accepts HTTPS only. Tests use injected openers and clocks, so the source test suite never performs a paid or external request.
+
+## Deliberate exclusions
+
+This increment does not yet:
+
+- connect live model calls to the general or specialist orchestrators;
+- execute tools proposed by a model;
+- estimate prices;
+- retry requests automatically;
+- publish raw provider responses;
+- produce comparative model results.
+
+Those behaviours require a separate, reviewed integration with bounded tool schemas, repeated paired runs, dated price tables, uncertainty reporting and disclosure-safe artifact export.
+
+## Verification
+
+The transport tests cover:
+
+- deterministic request digests and prompt-version sensitivity;
+- response text and usage parsing;
+- latency and provider request-ID capture;
+- `store: false` and version metadata in the request payload;
+- API-key exclusion from persisted result records and raised errors;
+- HTTP 429 retry classification;
+- insecure endpoint rejection;
+- missing-output rejection.
