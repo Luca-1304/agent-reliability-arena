@@ -54,6 +54,8 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(len(first.digest), 64)
         changed = ModelCallRequest(**(first.to_dict() | {"prompt_version": "live-prompts-v2"}))
         self.assertNotEqual(first.digest, changed.digest)
+        spaced = ModelCallRequest(**(first.to_dict() | {"input_text": "  exact input\n"}))
+        self.assertEqual(spaced.input_text, "  exact input\n")
 
     def test_openai_transport_parses_text_usage_and_request_id(self) -> None:
         seen = {}
@@ -120,7 +122,28 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(raised.exception.provider_request_id, "req_rate_limit")
         self.assertNotIn("secret-test-key", str(raised.exception))
 
-    def test_rejects_insecure_or_implicit_custom_endpoint_and_missing_output(self) -> None:
+    def test_accepts_refusal_as_a_valid_model_result(self) -> None:
+        transport = OpenAIResponsesTransport(
+            api_key="x",
+            opener=lambda *args, **kwargs: FakeResponse(
+                {
+                    "id": "resp-refusal",
+                    "model": "gpt-test",
+                    "status": "completed",
+                    "output": [
+                        {
+                            "type": "message",
+                            "content": [{"type": "refusal", "refusal": "I cannot do that."}],
+                        }
+                    ],
+                }
+            ),
+        )
+        result = transport.complete(request())
+        self.assertEqual(result.output_text, "")
+        self.assertEqual(result.refusal_text, "I cannot do that.")
+
+    def test_rejects_insecure_or_implicit_custom_endpoint_and_missing_content(self) -> None:
         with self.assertRaisesRegex(ValueError, "HTTPS"):
             OpenAIResponsesTransport(api_key="x", endpoint="http://example.com/v1/responses")
         with self.assertRaisesRegex(ValueError, "Custom endpoints"):
@@ -146,7 +169,7 @@ class TransportTests(unittest.TestCase):
                 {"id": "resp", "model": "gpt-test", "output": []}
             ),
         )
-        with self.assertRaisesRegex(TransportError, "no output_text"):
+        with self.assertRaisesRegex(TransportError, "no output_text or refusal"):
             transport.complete(request())
 
 
