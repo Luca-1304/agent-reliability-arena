@@ -1,0 +1,41 @@
+name: showcase-hash-capture
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Capture exact public file hashes
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path.cwd()
+          manifest = json.loads((root / "showcase/publication-manifest.json").read_text(encoding="utf-8"))
+          hashes = {
+              row["path"]: hashlib.sha256((root / row["path"]).read_bytes()).hexdigest()
+              for row in manifest["files"]
+          }
+          Path("showcase-hashes.json").write_text(
+              json.dumps(hashes, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload hash inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-hashes
+          path: showcase-hashes.json
+          if-no-files-found: error
