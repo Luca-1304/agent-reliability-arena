@@ -16,17 +16,17 @@ Status: **complete in v0.1.0**
 
 ### Stage 1 — Versioned provider boundary
 
-Status: **complete on main**
+Status: **complete**
 
 - provider-neutral request/result protocol;
 - OpenAI Responses adapter;
 - exact request and response digests;
 - usage, latency, request IDs, refusal, incomplete and provider-failure handling;
-- credential and endpoint protections.
+- credential, endpoint and explicit network-approval protections.
 
 ### Stage 2 — Private transport evidence
 
-Status: **complete on main**
+Status: **complete**
 
 - append-only JSONL ledger;
 - request, record and full-ledger digests;
@@ -36,18 +36,18 @@ Status: **complete on main**
 
 ### Stage 3 — Deterministic live request planning
 
-Status: **complete on main**
+Status: **complete**
 
 - six-role source-controlled prompt catalogue;
 - strict condition/role/attempt grammar;
 - deterministic call IDs and canonical input;
 - held-constant fairness metadata;
-- provider-free preflight manifest;
+- provider-free permission manifest;
 - 64 permitted templates verified for the reference configuration.
 
 ### Stage 4 — Fail-closed role outputs
 
-Status: **complete on main**
+Status: **complete**
 
 - exact JSON-object parsing;
 - duplicate-key, unknown-field, oversized-output and unsafe-path rejection;
@@ -57,34 +57,34 @@ Status: **complete on main**
 
 ### Stage 5 — Provider-free end-to-end integration
 
-Status: **complete on main**
+Status: **complete**
 
 - general and specialist live orchestrators;
 - exact contract checks before bounded mutation;
 - independent observation and verification;
 - evidence-derived audit and recovery;
 - terminal security handling;
-- scripted general success, specialist recovery and terminal failure release fixtures;
+- scripted success, recovery and terminal-failure release fixtures;
 - private ledger verification for every scripted run.
 
 ## Current stage
 
-### Stage 6 — v0.2 release candidate
+### Stage 6 — v0.2.0rc1 release candidate
 
-Status: **active**  
+Status: **safeguards implemented; final matrix pending**  
 Tracking: [#13 — Prepare Agent Reliability Arena v0.2 release candidate](https://github.com/Luca-1304/agent-reliability-arena/issues/13)
 
-Required before a paid or external-model experiment:
-
-- [ ] align package, README, changelog and release metadata;
-- [ ] provide a preflight-only operator procedure;
-- [ ] define the private run-directory and secret-handling rules;
-- [ ] define hard call, token and monetary ceilings;
-- [ ] ensure real-provider execution is explicit and never triggered by tests;
-- [ ] define abort conditions for provider, parser, ledger and verifier failures;
-- [ ] define a disclosure-safe public export that excludes private prompts and credentials;
-- [ ] run the full Python 3.10–3.13 release matrix on the final candidate;
-- [ ] publish only after the final tree and documentation are consistent.
+- [x] align package, README, changelog and release metadata;
+- [x] provide a provider-free pilot preflight command;
+- [x] define private run-directory and secret-handling rules;
+- [x] define hard call, requested-output-token, reserved-total-token and monetary ceilings;
+- [x] require an exact reviewed policy digest and separate execution approval;
+- [x] ensure the real adapter network opener is disabled by default;
+- [x] define abort conditions for provider, parser, ledger, contract and verifier failures;
+- [x] define a disclosure-safe public/private evidence boundary;
+- [x] verify the safeguard core on Python 3.10–3.13;
+- [ ] run the full Python 3.10–3.13 matrix on the final candidate tree;
+- [ ] merge the unchanged green candidate and close #13.
 
 Exit condition: a reviewer can reproduce every non-paid path, understand every limitation and see exactly what a private pilot would do before credentials are supplied.
 
@@ -100,12 +100,13 @@ Scope:
 - one explicitly named provider and dated model snapshot;
 - one controlled scenario first;
 - both conditions use the same model, task, contract and seed;
-- strict budget and call ceilings;
+- reviewed policy digest and two explicit execution approvals;
+- strict token and monetary reservations;
 - no automatic retries;
 - private tamper-evident evidence only;
 - immediate stop on parser, ledger, contract or verifier inconsistency.
 
-Exit condition: one complete paired run with verified evidence and no public performance claim.
+Exit condition: one complete paired run with verified private evidence and no public performance claim.
 
 ### Stage 8 — Repeated paired experiment
 

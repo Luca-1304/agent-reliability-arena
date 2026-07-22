@@ -4,13 +4,25 @@ import json
 import tempfile
 import unittest
 from datetime import datetime, timezone
+from importlib.metadata import version as installed_version
 from pathlib import Path
 
+from agent_reliability_arena import __version__
 from agent_reliability_arena.artifacts import verify_manifest
 from agent_reliability_arena.config import ExperimentConfig
 from agent_reliability_arena.experiment import execute_fixture_experiment
-from agent_reliability_arena.live_requests import PromptCatalog, build_live_request_preflight
+from agent_reliability_arena.live_requests import (
+    LiveRequestFactory,
+    PromptCatalog,
+    build_live_request_preflight,
+)
 from agent_reliability_arena.live_role_outputs import parse_live_role_output
+from agent_reliability_arena.pilot_policy import (
+    PilotExecutionGate,
+    PilotGateError,
+    PilotPolicy,
+    build_pilot_preflight,
+)
 from agent_reliability_arena.public_export import build_public_export
 from agent_reliability_arena.release_live_fixture import verify_provider_free_live_orchestration_release
 from agent_reliability_arena.replay import replay_experiment
@@ -25,6 +37,7 @@ from agent_reliability_arena.transports.base import canonical_json_sha256
 
 ROOT = Path(__file__).resolve().parents[1]
 MINIMUM_DISCOVERED_TESTS = 50
+EXPECTED_VERSION = "0.2.0rc1"
 
 
 class _ReleaseFixtureTransport:
@@ -39,9 +52,43 @@ class _ReleaseFixtureTransport:
         return self.result
 
 
+class _NeverCallPilotTransport:
+    provider = "openai-responses"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def complete(self, request: ModelCallRequest) -> ModelCallResult:
+        self.calls += 1
+        raise AssertionError("Disabled release-candidate policy must block before provider invocation.")
+
+
 def count_tests() -> int:
     suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_*.py")
     return suite.countTestCases()
+
+
+def verify_release_candidate_metadata() -> dict[str, object]:
+    assert __version__ == EXPECTED_VERSION
+    assert installed_version("agent-reliability-arena") == EXPECTED_VERSION
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert f'version = "{EXPECTED_VERSION}"' in pyproject
+    required_text = {
+        "README.md": EXPECTED_VERSION,
+        "CHANGELOG.md": EXPECTED_VERSION,
+        "docs/PROJECT_STATUS.md": EXPECTED_VERSION,
+        "docs/PRIVATE_PILOT_RUNBOOK.md": "External network execution",
+        "docs/DISCLOSURE_BOUNDARY.md": "Private by default",
+        "docs/RELEASE_CANDIDATE_CHECKLIST.md": EXPECTED_VERSION,
+    }
+    for relative, marker in required_text.items():
+        path = ROOT / relative
+        assert path.is_file(), relative
+        assert marker in path.read_text(encoding="utf-8"), relative
+    return {
+        "version": EXPECTED_VERSION,
+        "documents": len(required_text),
+    }
 
 
 def verify_transport_ledger_release(directory: Path) -> dict[str, object]:
@@ -110,6 +157,55 @@ def verify_live_request_preflight_release(config: ExperimentConfig) -> dict[str,
     return {
         "templates": template_count,
         "manifest_digest": manifest_digest,
+    }
+
+
+def verify_pilot_policy_release(
+    config: ExperimentConfig,
+    catalog: PromptCatalog,
+) -> dict[str, object]:
+    policy = PilotPolicy.from_dict(
+        json.loads((ROOT / "examples" / "pilot_policy.disabled.json").read_text(encoding="utf-8"))
+    )
+    manifest = build_pilot_preflight(config, catalog, policy)
+    unsigned = dict(manifest)
+    manifest_digest = unsigned.pop("manifest_digest")
+    assert canonical_json_sha256(unsigned) == manifest_digest
+    assert manifest["provider_called"] is False
+    assert manifest["external_execution_enabled"] is False
+    assert manifest["policy_digest"] == policy.digest
+    assert manifest["planned_call_ceiling"] == 8
+    assert manifest["planned_requested_output_tokens"] == 2068
+    assert manifest["reserved_total_tokens"] == 16384
+    assert manifest["reserved_cost_minor_units"] == 96
+    assert manifest["currency"] == "GBP"
+    assert "api_key" not in json.dumps(manifest).lower()
+
+    request = LiveRequestFactory(config, catalog).build(
+        condition="general",
+        role="general",
+        scenario_id="success",
+        attempt_number=1,
+        role_payload={"observation": "none"},
+    )
+    transport = _NeverCallPilotTransport()
+    gate = PilotExecutionGate(
+        transport,
+        policy,
+        reviewed_policy_digest=policy.digest,
+        external_execution_approved=True,
+    )
+    try:
+        gate.complete(request)
+    except PilotGateError as exc:
+        assert "disabled" in str(exc).lower()
+    else:
+        raise AssertionError("Disabled pilot policy unexpectedly permitted execution.")
+    assert transport.calls == 0
+    return {
+        "calls": manifest["planned_call_ceiling"],
+        "manifest_digest": manifest_digest,
+        "provider_calls": transport.calls,
     }
 
 
@@ -182,6 +278,7 @@ def verify_live_role_outputs_release() -> dict[str, object]:
 
 
 def main() -> None:
+    metadata = verify_release_candidate_metadata()
     config = ExperimentConfig.from_dict(json.loads((ROOT / "examples" / "fixture_experiment.json").read_text(encoding="utf-8")))
     catalog = PromptCatalog.from_dict(
         json.loads((ROOT / "examples" / "live_prompt_catalog.json").read_text(encoding="utf-8"))
@@ -203,6 +300,7 @@ def main() -> None:
     assert len(public["scenarios"]) == 8
     assert public["evidence_status"] == "deterministic_fixture"
     live_preflight = verify_live_request_preflight_release(config)
+    pilot_preflight = verify_pilot_policy_release(config, catalog)
     role_outputs = verify_live_role_outputs_release()
     with tempfile.TemporaryDirectory() as directory:
         temporary = Path(directory)
@@ -225,6 +323,8 @@ def main() -> None:
     print(json.dumps({
         "tests_expected_minimum": MINIMUM_DISCOVERED_TESTS,
         "tests_discovered": total,
+        "release_candidate_version": metadata["version"],
+        "release_candidate_documents_verified": metadata["documents"],
         "reference_manifest_verified": True,
         "general_verified": 2,
         "specialist_verified": 6,
@@ -234,6 +334,9 @@ def main() -> None:
         "transport_ledger_digest_verified": True,
         "live_request_templates_verified": live_preflight["templates"],
         "live_request_preflight_digest_verified": True,
+        "pilot_preflight_calls_verified": pilot_preflight["calls"],
+        "pilot_preflight_digest_verified": True,
+        "pilot_external_execution_disabled_verified": pilot_preflight["provider_calls"] == 0,
         "live_role_outputs_verified": role_outputs["outputs"],
         "live_role_output_digests_verified": role_outputs["digests_verified"],
         "live_orchestration_scenarios_verified": live_orchestration["scenarios"],

@@ -7,7 +7,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 
-EXPECTED_ARENA_VERSION = "0.2.0.dev0"
+EXPECTED_ARENA_VERSION = "0.2.0rc1"
 
 
 class VendorSnapshotTests(unittest.TestCase):

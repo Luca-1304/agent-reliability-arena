@@ -4,58 +4,59 @@ Last verified: 22 July 2026
 
 ## Current state
 
-Agent Reliability Arena is in **v0.2.0 development** on `main`.
+Agent Reliability Arena is at **v0.2.0rc1**.
 
-The public v0.1.0 evidence remains a deterministic fixture. It validates the experiment plumbing, evidence separation, replay, metrics and trace viewer; it is not a claim about external model performance.
+The public v0.1.0 evidence remains a deterministic fixture. It validates experiment plumbing, evidence separation, replay, metrics and the trace viewer; it is not a claim about external model performance.
 
-The v0.2 development tree now adds a complete provider-free live-model path:
+The release candidate adds a complete provider-free live-model path and private-pilot safeguards:
 
 1. versioned model request and result contracts;
-2. an HTTPS OpenAI Responses transport with credential and endpoint protections;
+2. an HTTPS OpenAI Responses transport with credential, endpoint and explicit network-approval protections;
 3. client/provider request provenance, latency, usage and incomplete/failure handling;
 4. an append-only, tamper-evident private transport ledger;
 5. a source-controlled six-role prompt catalogue and deterministic request factory;
-6. a provider-free preflight manifest covering every permitted request template;
+6. a provider-free permission manifest covering every permitted request template;
 7. strict fail-closed JSON output contracts for all six roles;
 8. provider-neutral general and specialist orchestrators;
 9. exact contract checks before bounded file mutation;
-10. independent observation, verification, audit, recovery and synthesis.
+10. independent observation, verification, audit, recovery and synthesis;
+11. a secret-free pilot policy with reviewed-digest approval;
+12. hard call, requested-output-token, reserved-total-token and monetary-reservation ceilings;
+13. a provider-free pilot preflight command;
+14. a private pilot runbook and disclosure-safe evidence boundary.
 
-## Latest verification evidence
+## Verification evidence
 
-GitHub Actions run **#59** completed successfully on Python 3.10, 3.11, 3.12 and 3.13.
+The safeguard core passed GitHub Actions run **#67** on Python 3.10, 3.11, 3.12 and 3.13, including source tests, release verification, installed commands, wheel build, clean-wheel tests and dependency checks.
 
-Every matrix job passed:
+The complete release-candidate tree must pass a fresh final matrix before issue #13 is closed or the PR is merged.
 
-- source compilation;
-- the complete source test suite;
-- release verification;
-- installed command checks;
-- wheel build;
-- clean-wheel installation and tests;
-- deterministic reference checks;
-- dependency validation.
+The permanent release verifier reproduces:
 
-The permanent release verifier reproduces three complete provider-free scenarios:
-
-- general success;
-- specialist recovery after false success;
-- specialist terminal rejection of path traversal.
-
-Across those scenarios it validates 12 role calls and independently verifies three private transport ledgers.
+- the deterministic v0.1.0 reference metrics;
+- 64 permitted live request templates;
+- all six strict role-output contracts;
+- one tamper-evident transport ledger;
+- three complete provider-free orchestration scenarios;
+- 12 validated role calls and three verified private ledgers;
+- the disabled pilot preflight with eight permitted calls;
+- proof that the disabled policy blocks before provider invocation;
+- package, installed-distribution and documentation version consistency.
 
 ## What is proven
 
-The current repository proves, for the controlled exact file-write fixture, that:
+For the controlled exact file-write fixture, the repository proves that:
 
 - requests can be versioned and pre-authorised deterministically;
 - model-shaped outputs can be parsed fail-closed into bounded role schemas;
-- proposed writes can be checked against the exact task contract before mutation;
+- proposed writes can be checked against the exact contract before mutation;
 - source-reported success can be separated from independently observed state;
 - false success can trigger one evidence-backed recovery attempt;
 - security failures remain terminal;
 - Auditor, Recovery and Synthesiser text cannot override authoritative evidence;
-- every provider-shaped call can be recorded and later verified without re-execution.
+- provider-shaped calls can be recorded and verified without re-execution;
+- real network execution remains disabled unless approved at both the pilot and adapter boundaries;
+- conservative call, token and monetary reservations can be enforced before calls.
 
 ## What is not yet proven
 
@@ -63,10 +64,10 @@ The repository does **not** yet prove:
 
 - performance of any real hosted or local model;
 - comparative reliability from a statistically meaningful live sample;
-- monetary cost or price efficiency;
+- measured monetary cost or price efficiency;
 - safe execution of arbitrary tools;
 - concurrent ledger writing;
-- prompt-redacted public ledger publication;
+- prompt-redacted public live-evidence publication;
 - production readiness or unattended operation.
 
 No real provider request has been used as benchmark evidence.
@@ -76,24 +77,19 @@ No real provider request has been used as benchmark evidence.
 - The validated mutation surface is one confined file-write action.
 - The transport ledger is deliberately single-writer.
 - Private ledgers may contain prompts and model outputs.
-- Automatic retry and price estimation are excluded.
+- Automatic retry and built-in price estimation are excluded.
 - There is no public live-execution CLI.
-- The OpenAI adapter exists, but real-provider execution remains a separate controlled experiment.
+- A future private caller must deliberately enable both execution barriers.
+- Monetary limits are conservative operator reservations, not measured billing.
 
 ## Current priority
 
-**Prepare a reviewable v0.2 release candidate before any paid empirical run.**
+**Finish the final v0.2.0rc1 verification matrix, then close issue #13.**
 
-The release-candidate gate should confirm:
+After that, issue #14 permits one bounded private provider pilot. It must use one provider, one dated model snapshot, one scenario, strict reservations, no automatic retries and immediate abort on evidence inconsistency.
 
-- package and documentation version consistency;
-- a documented private pilot procedure;
-- explicit budget and call ceilings;
-- secret handling and evidence-directory rules;
-- preflight-only and scripted-provider demonstrations;
-- a disclosure-safe export plan;
-- a fresh Python 3.10–3.13 matrix on the complete release tree.
+Issue #15 separately tracks the disclosure-safe public export.
 
 ## Related but separate projects
 
-The Agent Contract Compiler and Agent Action Firewall are tracked as separate repository issues. They may integrate with the Arena later, but they should not be folded into the v0.2 release scope.
+The Agent Contract Compiler and Agent Action Firewall remain separate projects. They may integrate later through reviewed interfaces but are outside the v0.2.0rc1 scope.
