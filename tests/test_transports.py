@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import unittest
@@ -61,24 +62,24 @@ class TransportTests(unittest.TestCase):
             seen["timeout"] = timeout
             seen["authorization"] = http_request.headers["Authorization"]
             seen["payload"] = json.loads(http_request.data.decode("utf-8"))
-            return FakeResponse(
-                {
-                    "id": "resp_test",
-                    "model": "gpt-test-snapshot",
-                    "status": "completed",
-                    "output": [
-                        {"type": "message", "content": [{"type": "output_text", "text": "first"}]},
-                        {"type": "message", "content": [{"type": "output_text", "text": " second"}]},
-                    ],
-                    "usage": {
-                        "input_tokens": 10,
-                        "output_tokens": 4,
-                        "total_tokens": 14,
-                        "input_tokens_details": {"cached_tokens": 3},
-                        "output_tokens_details": {"reasoning_tokens": 2},
-                    },
-                }
-            )
+            payload = {
+                "id": "resp_test",
+                "model": "gpt-test-snapshot",
+                "status": "completed",
+                "output": [
+                    {"type": "message", "content": [{"type": "output_text", "text": "first"}]},
+                    {"type": "message", "content": [{"type": "output_text", "text": " second"}]},
+                ],
+                "usage": {
+                    "input_tokens": 10,
+                    "output_tokens": 4,
+                    "total_tokens": 14,
+                    "input_tokens_details": {"cached_tokens": 3},
+                    "output_tokens_details": {"reasoning_tokens": 2},
+                },
+            }
+            seen["raw"] = json.dumps(payload).encode("utf-8")
+            return FakeResponse(payload)
 
         ticks = iter((1_000_000_000, 1_025_000_000))
         transport = OpenAIResponsesTransport(
@@ -90,6 +91,7 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(result.output_text, "first second")
         self.assertEqual(result.latency_ms, 25)
         self.assertEqual(result.provider_request_id, "req_test")
+        self.assertEqual(result.raw_response_sha256, hashlib.sha256(seen["raw"]).hexdigest())
         self.assertEqual(result.usage.to_dict()["cached_input_tokens"], 3)
         self.assertEqual(result.usage.to_dict()["reasoning_tokens"], 2)
         self.assertFalse(seen["payload"]["store"])
@@ -118,12 +120,31 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(raised.exception.provider_request_id, "req_rate_limit")
         self.assertNotIn("secret-test-key", str(raised.exception))
 
-    def test_rejects_insecure_endpoint_and_missing_output(self) -> None:
+    def test_rejects_insecure_or_implicit_custom_endpoint_and_missing_output(self) -> None:
         with self.assertRaisesRegex(ValueError, "HTTPS"):
             OpenAIResponsesTransport(api_key="x", endpoint="http://example.com/v1/responses")
+        with self.assertRaisesRegex(ValueError, "Custom endpoints"):
+            OpenAIResponsesTransport(api_key="x", endpoint="https://example.com/v1/responses")
+        custom = OpenAIResponsesTransport(
+            api_key="x",
+            endpoint="https://example.com/v1/responses",
+            allow_custom_endpoint=True,
+            opener=lambda *args, **kwargs: FakeResponse(
+                {
+                    "id": "resp-custom",
+                    "model": "gpt-test",
+                    "output": [
+                        {"type": "message", "content": [{"type": "output_text", "text": "ok"}]}
+                    ],
+                }
+            ),
+        )
+        self.assertEqual(custom.complete(request()).output_text, "ok")
         transport = OpenAIResponsesTransport(
             api_key="x",
-            opener=lambda *args, **kwargs: FakeResponse({"id": "resp", "model": "gpt-test", "output": []}),
+            opener=lambda *args, **kwargs: FakeResponse(
+                {"id": "resp", "model": "gpt-test", "output": []}
+            ),
         )
         with self.assertRaisesRegex(TransportError, "no output_text"):
             transport.complete(request())
