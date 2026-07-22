@@ -2,7 +2,7 @@ name: deploy-pages
 
 on:
   push:
-    branches: [main, portfolio-site]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -21,27 +21,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out main repository
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: main
-          path: main-source
-      - name: Check out portfolio branch
-        uses: actions/checkout@v4
-        with:
-          ref: portfolio-site
-          path: portfolio-source
-      - name: Assemble Pages site
-        run: |
-          mkdir -p _site/portfolio
-          cp -R main-source/web/. _site/
-          cp -R portfolio-source/portfolio/. _site/portfolio/
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload static site
+      - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: web
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
