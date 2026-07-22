@@ -52,7 +52,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: disclosure-debug-${{ matrix.python-version }}
-          path: disclosure-debug.txt
+          path: |
+            disclosure-debug.txt
+            src/agent_reliability_arena/disclosure_export.py
 
       - name: Run source tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
