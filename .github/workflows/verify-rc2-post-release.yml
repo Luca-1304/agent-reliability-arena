@@ -1,0 +1,174 @@
+name: Verify published rc2 release
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  attestations: read
+
+jobs:
+  verify:
+    if: github.head_ref == 'verify/rc2-post-release'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: v0.2.0rc2
+      RELEASE_TITLE: Agent Reliability Arena v0.2.0rc2
+      MERGE_COMMIT: 144b48645fb7ad9a09e438e576dc8c2e8b868b9a
+      SIGNER_WORKFLOW: Luca-1304/agent-reliability-arena/.github/workflows/release.yml
+    steps:
+      - name: Check out verification branch
+        uses: actions/checkout@v4
+
+      - name: Wait for immutable rc2 publication
+        run: |
+          for attempt in $(seq 1 30); do
+            if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              exit 0
+            fi
+            test "$attempt" -lt 30
+            sleep 5
+          done
+
+      - name: Download release metadata and assets
+        run: |
+          mkdir -p "$RUNNER_TEMP/rc2-release" "$RUNNER_TEMP/rc2-verification"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,name,isPrerelease,targetCommitish,publishedAt,url,assets \
+            > "$RUNNER_TEMP/rc2-verification/release-metadata.json"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "$RUNNER_TEMP/rc2-release"
+
+      - name: Verify metadata, exact inventory and source record
+        run: |
+          export RELEASE_DIR="$RUNNER_TEMP/rc2-release"
+          export METADATA_PATH="$RUNNER_TEMP/rc2-verification/release-metadata.json"
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          release_dir = Path(os.environ['RELEASE_DIR'])
+          metadata = json.loads(Path(os.environ['METADATA_PATH']).read_text(encoding='utf-8'))
+          expected_assets = {
+              'agent_reliability_arena-0.2.0rc2-py3-none-any.whl',
+              'agent_reliability_arena-0.2.0rc2.tar.gz',
+              'RELEASE_NOTES_v0.2.0rc2.md',
+              'github-prerelease.json',
+              'publication-manifest.json',
+              'launch-package-manifest.json',
+              'provenance.json',
+              'supply-chain-manifest.json',
+              'sbom.cdx.json',
+              'release-record.json',
+              'SHA256SUMS',
+          }
+          assert metadata['tagName'] == os.environ['TAG'], metadata
+          assert metadata['name'] == os.environ['RELEASE_TITLE'], metadata
+          assert metadata['isPrerelease'] is True, metadata
+          assert metadata['targetCommitish'] == os.environ['MERGE_COMMIT'], metadata
+          assert metadata['publishedAt'], metadata
+          assert metadata['url'], metadata
+          metadata_assets = {item['name'] for item in metadata['assets']}
+          downloaded_assets = {path.name for path in release_dir.iterdir() if path.is_file()}
+          assert metadata_assets == expected_assets, (metadata_assets, expected_assets)
+          assert downloaded_assets == expected_assets, (downloaded_assets, expected_assets)
+
+          record = json.loads((release_dir / 'release-record.json').read_text(encoding='utf-8'))
+          expected_primary = expected_assets - {'release-record.json', 'SHA256SUMS'}
+          assert record['schema_version'] == 'arena-github-prerelease-record-v1'
+          assert record['project'] == 'Agent Reliability Arena'
+          assert record['version'] == '0.2.0rc2'
+          assert record['tag'] == 'v0.2.0rc2'
+          assert record['prerelease'] is True
+          assert record['source_commit'] == os.environ['MERGE_COMMIT']
+          assert record['provider_called'] is False
+          assert record['comparative_claim_permitted'] is False
+          assert set(record['artifacts']) == expected_primary
+          for name, expected_digest in record['artifacts'].items():
+              actual = hashlib.sha256((release_dir / name).read_bytes()).hexdigest()
+              assert actual == expected_digest, name
+          PY
+
+      - name: Verify complete checksum inventory
+        run: |
+          cd "$RUNNER_TEMP/rc2-release"
+          sha256sum --check SHA256SUMS | tee "$RUNNER_TEMP/rc2-verification/checksums.log"
+          test "$(wc -l < SHA256SUMS)" -eq 10
+
+      - name: Verify SLSA provenance attestations
+        run: |
+          : > "$RUNNER_TEMP/rc2-verification/provenance-attestations.log"
+          for artifact in \
+            "$RUNNER_TEMP/rc2-release/agent_reliability_arena-0.2.0rc2-py3-none-any.whl" \
+            "$RUNNER_TEMP/rc2-release/agent_reliability_arena-0.2.0rc2.tar.gz"; do
+            gh attestation verify "$artifact" \
+              -R "$GITHUB_REPOSITORY" \
+              --signer-workflow "$SIGNER_WORKFLOW" \
+              --source-digest "$MERGE_COMMIT" \
+              --source-ref refs/heads/main \
+              | tee -a "$RUNNER_TEMP/rc2-verification/provenance-attestations.log"
+          done
+
+      - name: Verify CycloneDX SBOM attestations
+        run: |
+          : > "$RUNNER_TEMP/rc2-verification/cyclonedx-attestations.log"
+          for artifact in \
+            "$RUNNER_TEMP/rc2-release/agent_reliability_arena-0.2.0rc2-py3-none-any.whl" \
+            "$RUNNER_TEMP/rc2-release/agent_reliability_arena-0.2.0rc2.tar.gz"; do
+            gh attestation verify "$artifact" \
+              -R "$GITHUB_REPOSITORY" \
+              --signer-workflow "$SIGNER_WORKFLOW" \
+              --source-digest "$MERGE_COMMIT" \
+              --source-ref refs/heads/main \
+              --predicate-type https://cyclonedx.org/bom \
+              | tee -a "$RUNNER_TEMP/rc2-verification/cyclonedx-attestations.log"
+          done
+
+      - name: Write disclosure-safe verification record
+        run: |
+          export METADATA_PATH="$RUNNER_TEMP/rc2-verification/release-metadata.json"
+          export OUTPUT_PATH="$RUNNER_TEMP/rc2-verification/verification.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          metadata = json.loads(Path(os.environ['METADATA_PATH']).read_text(encoding='utf-8'))
+          record = {
+              'schema_version': 'arena-rc2-post-release-verification-v1',
+              'project': 'Agent Reliability Arena',
+              'version': '0.2.0rc2',
+              'tag': metadata['tagName'],
+              'title': metadata['name'],
+              'prerelease': metadata['isPrerelease'],
+              'target_commit': metadata['targetCommitish'],
+              'published_at': metadata['publishedAt'],
+              'release_url': metadata['url'],
+              'asset_count': len(metadata['assets']),
+              'asset_names': sorted(item['name'] for item in metadata['assets']),
+              'checksum_entries_verified': 10,
+              'provenance_attestations_verified': 2,
+              'cyclonedx_attestations_verified': 2,
+              'signer_workflow': os.environ['SIGNER_WORKFLOW'],
+              'source_ref': 'refs/heads/main',
+              'provider_called': False,
+              'comparative_claim_permitted': False,
+              'security_certification_claimed': False,
+          }
+          Path(os.environ['OUTPUT_PATH']).write_text(
+              json.dumps(record, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+      - name: Upload independent verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc2-post-release-verification
+          path: ${{ runner.temp }}/rc2-verification
+          if-no-files-found: error
+          retention-days: 1
