@@ -41,7 +41,7 @@ This record does not present generated implementation as unaided authorship. It 
 
 Neither Luca's statement nor an AI-generated success report determines correctness. The repository evidence does:
 
-- deterministic fixtures and independently reconstructed metrics;
+- reproducible deterministic fixtures and independently reconstructed metrics;
 - adversarial source tests;
 - Python 3.10–3.13 matrices;
 - installed-package and clean-wheel verification;
@@ -49,7 +49,7 @@ Neither Luca's statement nor an AI-generated success report determines correctne
 - release records and attestations;
 - explicit limitations and prohibited-claim checks.
 
-Reviewers should evaluate the work through those artifacts and the linked source/tests.
+Reviewers should evaluate the work through those reproducible artifacts and the linked source/tests.
 
 ## What the project does not claim
 
