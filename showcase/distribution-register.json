@@ -1,0 +1,80 @@
+{
+  "author": "Luca Panayiotou",
+  "claims_boundary": "Only the verified deterministic fixture, engineering methods and provider-free release evidence may be described. External account actions require public URL and date evidence.",
+  "entries": [
+    {
+      "audience": "employers, collaborators and technical reviewers",
+      "copy_source": "LAUNCH.md",
+      "notes": "Repository-hosted launch route published through the verified public repository.",
+      "public_url": "https://github.com/Luca-1304/agent-reliability-arena/blob/main/LAUNCH.md",
+      "published_date": "2026-07-23",
+      "state": "published_repository",
+      "surface": "GitHub repository",
+      "target_id": "github-repository-launch"
+    },
+    {
+      "audience": "professional network and hiring teams",
+      "copy_source": "docs/LAUNCH_POSTS.md",
+      "notes": "Prepared for manual publication from Luca's professional account after final account-level review.",
+      "public_url": null,
+      "published_date": null,
+      "state": "prepared",
+      "surface": "LinkedIn",
+      "target_id": "linkedin-launch"
+    },
+    {
+      "audience": "recruiters and relevant engineering leaders",
+      "copy_source": "docs/RECRUITER_OUTREACH.md",
+      "notes": "Prepared for selective personalisation after a relevant recipient or role is identified.",
+      "public_url": null,
+      "published_date": null,
+      "state": "prepared",
+      "surface": "direct outreach",
+      "target_id": "recruiter-outreach"
+    },
+    {
+      "audience": "portfolio reviewers and hiring managers",
+      "copy_source": "docs/PORTFOLIO_PROJECT_ENTRY.md",
+      "notes": "Prepared for inclusion in Luca's professional portfolio without altering the evidence boundary.",
+      "public_url": null,
+      "published_date": null,
+      "state": "prepared",
+      "surface": "portfolio",
+      "target_id": "portfolio-entry"
+    },
+    {
+      "audience": "developer, evaluation and reliability communities",
+      "copy_source": "docs/COMMUNITY_SUBMISSIONS.md",
+      "notes": "Prepared for selective submission after each community's disclosure and self-promotion rules are reviewed.",
+      "public_url": null,
+      "published_date": null,
+      "state": "prepared",
+      "surface": "technical community",
+      "target_id": "technical-community-submission"
+    },
+    {
+      "audience": "role-specific application reviewers",
+      "copy_source": "docs/CV_PROJECT_ENTRY.md",
+      "notes": "Prepared for relevant AI reliability, evaluation, verification and applied engineering applications.",
+      "public_url": null,
+      "published_date": null,
+      "state": "prepared",
+      "surface": "job application",
+      "target_id": "cv-project-entry"
+    },
+    {
+      "audience": "public web visitors",
+      "copy_source": "docs/HOSTED_DEPLOYMENT.md",
+      "notes": "Static site source is verified, but repository-owner hosting settings and a resulting public URL are still required.",
+      "public_url": null,
+      "published_date": null,
+      "state": "blocked",
+      "surface": "hosted static site",
+      "target_id": "hosted-showcase"
+    }
+  ],
+  "project": "Agent Reliability Arena",
+  "schema_version": "arena-distribution-register-v1",
+  "source_showcase_manifest_digest": "30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7",
+  "source_showcase_version": "0.2.0rc1-public-showcase-1"
+}
