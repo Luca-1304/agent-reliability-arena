@@ -66,19 +66,23 @@ jobs:
           python scripts/verify_supply_chain.py
           python scripts/verify_github_prerelease.py
 
-      - name: Commit exact restored fixtures through GitHub API
+      - name: Commit exact restored fixtures through GitHub Git database
         env:
           GH_TOKEN: ${{ github.token }}
           HEAD_REF: ${{ github.head_ref }}
         run: |
           test "$HEAD_REF" = "feature/attested-v0.2.0rc2-prerelease"
           rm -rf release/rc2-reference-restore
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A -- reference_runs/fixture-v1/runs release/rc2-reference-restore
           git diff --cached --check
+          PARENT="$(git rev-parse HEAD)"
+          BASE_TREE="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$PARENT" --jq .tree.sha)"
+          export PARENT BASE_TREE
           python - <<'PY'
+          import json
+          import os
           import subprocess
+          from pathlib import Path
 
           rows = subprocess.check_output(
               ['git', 'diff', '--cached', '--name-status'], text=True
@@ -101,10 +105,43 @@ jobs:
           assert actual_adds == expected_adds, (actual_adds, expected_adds)
           assert actual_deletes == expected_deletes, (actual_deletes, expected_deletes)
           assert len(rows) == 18, rows
+
+          entries = []
+          for path in sorted(expected_adds):
+              index_line = subprocess.check_output(
+                  ['git', 'ls-files', '-s', '--', path], text=True
+              ).strip()
+              mode, sha, stage_and_path = index_line.split(maxsplit=2)
+              stage, indexed_path = stage_and_path.split('\t', 1)
+              assert stage == '0' and indexed_path == path
+              entries.append({'path': path, 'mode': mode, 'type': 'blob', 'sha': sha})
+          for path in sorted(expected_deletes):
+              entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': None})
+
+          Path(os.environ['RUNNER_TEMP'], 'tree-request.json').write_text(
+              json.dumps({'base_tree': os.environ['BASE_TREE'], 'tree': entries}),
+              encoding='utf-8',
+          )
           PY
-          PARENT="$(git rev-parse HEAD)"
-          TREE="$(git write-tree)"
-          COMMIT="$(printf '%s\n' 'fix: restore locked rc2 reference fixtures' | git commit-tree "$TREE" -p "$PARENT")"
+          TREE="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" \
+            --input "$RUNNER_TEMP/tree-request.json" --jq .sha)"
+          export TREE
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          Path(os.environ['RUNNER_TEMP'], 'commit-request.json').write_text(
+              json.dumps({
+                  'message': 'fix: restore locked rc2 reference fixtures',
+                  'tree': os.environ['TREE'],
+                  'parents': [os.environ['PARENT']],
+              }),
+              encoding='utf-8',
+          )
+          PY
+          COMMIT="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" \
+            --input "$RUNNER_TEMP/commit-request.json" --jq .sha)"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$HEAD_REF" --jq .object.sha)" = "$PARENT"
           gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$HEAD_REF" \
             -f sha="$COMMIT" \
