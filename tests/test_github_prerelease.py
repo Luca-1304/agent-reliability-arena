@@ -146,6 +146,63 @@ class GithubPrereleaseTests(unittest.TestCase):
         self.assertIn("if: github.event_name == 'push' && github.ref == 'refs/heads/main'", attest_job)
         self.assertNotIn("contents: write", attest_job)
 
+    def test_external_consumer_workflow_stays_lean_and_read_only(self) -> None:
+        workflow_path = ROOT / ".github/workflows/verify-published-release.yml"
+        guide_path = ROOT / "docs/VERIFY_PUBLISHED_RELEASE.md"
+        self.assertTrue(workflow_path.is_file())
+        self.assertTrue(guide_path.is_file())
+
+        workflow = workflow_path.read_text(encoding="utf-8")
+        guide = guide_path.read_text(encoding="utf-8")
+
+        for marker in (
+            "name: Verify published v0.2.0rc2 release",
+            "workflow_dispatch:",
+            "push:",
+            "branches: [main]",
+            "contents: read",
+            "attestations: read",
+            "gh release view",
+            "gh release download",
+            "sha256sum --check SHA256SUMS",
+            "arena-github-prerelease-record-v2",
+            "3128616727ad4d5d0f87986a4b26391f4419aff9",
+            "gh attestation verify",
+            "--predicate-type https://cyclonedx.org/bom",
+            "python -m venv",
+            "pip install --no-deps",
+            "arena-run",
+            "arena-export-web",
+            "reference_runs/fixture-v1",
+            "actions/upload-artifact@v4",
+        ):
+            self.assertIn(marker, workflow)
+
+        for prohibited in (
+            "schedule:",
+            "contents: write",
+            "attestations: write",
+            "id-token: write",
+            "artifact-metadata: write",
+            "python -m build",
+            "dist/*.whl",
+            "pip install --editable",
+            "diagnose-published",
+        ):
+            self.assertNotIn(prohibited, workflow)
+
+        for marker in (
+            "External consumer verification",
+            "v0.2.0rc2",
+            "11 release assets",
+            "10 checksum entries",
+            "two provenance attestations",
+            "two CycloneDX attestations",
+            "deterministic fixture",
+            "does not prove security",
+        ):
+            self.assertIn(marker.lower(), guide.lower())
+
     def test_verifier_rejects_unsupported_claim(self) -> None:
         notes_path = ROOT / "docs/RELEASE_NOTES_v0.2.0rc2.md"
         if not notes_path.exists():
