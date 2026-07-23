@@ -26,10 +26,11 @@ class PublishedReleaseWorkflowTests(unittest.TestCase):
             "gh attestation verify",
             "--predicate-type https://cyclonedx.org/bom",
             "python -m venv",
-            "python -m pip install --no-deps",
-            "arena-run --config examples/fixture_experiment.json",
-            "arena-export-web",
-            "arena-verify-published-release",
+            "-m pip install --no-deps",
+            "release-venv/bin/arena-run",
+            "--config examples/fixture_experiment.json",
+            "release-venv/bin/arena-export-web",
+            "PYTHONPATH=src python scripts/verify_published_release.py",
             "reference_runs/fixture-v1",
             "actions/upload-artifact@v4",
         ):
@@ -46,6 +47,8 @@ class PublishedReleaseWorkflowTests(unittest.TestCase):
             "gh release create",
             "python -m build",
             "dist/*.whl",
+            "verifier-venv",
+            "pip install --upgrade setuptools",
         ):
             self.assertNotIn(prohibited, workflow)
 
