@@ -74,7 +74,7 @@ jobs:
           rm -rf release/rc2-reference-restore
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reference_runs/fixture-v1/runs release/rc2-reference-restore
+          git add -A -- reference_runs/fixture-v1/runs release/rc2-reference-restore
           git diff --cached --check
           test "$(git diff --cached --name-only | grep '^reference_runs/fixture-v1/runs/' | wc -l)" -eq 16
           test -z "$(git diff --cached --name-only | grep -v -E '^(reference_runs/fixture-v1/runs/|release/rc2-reference-restore/)' || true)"
