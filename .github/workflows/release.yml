@@ -1,0 +1,125 @@
+name: Publish verified v0.2.0rc1 prerelease
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/release.yml"
+      - "docs/RELEASE_NOTES_v0.2.0rc1.md"
+      - "release/**"
+      - "scripts/verify_github_prerelease.py"
+      - "src/agent_reliability_arena/github_prerelease.py"
+      - "tests/test_github_prerelease.py"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/release.yml"
+      - "docs/RELEASE_NOTES_v0.2.0rc1.md"
+      - "release/**"
+      - "scripts/verify_github_prerelease.py"
+      - "src/agent_reliability_arena/github_prerelease.py"
+      - "tests/test_github_prerelease.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-v0.2.0rc1-prerelease
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Verify and build prerelease assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install build tooling and package
+        run: |
+          python -m pip install --upgrade pip setuptools wheel build
+          python -m pip install --editable .
+
+      - name: Verify public evidence and prerelease contract
+        run: |
+          python scripts/verify_showcase_release.py
+          python scripts/verify_launch_package.py
+          python scripts/verify_github_prerelease.py
+
+      - name: Build wheel and source distribution
+        run: python -m build
+
+      - name: Build source-commit release bundle
+        run: |
+          python scripts/verify_github_prerelease.py \
+            --dist dist \
+            --output release-bundle \
+            --source-commit "$GITHUB_SHA"
+
+      - name: Verify release-record.json and SHA256SUMS
+        run: |
+          test -f release-bundle/release-record.json
+          test -f release-bundle/SHA256SUMS
+          cd release-bundle
+          sha256sum --check SHA256SUMS
+
+      - name: Upload verified prerelease assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: v0.2.0rc1-prerelease-assets
+          path: release-bundle
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish immutable GitHub prerelease
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: v0.2.0rc1
+      RELEASE_TITLE: Agent Reliability Arena v0.2.0rc1
+    steps:
+      - name: Download verified prerelease assets
+        uses: actions/download-artifact@v4
+        with:
+          name: v0.2.0rc1-prerelease-assets
+          path: release-bundle
+
+      - name: Refuse conflicting tag or release
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing GitHub release $TAG" >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags "https://github.com/${GITHUB_REPOSITORY}.git" "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing Git tag $TAG" >&2
+            exit 1
+          fi
+
+      - name: Publish verified prerelease
+        run: |
+          gh release create "$TAG" release-bundle/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$RELEASE_TITLE" \
+            --notes-file release-bundle/RELEASE_NOTES_v0.2.0rc1.md \
+            --target "$GITHUB_SHA" \
+            --prerelease
+
+      - name: Verify published release metadata
+        run: |
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)" = "$TAG"
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json name --jq .name)" = "$RELEASE_TITLE"
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = "true"
+          RELEASE_URL="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)"
+          test -n "$RELEASE_URL"
+          printf 'Published prerelease: %s\n' "$RELEASE_URL"
