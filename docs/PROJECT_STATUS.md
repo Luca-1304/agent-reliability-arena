@@ -6,7 +6,7 @@ Last verified: 23 July 2026
 
 Agent Reliability Arena is at **v0.2.0rc2**.
 
-`v0.2.0rc2` is a published prerelease with checksum-verified assets, SLSA provenance attestations and CycloneDX attestations tied to the release workflow and source commit. This records build and artifact identity; it is not a security certification, production-readiness claim or real-model benchmark.
+`v0.2.0rc2` is a published prerelease. Its checksum-verified assets are attested with SLSA provenance and CycloneDX statements tied to the release workflow and source commit. This records build and artifact identity; it is not a security certification, production-readiness claim or real-model benchmark.
 
 The public v0.1.0 evidence remains a deterministic fixture. It validates experiment plumbing, evidence separation, replay, metrics and the trace viewer; it is not a claim about external model performance.
 
