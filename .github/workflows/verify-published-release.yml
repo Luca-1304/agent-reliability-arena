@@ -140,7 +140,7 @@ jobs:
               | tee -a "$EVIDENCE_DIR/cyclonedx-attestations.log"
           done
 
-      - name: Create release-wheel environment
+      - name: Create isolated release-wheel environment
         env:
           RELEASE_DIR: ${{ runner.temp }}/published-release
         run: |
@@ -149,20 +149,9 @@ jobs:
             "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2-py3-none-any.whl"
           "$RUNNER_TEMP/release-venv/bin/python" -m pip check
 
-      - name: Diagnose and create verifier environment
+      - name: Verify checkout source is verifier-only
         run: |
-          python -m venv "$RUNNER_TEMP/verifier-venv"
-          "$RUNNER_TEMP/verifier-venv/bin/python" - <<'PY'
-          import importlib.util
-          import sys
-
-          print(f"python={sys.version}")
-          print(f"pip_available={importlib.util.find_spec('pip') is not None}")
-          print(f"setuptools_available={importlib.util.find_spec('setuptools') is not None}")
-          PY
-          "$RUNNER_TEMP/verifier-venv/bin/python" -m pip install --no-deps \
-            --no-build-isolation .
-          "$RUNNER_TEMP/verifier-venv/bin/python" -m pip check
+          PYTHONPATH=src python scripts/verify_published_release.py --help >/dev/null
 
       - name: Reproduce the locked deterministic fixture with the release wheel
         env:
@@ -186,7 +175,7 @@ jobs:
           REPRODUCED_DIR: ${{ runner.temp }}/published-release-reproduction
           PUBLIC_OUTPUT: ${{ runner.temp }}/published-release-public.json
         run: |
-          "$RUNNER_TEMP/verifier-venv/bin/arena-verify-published-release" \
+          PYTHONPATH=src python scripts/verify_published_release.py \
             --root . \
             --release-dir "$RELEASE_DIR" \
             --metadata "$EVIDENCE_DIR/release-metadata.json" \
