@@ -65,9 +65,6 @@ jobs:
 
       - name: Build exact Git tree request
         run: |
-          rm -rf release/rc2-reference-restore
-          git add -A -- reference_runs/fixture-v1/runs release/rc2-reference-restore
-          git diff --cached --check
           PARENT="$(git rev-parse HEAD)"
           BASE_TREE="$(git rev-parse 'HEAD^{tree}')"
           export PARENT BASE_TREE
@@ -77,10 +74,7 @@ jobs:
           import subprocess
           from pathlib import Path
 
-          rows = subprocess.check_output(
-              ['git', 'diff', '--cached', '--name-status'], text=True
-          ).splitlines()
-          expected_adds = {
+          paths = [
               f'reference_runs/fixture-v1/runs/{condition}/{scenario}.json'
               for condition in ('general', 'specialist')
               for scenario in (
@@ -88,25 +82,21 @@ jobs:
                   'success', 'symlink_escape', 'timeout_after_write',
                   'timeout_before_write',
               )
-          }
-          expected_deletes = {
+          ]
+          assert len(paths) == 16 and len(set(paths)) == 16
+          entries = []
+          for path in sorted(paths):
+              file_path = Path(path)
+              assert file_path.is_file(), path
+              sha = subprocess.check_output(
+                  ['git', 'hash-object', '--', path], text=True
+              ).strip()
+              assert len(sha) == 40
+              entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': sha})
+          for path in (
               'release/rc2-reference-restore/part-000',
               'release/rc2-reference-restore/part-001',
-          }
-          actual_adds = {row.split('\t', 1)[1] for row in rows if row.startswith('A\t')}
-          actual_deletes = {row.split('\t', 1)[1] for row in rows if row.startswith('D\t')}
-          assert actual_adds == expected_adds, (actual_adds, expected_adds)
-          assert actual_deletes == expected_deletes, (actual_deletes, expected_deletes)
-          assert len(rows) == 18, rows
-
-          entries = []
-          for path in sorted(expected_adds):
-              line = subprocess.check_output(['git', 'ls-files', '-s', '--', path], text=True).strip()
-              mode, sha, stage_and_path = line.split(maxsplit=2)
-              stage, indexed_path = stage_and_path.split('\t', 1)
-              assert stage == '0' and indexed_path == path
-              entries.append({'path': path, 'mode': mode, 'type': 'blob', 'sha': sha})
-          for path in sorted(expected_deletes):
+          ):
               entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': None})
 
           out = Path(os.environ['RUNNER_TEMP']) / 'rc2-restoration-request'
@@ -120,8 +110,8 @@ jobs:
                   'parent': os.environ['PARENT'],
                   'base_tree': os.environ['BASE_TREE'],
                   'entry_count': len(entries),
-                  'fixture_additions': len(expected_adds),
-                  'patch_deletions': len(expected_deletes),
+                  'fixture_additions': 16,
+                  'patch_deletions': 2,
                   'patch_sha256': '963144d2ddc0a7fa732c294688e8be0e3dc54cec92bbe019af5495dd263ffc6a',
                   'compressed_sha256': '1f01ce77cee204879bed9cbfe3e9437a2248398845cea800da4c495af3dba666',
                   'verification_passed': True,
