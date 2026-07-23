@@ -9,6 +9,7 @@ from pathlib import Path
 from agent_reliability_arena.published_release import (
     PublishedReleaseError,
     verify_downloaded_release,
+    verify_reproduced_fixture,
 )
 
 
@@ -74,6 +75,29 @@ class PublishedReleaseTests(unittest.TestCase):
 
             with self.assertRaisesRegex(PublishedReleaseError, "checksum|digest"):
                 verify_downloaded_release(root, release_dir, metadata_path)
+
+    def test_accepts_byte_identical_fixture_reproduction(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            reference, reproduced, public_output = _build_reproduction_fixture(Path(directory))
+
+            summary = verify_reproduced_fixture(reference, reproduced, public_output)
+
+            self.assertEqual(summary["schema_version"], "arena-published-release-reproduction-v1")
+            self.assertEqual(summary["files_verified"], 3)
+            self.assertEqual(summary["general_verified_complete"], 2)
+            self.assertEqual(summary["specialist_verified_complete"], 6)
+            self.assertEqual(summary["additional_logical_model_calls"], 36)
+            self.assertFalse(summary["provider_called"])
+            self.assertFalse(summary["comparative_claim_permitted"])
+
+    def test_rejects_reproduced_output_byte_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            reference, reproduced, public_output = _build_reproduction_fixture(Path(directory))
+            report = reproduced / "report.md"
+            report.write_bytes(report.read_bytes() + b"mutated")
+
+            with self.assertRaisesRegex(PublishedReleaseError, "reproduced output mismatch"):
+                verify_reproduced_fixture(reference, reproduced, public_output)
 
 
 def _build_fixture(
@@ -161,6 +185,40 @@ def _build_fixture(
     }
     metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
     return root, release_dir, metadata_path
+
+
+def _build_reproduction_fixture(base: Path) -> tuple[Path, Path, Path]:
+    reference = base / "reference"
+    reproduced = base / "reproduced"
+    public_output = base / "public.json"
+    reference.mkdir()
+    reproduced.mkdir()
+
+    payloads = {
+        "aggregate_metrics.json": b'{"fixture":true}\n',
+        "paired_results.jsonl": b'{"pair":1}\n',
+        "report.md": b"# Deterministic report\n",
+    }
+    for name, payload in payloads.items():
+        (reference / name).write_bytes(payload)
+        (reproduced / name).write_bytes(payload)
+
+    public_output.write_text(
+        json.dumps(
+            {
+                "evidence_status": "deterministic_fixture",
+                "metrics": {
+                    "conditions": {
+                        "general": {"verified_complete": 2},
+                        "specialist": {"verified_complete": 6},
+                    },
+                    "paired": {"additional_logical_model_calls": 36},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    return reference, reproduced, public_output
 
 
 if __name__ == "__main__":
