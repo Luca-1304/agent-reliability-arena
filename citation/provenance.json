@@ -5,7 +5,7 @@
   "files": [
     {
       "path": "CITATION.cff",
-      "sha256": "f5ee4756e429e2139653974d579350c09722fddfd7f1bb4d2341daf1252aa52f"
+      "sha256": "47ebe2380a3abdce991062b1fa6fb1b10fc4b06b3ab9965db4d1c8ac43ba6c64"
     },
     {
       "path": "docs/REPRODUCIBILITY.md",
@@ -13,16 +13,16 @@
     },
     {
       "path": "docs/TECHNICAL_REPORT.md",
-      "sha256": "21151aaa268a127d8cc4a89e7942babd31c8dcf02780b84f37a45abca1daf512"
+      "sha256": "99ac3d68b389675cb402977cd0553fde3bea0aa343ca33e7834acdd418f4cf5a"
     }
   ],
   "launch_manifest_digest": "620c658240e4b05571de47dd66be13fbde72a6540ba06ba977d8056caf17427e",
   "project": "Agent Reliability Arena",
   "provider_called": false,
   "release_date": "2026-07-23",
-  "release_tag": "v0.2.0rc1",
-  "release_url": "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1",
+  "release_tag": "v0.2.0rc2",
+  "release_url": "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc2",
   "schema_version": "arena-citation-package-v1",
   "showcase_manifest_digest": "30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7",
-  "version": "0.2.0rc1"
+  "version": "0.2.0rc2"
 }

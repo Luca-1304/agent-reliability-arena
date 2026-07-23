@@ -153,8 +153,11 @@ def verify_supply_chain_package(root: Path) -> dict[str, Any]:
         "schema_version": "arena-supply-chain-v1",
         "project": "Agent Reliability Arena",
         "version": project["version"],
-        "release_tag": "v0.2.0rc1",
-        "release_url": "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1",
+        "release_tag": f"v{project['version']}",
+        "release_url": (
+            "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/"
+            f"v{project['version']}"
+        ),
         "runtime_dependency_count": len(project["dependencies"]),
         "build_requirements": project["build_requirements"],
         "provider_called": False,

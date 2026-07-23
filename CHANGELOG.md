@@ -4,6 +4,25 @@ All notable changes to Agent Reliability Arena are recorded here.
 
 The project distinguishes deterministic fixture evidence, provider-free integration evidence and real-provider empirical evidence. A feature appearing here does not imply that a real-model benchmark has been run.
 
+## v0.2.0rc2 — 23 July 2026
+
+### Added
+
+- deterministic CycloneDX SBOM as a first-class release asset;
+- supply-chain manifest and citation provenance in the immutable release bundle;
+- GitHub SLSA provenance attestations for the wheel and source distribution;
+- CycloneDX SBOM attestations for both executable package artifacts;
+- online `gh attestation verify` gates before release publication;
+- job-scoped OIDC, attestation and artifact-metadata permissions;
+- rc2 citation, package, security and release metadata alignment.
+
+### Preserved
+
+- immutable `v0.2.0rc1` tag, notes and assets;
+- deterministic fixture and provider-free evidence boundaries;
+- `provider_called: false` and `comparative_claim_permitted: false`;
+- no claim of production readiness, vulnerability absence or representative real-model performance.
+
 ## v0.2.0rc1 — 22 July 2026
 
 ### Added

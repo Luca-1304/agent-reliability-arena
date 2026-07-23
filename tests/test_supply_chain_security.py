@@ -20,8 +20,8 @@ class SupplyChainSecurityTests(unittest.TestCase):
         summary = verify_supply_chain_package(ROOT)
 
         self.assertEqual(summary["project"], "Agent Reliability Arena")
-        self.assertEqual(summary["version"], "0.2.0rc1")
-        self.assertEqual(summary["release_tag"], "v0.2.0rc1")
+        self.assertEqual(summary["version"], "0.2.0rc2")
+        self.assertEqual(summary["release_tag"], "v0.2.0rc2")
         self.assertEqual(summary["component_count"], 2)
         self.assertEqual(summary["runtime_dependency_count"], 0)
         self.assertEqual(summary["build_requirements"], ["setuptools>=68"])

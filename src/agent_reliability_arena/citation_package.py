@@ -10,11 +10,11 @@ from typing import Any
 _PROVENANCE_PATH = Path("citation/provenance.json")
 _EXPECTED_SCHEMA = "arena-citation-package-v1"
 _EXPECTED_PROJECT = "Agent Reliability Arena"
-_EXPECTED_VERSION = "0.2.0rc1"
-_EXPECTED_TAG = "v0.2.0rc1"
+_EXPECTED_VERSION = "0.2.0rc2"
+_EXPECTED_TAG = "v0.2.0rc2"
 _EXPECTED_DATE = "2026-07-23"
 _EXPECTED_RELEASE_URL = (
-    "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1"
+    "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc2"
 )
 _EXPECTED_SHOWCASE_DIGEST = (
     "30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7"
