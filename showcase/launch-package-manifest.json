@@ -1,0 +1,47 @@
+{
+  "author": "Luca Panayiotou",
+  "claims_boundary": "Career and distribution copy may cite only the verified deterministic fixture and provider-free engineering evidence; no external account action or real-provider result is implied.",
+  "comparative_claim_permitted": false,
+  "distribution_register": "showcase/distribution-register.json",
+  "files": [
+    {
+      "path": "LAUNCH.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "docs/COMMUNITY_SUBMISSIONS.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "docs/CV_PROJECT_ENTRY.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "docs/HOSTED_DEPLOYMENT.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "docs/LAUNCH_POSTS.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "docs/PORTFOLIO_PROJECT_ENTRY.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "docs/RECRUITER_OUTREACH.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "path": "showcase/distribution-register.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "manifest_digest": "d4fcff1bca1ba1a3ffae8991b87bef2529b8b3c3e86b62619b6eac03b3613db7",
+  "package_version": "0.2.0rc1-launch-package-1",
+  "project": "Agent Reliability Arena",
+  "provider_called": false,
+  "schema_version": "arena-launch-package-v1",
+  "source_showcase_manifest_digest": "30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7",
+  "source_showcase_version": "0.2.0rc1-public-showcase-1"
+}
