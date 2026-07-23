@@ -108,7 +108,7 @@ jobs:
           assert launch["comparative_claim_permitted"] is False
           citation = json.loads(Path("/tmp/wheel-citation-package.json").read_text(encoding="utf-8"))
           assert citation["files_verified"] == 4
-          assert citation["release_tag"] == "v0.2.0rc1"
+          assert citation["release_tag"] == "v0.2.0rc2"
           assert citation["provider_called"] is False
           assert citation["comparative_claim_permitted"] is False
           supply_chain = json.loads(Path("/tmp/wheel-supply-chain.json").read_text(encoding="utf-8"))
