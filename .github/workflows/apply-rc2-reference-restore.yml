@@ -19,7 +19,7 @@ jobs:
         with:
           ref: feature/attested-v0.2.0rc2-prerelease
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Reconstruct and verify add-only restoration
         run: |
@@ -66,8 +66,9 @@ jobs:
           python scripts/verify_supply_chain.py
           python scripts/verify_github_prerelease.py
 
-      - name: Commit exact restored fixtures
+      - name: Commit exact restored fixtures through GitHub API
         env:
+          GH_TOKEN: ${{ github.token }}
           HEAD_REF: ${{ github.head_ref }}
         run: |
           test "$HEAD_REF" = "feature/attested-v0.2.0rc2-prerelease"
@@ -76,7 +77,36 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A -- reference_runs/fixture-v1/runs release/rc2-reference-restore
           git diff --cached --check
-          test "$(git diff --cached --name-only | grep '^reference_runs/fixture-v1/runs/' | wc -l)" -eq 16
-          test -z "$(git diff --cached --name-only | grep -v -E '^(reference_runs/fixture-v1/runs/|release/rc2-reference-restore/)' || true)"
-          git commit -m "fix: restore locked rc2 reference fixtures"
-          git push origin "HEAD:$HEAD_REF"
+          python - <<'PY'
+          import subprocess
+
+          rows = subprocess.check_output(
+              ['git', 'diff', '--cached', '--name-status'], text=True
+          ).splitlines()
+          expected_adds = {
+              f'reference_runs/fixture-v1/runs/{condition}/{scenario}.json'
+              for condition in ('general', 'specialist')
+              for scenario in (
+                  'false_success', 'partial_write', 'path_traversal', 'rollback',
+                  'success', 'symlink_escape', 'timeout_after_write',
+                  'timeout_before_write',
+              )
+          }
+          expected_deletes = {
+              'release/rc2-reference-restore/part-000',
+              'release/rc2-reference-restore/part-001',
+          }
+          actual_adds = {row.split('\t', 1)[1] for row in rows if row.startswith('A\t')}
+          actual_deletes = {row.split('\t', 1)[1] for row in rows if row.startswith('D\t')}
+          assert actual_adds == expected_adds, (actual_adds, expected_adds)
+          assert actual_deletes == expected_deletes, (actual_deletes, expected_deletes)
+          assert len(rows) == 18, rows
+          PY
+          PARENT="$(git rev-parse HEAD)"
+          TREE="$(git write-tree)"
+          COMMIT="$(printf '%s\n' 'fix: restore locked rc2 reference fixtures' | git commit-tree "$TREE" -p "$PARENT")"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$HEAD_REF" --jq .object.sha)" = "$PARENT"
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$HEAD_REF" \
+            -f sha="$COMMIT" \
+            -F force=false >/dev/null
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$HEAD_REF" --jq .object.sha)" = "$COMMIT"
