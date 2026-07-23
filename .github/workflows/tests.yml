@@ -48,6 +48,7 @@ jobs:
           python scripts/verify_showcase_release.py
           python scripts/verify_launch_package.py
           python scripts/verify_citation_package.py
+          python scripts/verify_supply_chain.py
 
       - name: Run installed commands
         run: |
@@ -57,6 +58,7 @@ jobs:
           arena-verify-showcase --root . > /tmp/editable-showcase.json
           arena-verify-launch-package --root . > /tmp/editable-launch-package.json
           arena-verify-citation-package --root . > /tmp/editable-citation-package.json
+          arena-verify-supply-chain --root . > /tmp/editable-supply-chain.json
 
       - name: Build wheel
         run: python -m pip wheel . --no-deps --no-build-isolation --wheel-dir dist
@@ -72,12 +74,14 @@ jobs:
           /tmp/arena-wheel/bin/python scripts/verify_showcase_release.py
           /tmp/arena-wheel/bin/python scripts/verify_launch_package.py
           /tmp/arena-wheel/bin/python scripts/verify_citation_package.py
+          /tmp/arena-wheel/bin/python scripts/verify_supply_chain.py
           /tmp/arena-wheel/bin/arena-run --config examples/fixture_experiment.json --output /tmp/arena-wheel-run
           /tmp/arena-wheel/bin/arena-replay --input /tmp/arena-wheel-run > /tmp/wheel-replay.json
           /tmp/arena-wheel/bin/arena-export-web --input /tmp/arena-wheel-run --output /tmp/wheel-public.json
           /tmp/arena-wheel/bin/arena-verify-showcase --root . > /tmp/wheel-showcase.json
           /tmp/arena-wheel/bin/arena-verify-launch-package --root . > /tmp/wheel-launch-package.json
           /tmp/arena-wheel/bin/arena-verify-citation-package --root . > /tmp/wheel-citation-package.json
+          /tmp/arena-wheel/bin/arena-verify-supply-chain --root . > /tmp/wheel-supply-chain.json
           /tmp/arena-wheel/bin/python - <<'PY'
           from pathlib import Path
           import json
@@ -107,6 +111,12 @@ jobs:
           assert citation["release_tag"] == "v0.2.0rc1"
           assert citation["provider_called"] is False
           assert citation["comparative_claim_permitted"] is False
+          supply_chain = json.loads(Path("/tmp/wheel-supply-chain.json").read_text(encoding="utf-8"))
+          assert supply_chain["component_count"] == 2
+          assert supply_chain["runtime_dependency_count"] == 0
+          assert supply_chain["provider_called"] is False
+          assert supply_chain["comparative_claim_permitted"] is False
+          assert supply_chain["exhaustive_security_scan_claimed"] is False
           PY
           /tmp/arena-wheel/bin/python -m pip check
 
