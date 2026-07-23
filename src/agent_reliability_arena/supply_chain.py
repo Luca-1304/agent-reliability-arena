@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +52,7 @@ def build_cyclonedx_sbom(root: Path) -> bytes:
 
     project_name = str(project["name"])
     project_version = str(project["version"])
+    serial_number = f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, f'https://github.com/Luca-1304/agent-reliability-arena@{project_version}')}"
     vendor_name = "agent-completion-verifier"
     vendor_version = str(vendor["source_version"])
     vendor_commit = str(vendor["source_commit"])
@@ -92,6 +94,7 @@ def build_cyclonedx_sbom(root: Path) -> bytes:
 
     payload = {
         "bomFormat": "CycloneDX",
+        "serialNumber": serial_number,
         "components": [project_component, vendor_component],
         "dependencies": [
             {"dependsOn": [vendor_ref], "ref": project_ref},
@@ -240,8 +243,14 @@ def verify_supply_chain_package(root: Path) -> dict[str, Any]:
 
 
 def _verify_sbom(sbom: dict[str, Any], project: dict[str, Any], vendor: dict[str, Any]) -> None:
-    if sbom.get("bomFormat") != "CycloneDX" or sbom.get("specVersion") != "1.6":
-        raise SupplyChainError("invalid CycloneDX SBOM format")
+    project_version = str(project["version"])
+    expected_serial = f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, f'https://github.com/Luca-1304/agent-reliability-arena@{project_version}')}"
+    if (
+        sbom.get("bomFormat") != "CycloneDX"
+        or sbom.get("specVersion") != "1.6"
+        or sbom.get("serialNumber") != expected_serial
+    ):
+        raise SupplyChainError("invalid CycloneDX SBOM format or serial number")
     components = sbom.get("components")
     if not isinstance(components, list):
         raise SupplyChainError("SBOM components missing")
