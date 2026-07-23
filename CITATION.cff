@@ -5,9 +5,9 @@ type: software
 authors:
   - family-names: "Panayiotou"
     given-names: "Luca"
-version: "0.2.0rc1"
+version: "0.2.0rc2"
 date-released: "2026-07-23"
-url: "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1"
+url: "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc2"
 repository-code: "https://github.com/Luca-1304/agent-reliability-arena"
 license: "MIT"
 abstract: >-
@@ -30,4 +30,4 @@ preferred-citation:
     - family-names: "Panayiotou"
       given-names: "Luca"
   year: 2026
-  url: "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1"
+  url: "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc2"
