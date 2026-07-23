@@ -14,6 +14,7 @@ This is the compact public route through Agent Reliability Arena. It presents th
 4. Read the [employer-facing technical summary](docs/EMPLOYER_TECHNICAL_SUMMARY.md).
 5. Review the [publication boundary](docs/PUBLICATION_BOUNDARY.md).
 6. Use the [90-second demonstration script](docs/SHOWCASE_DEMO_SCRIPT.md).
+7. Open the [launch and career conversion package](LAUNCH.md) for CV, portfolio, outreach and distribution material.
 
 ```bash
 python -m http.server 8000 --directory web
@@ -39,6 +40,18 @@ The verifier checks:
 - unsupported performance, cost, safety or production claims.
 
 The locked package is recorded in [`showcase/publication-manifest.json`](showcase/publication-manifest.json).
+
+## Career and distribution package
+
+The separate [launch package](LAUNCH.md) converts the verified showcase into reusable CV, portfolio, recruiter, professional-social and technical-community copy without modifying the locked evidence bundle.
+
+```bash
+arena-verify-launch-package --root .
+```
+
+Its manifest is recorded in [`showcase/launch-package-manifest.json`](showcase/launch-package-manifest.json), and its evidence-backed publication states are recorded in [`showcase/distribution-register.json`](showcase/distribution-register.json).
+
+Prepared external actions remain explicitly unsubmitted until a public URL and date exist.
 
 ## Public evidence
 
