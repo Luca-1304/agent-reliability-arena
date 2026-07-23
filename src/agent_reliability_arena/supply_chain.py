@@ -243,7 +243,8 @@ def verify_supply_chain_package(root: Path) -> dict[str, Any]:
 
 
 def _verify_sbom(sbom: dict[str, Any], project: dict[str, Any], vendor: dict[str, Any]) -> None:
-    expected_serial = f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, f'https://github.com/Luca-1304/agent-reliability-arena@{project["version"]}')}"
+    project_version = str(project["version"])
+    expected_serial = f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, f'https://github.com/Luca-1304/agent-reliability-arena@{project_version}')}"
     if (
         sbom.get("bomFormat") != "CycloneDX"
         or sbom.get("specVersion") != "1.6"
