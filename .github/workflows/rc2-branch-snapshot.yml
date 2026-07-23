@@ -21,12 +21,12 @@ jobs:
             --exclude='private-evidence' \
             --exclude='*.env' \
             --exclude='dist' \
-            -czf rc2-branch-snapshot.tar.gz .
+            -czf "$RUNNER_TEMP/rc2-branch-snapshot.tar.gz" .
 
       - name: Upload source snapshot
         uses: actions/upload-artifact@v4
         with:
           name: rc2-branch-snapshot
-          path: rc2-branch-snapshot.tar.gz
+          path: ${{ runner.temp }}/rc2-branch-snapshot.tar.gz
           if-no-files-found: error
           retention-days: 1
