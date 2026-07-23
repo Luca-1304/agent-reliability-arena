@@ -1,6 +1,6 @@
 # Security Policy
 
-Agent Reliability Arena is an alpha-stage research and engineering project. Security reports are welcome, but this repository and its release evidence provide **no guarantee** that the software is vulnerability-free, production-ready or safe for unrestricted tools. The published hardening work is **not an exhaustive security audit**.
+Agent Reliability Arena is an alpha-stage research and engineering project. Security reports are welcome, but this repository and its release evidence provide **no guarantee** that the software is free of security defects, production-ready or safe for unrestricted tools. The published hardening work is **not an exhaustive security audit**.
 
 ## Supported versions
 
