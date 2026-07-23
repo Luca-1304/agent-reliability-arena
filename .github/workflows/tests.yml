@@ -47,6 +47,7 @@ jobs:
           python scripts/verify_repeated_release.py
           python scripts/verify_showcase_release.py
           python scripts/verify_launch_package.py
+          python scripts/verify_citation_package.py
 
       - name: Run installed commands
         run: |
@@ -55,6 +56,7 @@ jobs:
           arena-export-web --input /tmp/arena-editable --output /tmp/editable-public.json
           arena-verify-showcase --root . > /tmp/editable-showcase.json
           arena-verify-launch-package --root . > /tmp/editable-launch-package.json
+          arena-verify-citation-package --root . > /tmp/editable-citation-package.json
 
       - name: Build wheel
         run: python -m pip wheel . --no-deps --no-build-isolation --wheel-dir dist
@@ -69,11 +71,13 @@ jobs:
           /tmp/arena-wheel/bin/python scripts/verify_repeated_release.py
           /tmp/arena-wheel/bin/python scripts/verify_showcase_release.py
           /tmp/arena-wheel/bin/python scripts/verify_launch_package.py
+          /tmp/arena-wheel/bin/python scripts/verify_citation_package.py
           /tmp/arena-wheel/bin/arena-run --config examples/fixture_experiment.json --output /tmp/arena-wheel-run
           /tmp/arena-wheel/bin/arena-replay --input /tmp/arena-wheel-run > /tmp/wheel-replay.json
           /tmp/arena-wheel/bin/arena-export-web --input /tmp/arena-wheel-run --output /tmp/wheel-public.json
           /tmp/arena-wheel/bin/arena-verify-showcase --root . > /tmp/wheel-showcase.json
           /tmp/arena-wheel/bin/arena-verify-launch-package --root . > /tmp/wheel-launch-package.json
+          /tmp/arena-wheel/bin/arena-verify-citation-package --root . > /tmp/wheel-citation-package.json
           /tmp/arena-wheel/bin/python - <<'PY'
           from pathlib import Path
           import json
@@ -98,6 +102,11 @@ jobs:
           assert launch["submitted_external_actions"] == 0
           assert launch["provider_called"] is False
           assert launch["comparative_claim_permitted"] is False
+          citation = json.loads(Path("/tmp/wheel-citation-package.json").read_text(encoding="utf-8"))
+          assert citation["files_verified"] == 4
+          assert citation["release_tag"] == "v0.2.0rc1"
+          assert citation["provider_called"] is False
+          assert citation["comparative_claim_permitted"] is False
           PY
           /tmp/arena-wheel/bin/python -m pip check
 
