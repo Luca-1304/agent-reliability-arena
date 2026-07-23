@@ -1,0 +1,99 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "pkg:pypi/agent-reliability-arena@0.2.0rc1",
+      "description": "Same model, same tools, same evidence rules\u2014different orchestration.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "agent-reliability-arena",
+      "purl": "pkg:pypi/agent-reliability-arena@0.2.0rc1",
+      "type": "application",
+      "version": "0.2.0rc1"
+    },
+    {
+      "bom-ref": "pkg:github/Luca-1304/agent-completion-verifier@0.6.0?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2FLuca-1304%2Fagent-completion-verifier.git%40f65fb3450e3c1d7db17f0192667b854d126cd190",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/Luca-1304/agent-completion-verifier/commit/f65fb3450e3c1d7db17f0192667b854d126cd190"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "agent-completion-verifier",
+      "properties": [
+        {
+          "name": "arena:vendored",
+          "value": "true"
+        },
+        {
+          "name": "arena:source-commit",
+          "value": "f65fb3450e3c1d7db17f0192667b854d126cd190"
+        },
+        {
+          "name": "arena:file-count",
+          "value": "39"
+        }
+      ],
+      "purl": "pkg:github/Luca-1304/agent-completion-verifier@0.6.0?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2FLuca-1304%2Fagent-completion-verifier.git%40f65fb3450e3c1d7db17f0192667b854d126cd190",
+      "type": "library",
+      "version": "0.6.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "pkg:github/Luca-1304/agent-completion-verifier@0.6.0?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2FLuca-1304%2Fagent-completion-verifier.git%40f65fb3450e3c1d7db17f0192667b854d126cd190"
+      ],
+      "ref": "pkg:pypi/agent-reliability-arena@0.2.0rc1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:github/Luca-1304/agent-completion-verifier@0.6.0?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2FLuca-1304%2Fagent-completion-verifier.git%40f65fb3450e3c1d7db17f0192667b854d126cd190"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "pkg:pypi/agent-reliability-arena@0.2.0rc1",
+      "description": "Same model, same tools, same evidence rules\u2014different orchestration.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "agent-reliability-arena",
+      "purl": "pkg:pypi/agent-reliability-arena@0.2.0rc1",
+      "type": "application",
+      "version": "0.2.0rc1"
+    },
+    "properties": [
+      {
+        "name": "arena:declared-runtime-dependency-count",
+        "value": "0"
+      },
+      {
+        "name": "arena:build-requirements",
+        "value": "[\"setuptools>=68\"]"
+      },
+      {
+        "name": "arena:deterministic",
+        "value": "true"
+      }
+    ]
+  },
+  "specVersion": "1.6",
+  "version": 1
+}
