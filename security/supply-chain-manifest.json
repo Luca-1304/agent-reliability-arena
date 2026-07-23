@@ -39,7 +39,7 @@
     },
     {
       "path": "security/sbom.cdx.json",
-      "sha256": "c015be33e6c058cfa6160d5431526648b05eff22de50b570cc30e7af82a964c8"
+      "sha256": "d571b710b7a12fb47d0da151cf923a82dccf666e1c2f2c207342777c01ce500d"
     }
   ],
   "launch_manifest_digest": "620c658240e4b05571de47dd66be13fbde72a6540ba06ba977d8056caf17427e",
