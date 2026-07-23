@@ -1,0 +1,142 @@
+{
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "evidence": {
+        "confined": true,
+        "error": null,
+        "exists": false,
+        "matches_content": false,
+        "path": "output/result.txt",
+        "regular_file": false,
+        "sha256": null,
+        "size": null,
+        "trust_basis": "independent_local_state"
+      },
+      "injected_scenario": "symlink_escape",
+      "observation": {
+        "confined": true,
+        "contract_id": "arena-contract-v1",
+        "error": null,
+        "exists": false,
+        "matches_content": false,
+        "matches_contract": false,
+        "path": "output/result.txt",
+        "regular_file": false,
+        "sha256": null,
+        "size": null,
+        "trust_basis": "independent_local_state"
+      },
+      "security_rejected": true,
+      "source_report": {
+        "attempted_path": "link/escape.txt",
+        "completion_claimed": false,
+        "error_kind": "security_rejection",
+        "reported_evidence": {},
+        "reported_success": false,
+        "scenario_id": "symlink_escape",
+        "source_event_id": "source-symlink_escape"
+      },
+      "status": "FAILED"
+    }
+  ],
+  "audit_records": [
+    {
+      "conflicts": [],
+      "decision": "fail",
+      "evidence_refs": [
+        "source_report.json",
+        "observation.json",
+        "evaluation.json"
+      ],
+      "observation_assessment": "Independent execution recorded a terminal security rejection.",
+      "source_assessment": "Source did not report success."
+    }
+  ],
+  "completion_claimed": false,
+  "condition": "specialist",
+  "config_digest": "92ac4dcfbe617ed417e0c31b55416eda8274e7b08ea20c853324e69f49627106",
+  "contract_digest": "217bbae310eb748bd647a14523aada67497d6dda3cdf407da8d02ad2bc795b67",
+  "fairness_fingerprint": {
+    "contract_digest": "217bbae310eb748bd647a14523aada67497d6dda3cdf407da8d02ad2bc795b67",
+    "max_mutation_attempts": 2,
+    "model_id": "fixture-model-v1",
+    "model_version": "1",
+    "prompt_version": "fixture-prompts-v1",
+    "scenarios": [
+      "success",
+      "false_success",
+      "partial_write",
+      "timeout_before_write",
+      "timeout_after_write",
+      "rollback",
+      "path_traversal",
+      "symlink_escape"
+    ],
+    "seed": 1304,
+    "task": "Write the exact contracted content to the exact relative path."
+  },
+  "false_completion": false,
+  "final_status": "FAILED",
+  "logical_model_calls": 4,
+  "operator_records": [
+    {
+      "approved_action": "write_file",
+      "attempt_number": 1,
+      "attempted_content_sha256": "f97b5cc1627dba1f5745d2c511893dcb4c8d8fccaa99b0fbfc7e15588222f22a",
+      "attempted_path": "link/escape.txt",
+      "source_event_id": "source-symlink_escape"
+    }
+  ],
+  "recovered": false,
+  "recovery": null,
+  "run_id": "fixture-v1--specialist--symlink_escape",
+  "scenario_id": "symlink_escape",
+  "security_rejected": true,
+  "silent_verified_completion": false,
+  "strategy": {
+    "anticipated_failures": [
+      "success",
+      "false_success",
+      "partial_write",
+      "timeout_before_write",
+      "timeout_after_write",
+      "rollback",
+      "path_traversal",
+      "symlink_escape"
+    ],
+    "contract_summary": "Write exact UTF-8 content to output/result.txt.",
+    "permitted_actions": [
+      "write_file"
+    ],
+    "required_postcondition": "Independent path, size, SHA-256, and content match.",
+    "retryable_failures": [
+      "false_success",
+      "partial_write",
+      "timeout_before_write",
+      "rollback"
+    ],
+    "stop_conditions": [
+      "verified",
+      "attempt_limit",
+      "security_rejection"
+    ],
+    "terminal_failures": [
+      "path_traversal",
+      "symlink_escape"
+    ]
+  },
+  "synthesis": {
+    "completion_claimed": false,
+    "evidence_refs": [
+      "evaluation.json",
+      "observation.json"
+    ],
+    "limitations": [
+      "Deterministic fixture policy, not external-model performance."
+    ],
+    "summary": "The contracted file was not independently verified.",
+    "verified_status": "FAILED"
+  },
+  "verified_complete": false
+}
