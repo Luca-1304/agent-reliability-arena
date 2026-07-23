@@ -17,13 +17,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class GithubPrereleaseTests(unittest.TestCase):
-    def test_verified_contract_matches_package_and_public_evidence(self) -> None:
+    def test_verified_contract_matches_rc2_and_public_evidence(self) -> None:
         summary = verify_github_prerelease_contract(ROOT)
 
-        self.assertEqual(summary["version"], "0.2.0rc1")
-        self.assertEqual(summary["tag"], "v0.2.0rc1")
-        self.assertEqual(summary["release_title"], "Agent Reliability Arena v0.2.0rc1")
+        self.assertEqual(summary["version"], "0.2.0rc2")
+        self.assertEqual(summary["tag"], "v0.2.0rc2")
+        self.assertEqual(summary["release_title"], "Agent Reliability Arena v0.2.0rc2")
         self.assertTrue(summary["prerelease"])
+        self.assertTrue(summary["provenance_attestation_required"])
+        self.assertTrue(summary["sbom_attestation_required"])
         self.assertFalse(summary["provider_called"])
         self.assertFalse(summary["comparative_claim_permitted"])
         self.assertEqual(
@@ -35,14 +37,14 @@ class GithubPrereleaseTests(unittest.TestCase):
             "620c658240e4b05571de47dd66be13fbde72a6540ba06ba977d8056caf17427e",
         )
 
-    def test_bundle_records_primary_hashes_commit_and_checksums(self) -> None:
+    def test_bundle_records_nine_primary_artifacts_commit_and_checksums(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             temp = Path(directory)
             dist = temp / "dist"
             output = temp / "release"
             dist.mkdir()
-            wheel = dist / "agent_reliability_arena-0.2.0rc1-py3-none-any.whl"
-            source = dist / "agent_reliability_arena-0.2.0rc1.tar.gz"
+            wheel = dist / "agent_reliability_arena-0.2.0rc2-py3-none-any.whl"
+            source = dist / "agent_reliability_arena-0.2.0rc2.tar.gz"
             wheel.write_bytes(b"fixture wheel bytes")
             source.write_bytes(b"fixture source bytes")
 
@@ -54,20 +56,27 @@ class GithubPrereleaseTests(unittest.TestCase):
             )
 
             self.assertEqual(summary["source_commit"], "a" * 40)
-            self.assertEqual(summary["primary_artifact_count"], 6)
+            self.assertEqual(summary["primary_artifact_count"], 9)
+            self.assertEqual(summary["checksum_entry_count"], 10)
             self.assertFalse(summary["provider_called"])
             self.assertFalse(summary["comparative_claim_permitted"])
             record = json.loads((output / "release-record.json").read_text(encoding="utf-8"))
             self.assertEqual(record["source_commit"], "a" * 40)
+            self.assertTrue(record["provenance_attestation_required"])
+            self.assertTrue(record["sbom_attestation_required"])
             self.assertEqual(record["artifacts"][wheel.name], hashlib.sha256(wheel.read_bytes()).hexdigest())
             self.assertEqual(record["artifacts"][source.name], hashlib.sha256(source.read_bytes()).hexdigest())
+            self.assertIn("sbom.cdx.json", record["artifacts"])
+            self.assertIn("supply-chain-manifest.json", record["artifacts"])
+            self.assertIn("provenance.json", record["artifacts"])
             checksum_lines = (output / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
             self.assertTrue(any(line.endswith("  release-record.json") for line in checksum_lines))
-            self.assertEqual(len(checksum_lines), 7)
+            self.assertEqual(len(checksum_lines), 10)
 
-    def test_contract_and_notes_are_publication_safe(self) -> None:
+    def test_rc1_history_remains_and_rc2_notes_are_publication_safe(self) -> None:
+        self.assertTrue((ROOT / "docs/RELEASE_NOTES_v0.2.0rc1.md").is_file())
         contract = json.loads((ROOT / "release/github-prerelease.json").read_text(encoding="utf-8"))
-        notes = (ROOT / "docs/RELEASE_NOTES_v0.2.0rc1.md").read_text(encoding="utf-8")
+        notes = (ROOT / "docs/RELEASE_NOTES_v0.2.0rc2.md").read_text(encoding="utf-8")
         combined = json.dumps(contract, sort_keys=True) + "\n" + notes
 
         for marker in (
@@ -88,38 +97,57 @@ class GithubPrereleaseTests(unittest.TestCase):
             "prerelease",
             "No real-provider benchmark",
             "not production readiness",
+            "CycloneDX SBOM",
+            "artifact attestation",
+            "gh attestation verify",
         ):
             self.assertIn(required.lower(), combined.lower())
 
-    def test_workflow_builds_on_pr_and_publishes_only_from_main(self) -> None:
+    def test_workflow_attests_only_on_main_and_publishes_after_attestation(self) -> None:
         workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
         for marker in (
-            "name: Publish verified v0.2.0rc1 prerelease",
+            "name: Publish attested v0.2.0rc2 prerelease",
             "pull_request:",
             "push:",
             "branches: [main]",
             "contents: read",
             "contents: write",
+            "id-token: write",
+            "attestations: write",
+            "artifact-metadata: write",
             "python -m build",
             "python scripts/verify_github_prerelease.py",
             "release-record.json",
             "SHA256SUMS",
+            "actions/attest@v4",
+            "subject-checksums: release-bundle/SHA256SUMS",
+            "sbom-path: release-bundle/sbom.cdx.json",
+            "gh attestation verify",
+            "--predicate-type https://cyclonedx.org/bom",
             "gh release create",
             "--prerelease",
             "--target \"$GITHUB_SHA\"",
             "if: github.event_name == 'push' && github.ref == 'refs/heads/main'",
+            "needs: [build, attest]",
         ):
             self.assertIn(marker, workflow)
 
         global_permissions = workflow.split("jobs:", 1)[0]
         self.assertIn("contents: read", global_permissions)
         self.assertNotIn("contents: write", global_permissions)
+        self.assertNotIn("id-token: write", global_permissions)
+        self.assertNotIn("attestations: write", global_permissions)
+        self.assertNotIn("artifact-metadata: write", global_permissions)
+
+        attest_job = workflow.split("  attest:", 1)[1].split("  publish:", 1)[0]
+        self.assertIn("if: github.event_name == 'push' && github.ref == 'refs/heads/main'", attest_job)
+        self.assertNotIn("contents: write", attest_job)
 
     def test_verifier_rejects_unsupported_claim(self) -> None:
-        notes_path = ROOT / "docs/RELEASE_NOTES_v0.2.0rc1.md"
+        notes_path = ROOT / "docs/RELEASE_NOTES_v0.2.0rc2.md"
         if not notes_path.exists():
-            self.skipTest("release notes do not exist during the expected red phase")
+            self.skipTest("rc2 release notes do not exist during the expected red phase")
 
         original = notes_path.read_text(encoding="utf-8")
         try:
