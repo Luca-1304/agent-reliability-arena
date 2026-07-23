@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
+from agent_reliability_arena.cli_published_release import verify_main
 from agent_reliability_arena.published_release import (
     PublishedReleaseError,
     verify_downloaded_release,
@@ -98,6 +101,87 @@ class PublishedReleaseTests(unittest.TestCase):
 
             with self.assertRaisesRegex(PublishedReleaseError, "reproduced output mismatch"):
                 verify_reproduced_fixture(reference, reproduced, public_output)
+
+    def test_cli_emits_combined_consumer_verification_record(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root, release_dir, metadata_path = _build_fixture(base)
+            reference, reproduced, public_output = _build_reproduction_fixture(base)
+            output = io.StringIO()
+
+            with redirect_stdout(output):
+                result = verify_main(
+                    _cli_args(
+                        root,
+                        release_dir,
+                        metadata_path,
+                        reference,
+                        reproduced,
+                        public_output,
+                    )
+                )
+
+            self.assertEqual(result, 0)
+            record = json.loads(output.getvalue())
+            self.assertEqual(record["schema_version"], "arena-published-release-verification-v1")
+            self.assertEqual(record["version"], VERSION)
+            self.assertEqual(record["source_commit"], SOURCE_COMMIT)
+            self.assertEqual(record["asset_count"], 11)
+            self.assertEqual(record["reproduced_files_verified"], 3)
+            self.assertEqual(record["provenance_attestations_verified"], 2)
+            self.assertEqual(record["cyclonedx_attestations_verified"], 2)
+            self.assertFalse(record["provider_called"])
+            self.assertFalse(record["comparative_claim_permitted"])
+            self.assertFalse(record["security_certification_claimed"])
+
+    def test_cli_rejects_incomplete_attestation_counts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root, release_dir, metadata_path = _build_fixture(base)
+            reference, reproduced, public_output = _build_reproduction_fixture(base)
+            args = _cli_args(
+                root,
+                release_dir,
+                metadata_path,
+                reference,
+                reproduced,
+                public_output,
+            )
+            args[args.index("--provenance-attestations") + 1] = "1"
+
+            with redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as raised:
+                    verify_main(args)
+
+            self.assertEqual(raised.exception.code, 1)
+
+
+def _cli_args(
+    root: Path,
+    release_dir: Path,
+    metadata_path: Path,
+    reference: Path,
+    reproduced: Path,
+    public_output: Path,
+) -> list[str]:
+    return [
+        "--root",
+        str(root),
+        "--release-dir",
+        str(release_dir),
+        "--metadata",
+        str(metadata_path),
+        "--reference-root",
+        str(reference),
+        "--reproduced-root",
+        str(reproduced),
+        "--public-output",
+        str(public_output),
+        "--provenance-attestations",
+        "2",
+        "--cyclonedx-attestations",
+        "2",
+    ]
 
 
 def _build_fixture(
