@@ -16,6 +16,11 @@ _CONTRACT_PATH = Path("release/github-prerelease.json")
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _CONTRACT_SCHEMA_PATTERN = re.compile(r"^arena-github-prerelease-v([1-9][0-9]*)$")
+_REPRODUCED_FILES = (
+    "aggregate_metrics.json",
+    "paired_results.jsonl",
+    "report.md",
+)
 
 
 def verify_downloaded_release(
@@ -158,6 +163,57 @@ def verify_downloaded_release(
         "provider_called": False,
         "comparative_claim_permitted": False,
         "security_certification_claimed": False,
+    }
+
+
+def verify_reproduced_fixture(
+    reference_root: Path,
+    reproduced_root: Path,
+    public_output: Path,
+) -> dict[str, object]:
+    """Compare key outputs produced by the downloaded wheel with locked public bytes."""
+
+    reference = _real_directory(reference_root, "Reference fixture directory")
+    reproduced = _real_directory(reproduced_root, "Reproduced fixture directory")
+    for name in _REPRODUCED_FILES:
+        expected = _real_file(reference / name, f"Reference output {name}")
+        actual = _real_file(reproduced / name, f"Reproduced output {name}")
+        if actual.read_bytes() != expected.read_bytes():
+            raise PublishedReleaseError(f"reproduced output mismatch: {name}")
+
+    public = _read_json(_real_file(public_output, "Public fixture export"), "Public fixture export")
+    if public.get("evidence_status") != "deterministic_fixture":
+        raise PublishedReleaseError("public fixture evidence status drift")
+    metrics = public.get("metrics")
+    if not isinstance(metrics, dict):
+        raise PublishedReleaseError("public fixture metrics missing")
+    conditions = metrics.get("conditions")
+    paired = metrics.get("paired")
+    if not isinstance(conditions, dict) or not isinstance(paired, dict):
+        raise PublishedReleaseError("public fixture metric groups missing")
+    general = conditions.get("general")
+    specialist = conditions.get("specialist")
+    if not isinstance(general, dict) or not isinstance(specialist, dict):
+        raise PublishedReleaseError("public fixture condition metrics missing")
+
+    expected_metrics = {
+        "general_verified_complete": (general.get("verified_complete"), 2),
+        "specialist_verified_complete": (specialist.get("verified_complete"), 6),
+        "additional_logical_model_calls": (paired.get("additional_logical_model_calls"), 36),
+    }
+    for name, (actual, expected) in expected_metrics.items():
+        if actual != expected:
+            raise PublishedReleaseError(f"public fixture metric drift: {name}")
+
+    return {
+        "schema_version": "arena-published-release-reproduction-v1",
+        "evidence_status": "deterministic_fixture",
+        "files_verified": len(_REPRODUCED_FILES),
+        "general_verified_complete": 2,
+        "specialist_verified_complete": 6,
+        "additional_logical_model_calls": 36,
+        "provider_called": False,
+        "comparative_claim_permitted": False,
     }
 
 
