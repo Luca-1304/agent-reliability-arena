@@ -13,6 +13,7 @@ from agent_reliability_arena.supply_chain import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+_EXPECTED_SERIAL_NUMBER = "urn:uuid:a051633f-39f2-5f1b-b7af-3272e34636df"
 
 
 class SupplyChainSecurityTests(unittest.TestCase):
@@ -44,11 +45,21 @@ class SupplyChainSecurityTests(unittest.TestCase):
         parsed = json.loads(expected)
         self.assertEqual(parsed["bomFormat"], "CycloneDX")
         self.assertEqual(parsed["specVersion"], "1.6")
+        self.assertEqual(parsed["serialNumber"], _EXPECTED_SERIAL_NUMBER)
         self.assertEqual(parsed["metadata"]["component"]["name"], "agent-reliability-arena")
         self.assertEqual(
             [component["name"] for component in parsed["components"]],
             ["agent-reliability-arena", "agent-completion-verifier"],
         )
+
+    def test_sbom_matches_actions_attest_cyclonedx_detector(self) -> None:
+        parsed = json.loads((ROOT / "security/sbom.cdx.json").read_text(encoding="utf-8"))
+
+        # actions/attest@v4 accepts CycloneDX only when all three fields are truthy.
+        self.assertTrue(parsed.get("bomFormat"))
+        self.assertTrue(parsed.get("serialNumber"))
+        self.assertTrue(parsed.get("specVersion"))
+        self.assertRegex(parsed["serialNumber"], r"^urn:uuid:[0-9a-f-]{36}$")
 
     def test_public_security_policy_is_clear_and_non_exaggerated(self) -> None:
         policy = (ROOT / "SECURITY.md").read_text(encoding="utf-8").lower()
