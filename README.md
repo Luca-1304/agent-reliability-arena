@@ -1,5 +1,10 @@
 # Agent Reliability Arena
 
+[![tests](https://github.com/Luca-1304/agent-reliability-arena/actions/workflows/tests.yml/badge.svg)](https://github.com/Luca-1304/agent-reliability-arena/actions/workflows/tests.yml)
+[![CodeQL](https://github.com/Luca-1304/agent-reliability-arena/actions/workflows/codeql.yml/badge.svg)](https://github.com/Luca-1304/agent-reliability-arena/actions/workflows/codeql.yml)
+[![release](https://github.com/Luca-1304/agent-reliability-arena/actions/workflows/release.yml/badge.svg)](https://github.com/Luca-1304/agent-reliability-arena/actions/workflows/release.yml)
+[![Licence: MIT](https://img.shields.io/badge/Licence-MIT-yellow.svg)](LICENSE)
+
 > **Same model. Same tools. Same evidence rules. Different orchestration.**
 
 Agent Reliability Arena is a controlled evaluation and demonstration system comparing:
@@ -12,6 +17,25 @@ Both conditions receive the same task, model configuration, sandbox, failure sce
 > Does role-specialised orchestration improve reliable completion enough to justify its additional calls and complexity?
 
 ![Agent Reliability Arena trace viewer](web/arena-preview.png)
+
+## Employer review
+
+**Current release:** `v0.2.0rc2`  
+**Evidence class:** deterministic fixture and provider-free integration  
+**Review route:** [five-minute employer review](EMPLOYER_REVIEW.md)
+
+This repository demonstrates controlled evaluation design, agent authority separation, independent completion verification, adversarial testing, reproducible packaging, supply-chain evidence and honest claims management.
+
+| Public proof point | Verified result |
+|---|---:|
+| General independently verified outcomes | 2/8 |
+| Specialist independently verified outcomes | 6/8 |
+| False-completion claims removed | 3 |
+| Additional logical role calls | 36 |
+
+These are deterministic software-fixture results. **No real-provider benchmark request or provider spend has been executed.**
+
+Start with the [employer review](EMPLOYER_REVIEW.md), [interactive trace viewer](web/index.html), [technical report](docs/TECHNICAL_REPORT.md), or [attested rc2 release](https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc2).
 
 ## Current evidence status
 
