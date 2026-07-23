@@ -64,14 +64,12 @@ jobs:
           python scripts/verify_github_prerelease.py
 
       - name: Build exact Git tree request
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           rm -rf release/rc2-reference-restore
           git add -A -- reference_runs/fixture-v1/runs release/rc2-reference-restore
           git diff --cached --check
           PARENT="$(git rev-parse HEAD)"
-          BASE_TREE="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$PARENT" --jq .tree.sha)"
+          BASE_TREE="$(git rev-parse 'HEAD^{tree}')"
           export PARENT BASE_TREE
           python - <<'PY'
           import json
