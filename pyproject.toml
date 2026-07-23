@@ -30,6 +30,7 @@ arena-preflight-pilot = "agent_reliability_arena.cli:preflight_pilot_main"
 arena-export-live-evidence = "agent_reliability_arena.cli_disclosure:export_main"
 arena-verify-live-export = "agent_reliability_arena.cli_disclosure:verify_main"
 arena-verify-showcase = "agent_reliability_arena.cli_showcase:verify_main"
+arena-verify-launch-package = "agent_reliability_arena.cli_launch:verify_main"
 
 [project.urls]
 Repository = "https://github.com/Luca-1304/agent-reliability-arena"
