@@ -18,7 +18,7 @@ The release matrix covers CPython 3.10, 3.11, 3.12 and 3.13 on GitHub Actions. T
 ```bash
 git clone https://github.com/Luca-1304/agent-reliability-arena.git
 cd agent-reliability-arena
-git checkout v0.2.0rc1
+git checkout main
 
 python -m venv .venv
 . .venv/bin/activate
