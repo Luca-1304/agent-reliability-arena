@@ -1,0 +1,200 @@
+name: Verify published v0.2.0rc2 release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-published-release.yml"
+      - "release/github-prerelease.json"
+      - "reference_runs/fixture-v1/**"
+      - "examples/fixture_experiment.json"
+      - "src/agent_reliability_arena/published_release.py"
+      - "src/agent_reliability_arena/cli_published_release.py"
+      - "scripts/verify_published_release.py"
+      - "docs/VERIFY_PUBLISHED_RELEASE.md"
+      - "pyproject.toml"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-published-release.yml"
+      - "release/github-prerelease.json"
+      - "reference_runs/fixture-v1/**"
+      - "examples/fixture_experiment.json"
+      - "src/agent_reliability_arena/published_release.py"
+      - "src/agent_reliability_arena/cli_published_release.py"
+      - "scripts/verify_published_release.py"
+      - "tests/test_published_release.py"
+      - "tests/test_published_release_workflow.py"
+      - "docs/VERIFY_PUBLISHED_RELEASE.md"
+      - "pyproject.toml"
+
+permissions:
+  contents: read
+  attestations: read
+
+concurrency:
+  group: verify-published-v0.2.0rc2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify public rc2 as an external consumer
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: v0.2.0rc2
+      RELEASE_TITLE: Agent Reliability Arena v0.2.0rc2
+      SIGNER_WORKFLOW: Luca-1304/agent-reliability-arena/.github/workflows/release.yml
+
+    steps:
+      - name: Check out verifier and locked reference bytes
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download public release metadata and assets
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/published-release
+          EVIDENCE_DIR: ${{ runner.temp }}/published-release-evidence
+        run: |
+          mkdir -p "$RELEASE_DIR" "$EVIDENCE_DIR"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,name,isPrerelease,targetCommitish,publishedAt,url,assets \
+            > "$EVIDENCE_DIR/release-metadata.json"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "$RELEASE_DIR"
+
+      - name: Extract exact source identity
+        id: release
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/published-release
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          record = json.loads(
+              (Path(os.environ["RELEASE_DIR"]) / "release-record.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          source_commit = record.get("source_commit")
+          if not isinstance(source_commit, str) or len(source_commit) != 40:
+              raise SystemExit("invalid release-record source commit")
+          if record.get("schema_version") != "arena-github-prerelease-record-v2":
+              raise SystemExit("unexpected release-record schema")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"source_commit={source_commit}\n")
+          PY
+
+      - name: Verify all published checksums independently
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/published-release
+          EVIDENCE_DIR: ${{ runner.temp }}/published-release-evidence
+        run: |
+          cd "$RELEASE_DIR"
+          sha256sum --check SHA256SUMS | tee "$EVIDENCE_DIR/checksums.log"
+          test "$(wc -l < SHA256SUMS)" -eq 10
+
+      - name: Verify online provenance attestations
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/published-release
+          EVIDENCE_DIR: ${{ runner.temp }}/published-release-evidence
+          SOURCE_COMMIT: ${{ steps.release.outputs.source_commit }}
+        run: |
+          : > "$EVIDENCE_DIR/provenance-attestations.log"
+          for artifact in \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2-py3-none-any.whl" \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2.tar.gz"; do
+            gh attestation verify "$artifact" \
+              -R "$GITHUB_REPOSITORY" \
+              --signer-workflow "$SIGNER_WORKFLOW" \
+              --source-digest "$SOURCE_COMMIT" \
+              --source-ref refs/heads/main \
+              | tee -a "$EVIDENCE_DIR/provenance-attestations.log"
+          done
+
+      - name: Verify online CycloneDX attestations
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/published-release
+          EVIDENCE_DIR: ${{ runner.temp }}/published-release-evidence
+          SOURCE_COMMIT: ${{ steps.release.outputs.source_commit }}
+        run: |
+          : > "$EVIDENCE_DIR/cyclonedx-attestations.log"
+          for artifact in \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2-py3-none-any.whl" \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2.tar.gz"; do
+            gh attestation verify "$artifact" \
+              -R "$GITHUB_REPOSITORY" \
+              --signer-workflow "$SIGNER_WORKFLOW" \
+              --source-digest "$SOURCE_COMMIT" \
+              --source-ref refs/heads/main \
+              --predicate-type https://cyclonedx.org/bom \
+              | tee -a "$EVIDENCE_DIR/cyclonedx-attestations.log"
+          done
+
+      - name: Create isolated release and verifier environments
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/published-release
+        run: |
+          python -m venv "$RUNNER_TEMP/release-venv"
+          python -m venv "$RUNNER_TEMP/verifier-venv"
+          "$RUNNER_TEMP/release-venv/bin/python" -m pip install --no-deps \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2-py3-none-any.whl"
+          "$RUNNER_TEMP/verifier-venv/bin/python" -m pip install --no-deps \
+            --no-build-isolation .
+          "$RUNNER_TEMP/release-venv/bin/python" -m pip check
+          "$RUNNER_TEMP/verifier-venv/bin/python" -m pip check
+
+      - name: Reproduce the locked deterministic fixture with the release wheel
+        env:
+          REPRODUCED_DIR: ${{ runner.temp }}/published-release-reproduction
+          PUBLIC_OUTPUT: ${{ runner.temp }}/published-release-public.json
+        run: |
+          "$RUNNER_TEMP/release-venv/bin/arena-run" \
+            --config examples/fixture_experiment.json \
+            --output "$REPRODUCED_DIR"
+          "$RUNNER_TEMP/release-venv/bin/arena-replay" \
+            --input "$REPRODUCED_DIR" \
+            > "$RUNNER_TEMP/published-release-replay.json"
+          "$RUNNER_TEMP/release-venv/bin/arena-export-web" \
+            --input "$REPRODUCED_DIR" \
+            --output "$PUBLIC_OUTPUT"
+
+      - name: Produce the disclosure-safe consumer verification record
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/published-release
+          EVIDENCE_DIR: ${{ runner.temp }}/published-release-evidence
+          REPRODUCED_DIR: ${{ runner.temp }}/published-release-reproduction
+          PUBLIC_OUTPUT: ${{ runner.temp }}/published-release-public.json
+        run: |
+          "$RUNNER_TEMP/verifier-venv/bin/arena-verify-published-release" \
+            --root . \
+            --release-dir "$RELEASE_DIR" \
+            --metadata "$EVIDENCE_DIR/release-metadata.json" \
+            --reference-root reference_runs/fixture-v1 \
+            --reproduced-root "$REPRODUCED_DIR" \
+            --public-output "$PUBLIC_OUTPUT" \
+            --provenance-attestations 2 \
+            --cyclonedx-attestations 2 \
+            > "$EVIDENCE_DIR/verification.json"
+          python -m json.tool "$EVIDENCE_DIR/verification.json" >/dev/null
+
+      - name: Upload independent verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-v0.2.0rc2-consumer-verification
+          path: |
+            ${{ runner.temp }}/published-release-evidence/verification.json
+            ${{ runner.temp }}/published-release-evidence/checksums.log
+            ${{ runner.temp }}/published-release-evidence/provenance-attestations.log
+            ${{ runner.temp }}/published-release-evidence/cyclonedx-attestations.log
+          if-no-files-found: error
+          retention-days: 14
