@@ -1,0 +1,28 @@
+{
+  "author": "Luca Panayiotou",
+  "claims_boundary": "Deterministic fixture and provider-free integration evidence only. No real-provider benchmark has been executed; this package is not production readiness or a representative performance claim.",
+  "comparative_claim_permitted": false,
+  "files": [
+    {
+      "path": "CITATION.cff",
+      "sha256": "f5ee4756e429e2139653974d579350c09722fddfd7f1bb4d2341daf1252aa52f"
+    },
+    {
+      "path": "docs/REPRODUCIBILITY.md",
+      "sha256": "9bf4b42a1a3dbe54950b1c4371efd5d825069bfecbeec3670adddac81a5de7cf"
+    },
+    {
+      "path": "docs/TECHNICAL_REPORT.md",
+      "sha256": "21151aaa268a127d8cc4a89e7942babd31c8dcf02780b84f37a45abca1daf512"
+    }
+  ],
+  "launch_manifest_digest": "620c658240e4b05571de47dd66be13fbde72a6540ba06ba977d8056caf17427e",
+  "project": "Agent Reliability Arena",
+  "provider_called": false,
+  "release_date": "2026-07-23",
+  "release_tag": "v0.2.0rc1",
+  "release_url": "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1",
+  "schema_version": "arena-citation-package-v1",
+  "showcase_manifest_digest": "30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7",
+  "version": "0.2.0rc1"
+}
