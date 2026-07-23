@@ -1,0 +1,60 @@
+name: Diagnose published verifier environment
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'feature/independent-published-release-verification'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact verifier branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Capture verifier environment and install result
+        id: diagnose
+        run: |
+          python -m venv "$RUNNER_TEMP/verifier-venv"
+          "$RUNNER_TEMP/verifier-venv/bin/python" - <<'PY' \
+            > "$RUNNER_TEMP/verifier-environment.txt"
+          import importlib.util
+          import sys
+
+          print(f"python={sys.version}")
+          print(f"pip_available={importlib.util.find_spec('pip') is not None}")
+          print(f"setuptools_available={importlib.util.find_spec('setuptools') is not None}")
+          print(f"wheel_available={importlib.util.find_spec('wheel') is not None}")
+          PY
+          set +e
+          "$RUNNER_TEMP/verifier-venv/bin/python" -m pip install --no-deps \
+            --no-build-isolation . \
+            > "$RUNNER_TEMP/verifier-install.log" 2>&1
+          status="$?"
+          set -e
+          printf '%s\n' "$status" > "$RUNNER_TEMP/verifier-install-status.txt"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Upload verifier environment diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-verifier-environment-diagnostic
+          path: |
+            ${{ runner.temp }}/verifier-environment.txt
+            ${{ runner.temp }}/verifier-install.log
+            ${{ runner.temp }}/verifier-install-status.txt
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Preserve failing status
+        env:
+          INSTALL_STATUS: ${{ steps.diagnose.outputs.status }}
+        run: test "$INSTALL_STATUS" = "0"
