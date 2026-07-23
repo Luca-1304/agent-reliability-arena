@@ -4,7 +4,7 @@ Last verified: 22 July 2026
 
 ## Current state
 
-Agent Reliability Arena is at **v0.2.0rc1**.
+Agent Reliability Arena is at **v0.2.0rc2**.
 
 The public v0.1.0 evidence remains a deterministic fixture. It validates experiment plumbing, evidence separation, replay, metrics and the trace viewer; it is not a claim about external model performance.
 
@@ -146,4 +146,4 @@ The first-pilot, repeated-runner and disclosure mechanisms are ready at their pr
 
 ## Related but separate projects
 
-The Agent Contract Compiler and Agent Action Firewall remain separate projects. They may integrate later through reviewed interfaces but are outside the v0.2.0rc1 scope.
+The Agent Contract Compiler and Agent Action Firewall remain separate projects. They may integrate later through reviewed interfaces but are outside the v0.2.0rc2 scope.

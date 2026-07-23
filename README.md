@@ -21,7 +21,7 @@ Both conditions receive the same task, model configuration, sandbox, failure sce
 
 The published reference run proves that experiment plumbing, role boundaries, evidence separation, metrics, replay and the trace viewer behave as designed. The fixed policies are not measurements of OpenAI, Anthropic, Gemini, local models, people or production systems.
 
-### v0.2.0rc1 release candidate
+### v0.2.0rc2 release candidate
 
 The release candidate adds a complete provider-free live-model path and controlled empirical safeguards:
 
