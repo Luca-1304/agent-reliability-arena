@@ -1,14 +1,14 @@
-name: Diagnose reviewed rc2 patch
+name: Apply reviewed rc2 patch
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  apply:
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.head_ref == 'feature/attested-v0.2.0rc2-prerelease'
@@ -19,7 +19,7 @@ jobs:
         with:
           ref: feature/attested-v0.2.0rc2-prerelease
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Reconstruct and verify reviewed patch
         run: |
@@ -30,38 +30,39 @@ jobs:
           echo "e20077fe38eedddc52bcdfd0fcd17909cfa6b009cca8658329f39b1988d31a59  $RUNNER_TEMP/rc2-change.patch" | sha256sum --check
           git apply --check "$RUNNER_TEMP/rc2-change.patch"
           git apply --whitespace=nowarn "$RUNNER_TEMP/rc2-change.patch"
+
+      - name: Remove one-use applicator material
+        run: |
           rm -rf release/rc2-patch
           rm -f .github/workflows/apply-rc2-patch.yml
 
-      - name: Capture complete verification output
+      - name: Verify final source tree
         run: |
-          set +e
-          {
-            set -x
-            python -m pip install --upgrade pip setuptools wheel
-            python -m pip install --editable .
-            python -m compileall -q src tests scripts
-            python -m unittest discover -s tests -p "test_*.py" -v
-            python scripts/verify_release.py
-            python scripts/verify_disclosure_release.py
-            python scripts/verify_repeated_release.py
-            python scripts/verify_showcase_release.py
-            python scripts/verify_launch_package.py
-            python scripts/verify_citation_package.py
-            python scripts/verify_supply_chain.py
-            python scripts/verify_github_prerelease.py
-          } > "$RUNNER_TEMP/rc2-diagnostic.log" 2>&1
-          status=$?
-          printf '%s\n' "$status" > "$RUNNER_TEMP/rc2-diagnostic-status.txt"
-          exit "$status"
+          for attempt in 1 2 3; do
+            python -m pip install --upgrade pip setuptools wheel && break
+            test "$attempt" -lt 3
+            sleep $((attempt * 5))
+          done
+          python -m pip install --editable .
+          python -m compileall -q src tests scripts
+          python -m unittest discover -s tests -p "test_*.py" -v
+          python scripts/verify_release.py
+          python scripts/verify_disclosure_release.py
+          python scripts/verify_repeated_release.py
+          python scripts/verify_showcase_release.py
+          python scripts/verify_launch_package.py
+          python scripts/verify_citation_package.py
+          python scripts/verify_supply_chain.py
+          python scripts/verify_github_prerelease.py
 
-      - name: Upload complete diagnostic log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rc2-applicator-diagnostic
-          path: |
-            ${{ runner.temp }}/rc2-diagnostic.log
-            ${{ runner.temp }}/rc2-diagnostic-status.txt
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit exact reviewed implementation
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          test "$HEAD_REF" = "feature/attested-v0.2.0rc2-prerelease"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "release: implement attested v0.2.0rc2 candidate"
+          git push origin "HEAD:$HEAD_REF"
