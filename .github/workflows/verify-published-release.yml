@@ -1,0 +1,254 @@
+name: Verify published v0.2.0rc2 release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-published-release.yml"
+      - "docs/VERIFY_PUBLISHED_RELEASE.md"
+      - "release/github-prerelease.json"
+      - "reference_runs/fixture-v1/**"
+      - "examples/fixture_experiment.json"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-published-release.yml"
+      - "docs/VERIFY_PUBLISHED_RELEASE.md"
+      - "tests/test_github_prerelease.py"
+      - "release/github-prerelease.json"
+      - "reference_runs/fixture-v1/**"
+      - "examples/fixture_experiment.json"
+
+permissions:
+  contents: read
+  attestations: read
+
+concurrency:
+  group: verify-published-v0.2.0rc2-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify public rc2 as an external consumer
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: v0.2.0rc2
+      MERGE_COMMIT: 3128616727ad4d5d0f87986a4b26391f4419aff9
+      SIGNER_WORKFLOW: Luca-1304/agent-reliability-arena/.github/workflows/release.yml
+      RELEASE_DIR: ${{ runner.temp }}/published-release
+      EVIDENCE_DIR: ${{ runner.temp }}/published-release-evidence
+      REPRODUCED_DIR: ${{ runner.temp }}/published-release-reproduction
+      PUBLIC_OUTPUT: ${{ runner.temp }}/published-release-public.json
+
+    steps:
+      - name: Check out reference inputs only
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download public release metadata and assets
+        run: |
+          mkdir -p "$RELEASE_DIR" "$EVIDENCE_DIR"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,name,isPrerelease,targetCommitish,publishedAt,url,assets \
+            > "$EVIDENCE_DIR/release-metadata.json"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "$RELEASE_DIR"
+
+      - name: Verify metadata, inventory, record, SBOM and checksums
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import uuid
+          from pathlib import Path
+
+          release_dir = Path(os.environ["RELEASE_DIR"])
+          evidence_dir = Path(os.environ["EVIDENCE_DIR"])
+          metadata = json.loads(
+              (evidence_dir / "release-metadata.json").read_text(encoding="utf-8")
+          )
+          version = "0.2.0rc2"
+          expected_primary = {
+              f"agent_reliability_arena-{version}-py3-none-any.whl",
+              f"agent_reliability_arena-{version}.tar.gz",
+              f"RELEASE_NOTES_v{version}.md",
+              "github-prerelease.json",
+              "publication-manifest.json",
+              "launch-package-manifest.json",
+              "provenance.json",
+              "supply-chain-manifest.json",
+              "sbom.cdx.json",
+          }
+          expected_assets = expected_primary | {"release-record.json", "SHA256SUMS"}
+
+          assert metadata["tagName"] == os.environ["TAG"]
+          assert metadata["name"] == "Agent Reliability Arena v0.2.0rc2"
+          assert metadata["isPrerelease"] is True
+          assert metadata["targetCommitish"] == os.environ["MERGE_COMMIT"]
+          assert metadata["publishedAt"] and metadata["url"]
+          assert {asset["name"] for asset in metadata["assets"]} == expected_assets
+          assert {path.name for path in release_dir.iterdir() if path.is_file()} == expected_assets
+          assert all(not path.is_symlink() for path in release_dir.iterdir())
+
+          record = json.loads(
+              (release_dir / "release-record.json").read_text(encoding="utf-8")
+          )
+          assert record["schema_version"] == "arena-github-prerelease-record-v2"
+          assert record["version"] == version
+          assert record["tag"] == os.environ["TAG"]
+          assert record["source_commit"] == os.environ["MERGE_COMMIT"]
+          assert record["provenance_attestation_required"] is True
+          assert record["sbom_attestation_required"] is True
+          assert record["provider_called"] is False
+          assert record["comparative_claim_permitted"] is False
+          assert set(record["artifacts"]) == expected_primary
+
+          for name, expected_digest in record["artifacts"].items():
+              actual = hashlib.sha256((release_dir / name).read_bytes()).hexdigest()
+              assert actual == expected_digest, name
+
+          checkout_contract = Path("release/github-prerelease.json").read_bytes()
+          assert (release_dir / "github-prerelease.json").read_bytes() == checkout_contract
+
+          sbom = json.loads((release_dir / "sbom.cdx.json").read_text(encoding="utf-8"))
+          expected_serial = "urn:uuid:" + str(
+              uuid.uuid5(
+                  uuid.NAMESPACE_URL,
+                  "https://github.com/Luca-1304/agent-reliability-arena@0.2.0rc2",
+              )
+          )
+          assert sbom["bomFormat"] == "CycloneDX"
+          assert sbom["specVersion"] == "1.6"
+          assert sbom["serialNumber"] == expected_serial
+
+          checksum_rows = {}
+          for line in (release_dir / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
+              digest, separator, name = line.partition("  ")
+              assert separator == "  " and len(digest) == 64 and name
+              assert name not in checksum_rows
+              checksum_rows[name] = digest
+          assert set(checksum_rows) == expected_primary | {"release-record.json"}
+          assert len(checksum_rows) == 10
+          for name, expected_digest in checksum_rows.items():
+              actual = hashlib.sha256((release_dir / name).read_bytes()).hexdigest()
+              assert actual == expected_digest, name
+          PY
+          cd "$RELEASE_DIR"
+          sha256sum --check SHA256SUMS | tee "$EVIDENCE_DIR/checksums.log"
+
+      - name: Verify two provenance attestations
+        run: |
+          : > "$EVIDENCE_DIR/provenance-attestations.log"
+          for artifact in \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2-py3-none-any.whl" \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2.tar.gz"; do
+            gh attestation verify "$artifact" \
+              -R "$GITHUB_REPOSITORY" \
+              --signer-workflow "$SIGNER_WORKFLOW" \
+              --source-digest "$MERGE_COMMIT" \
+              --source-ref refs/heads/main \
+              | tee -a "$EVIDENCE_DIR/provenance-attestations.log"
+          done
+
+      - name: Verify two CycloneDX attestations
+        run: |
+          : > "$EVIDENCE_DIR/cyclonedx-attestations.log"
+          for artifact in \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2-py3-none-any.whl" \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2.tar.gz"; do
+            gh attestation verify "$artifact" \
+              -R "$GITHUB_REPOSITORY" \
+              --signer-workflow "$SIGNER_WORKFLOW" \
+              --source-digest "$MERGE_COMMIT" \
+              --source-ref refs/heads/main \
+              --predicate-type https://cyclonedx.org/bom \
+              | tee -a "$EVIDENCE_DIR/cyclonedx-attestations.log"
+          done
+
+      - name: Install only the downloaded wheel
+        run: |
+          python -m venv "$RUNNER_TEMP/release-venv"
+          "$RUNNER_TEMP/release-venv/bin/python" -m pip install --no-deps \
+            "$RELEASE_DIR/agent_reliability_arena-0.2.0rc2-py3-none-any.whl"
+          "$RUNNER_TEMP/release-venv/bin/python" -m pip check
+
+      - name: Reproduce the deterministic fixture
+        run: |
+          "$RUNNER_TEMP/release-venv/bin/arena-run" \
+            --config examples/fixture_experiment.json \
+            --output "$REPRODUCED_DIR"
+          "$RUNNER_TEMP/release-venv/bin/arena-replay" \
+            --input "$REPRODUCED_DIR" \
+            > "$RUNNER_TEMP/published-release-replay.json"
+          "$RUNNER_TEMP/release-venv/bin/arena-export-web" \
+            --input "$REPRODUCED_DIR" \
+            --output "$PUBLIC_OUTPUT"
+
+      - name: Compare locked outputs and write verification record
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          reference = Path("reference_runs/fixture-v1")
+          reproduced = Path(os.environ["REPRODUCED_DIR"])
+          evidence_dir = Path(os.environ["EVIDENCE_DIR"])
+          for name in ("aggregate_metrics.json", "paired_results.jsonl", "report.md"):
+              assert (reference / name).read_bytes() == (reproduced / name).read_bytes(), name
+
+          public = json.loads(Path(os.environ["PUBLIC_OUTPUT"]).read_text(encoding="utf-8"))
+          assert public["evidence_status"] == "deterministic_fixture"
+          assert public["metrics"]["conditions"]["general"]["verified_complete"] == 2
+          assert public["metrics"]["conditions"]["specialist"]["verified_complete"] == 6
+          assert public["metrics"]["paired"]["additional_logical_model_calls"] == 36
+
+          metadata = json.loads(
+              (evidence_dir / "release-metadata.json").read_text(encoding="utf-8")
+          )
+          verification = {
+              "schema_version": "arena-published-release-verification-v1",
+              "project": "Agent Reliability Arena",
+              "version": "0.2.0rc2",
+              "tag": os.environ["TAG"],
+              "source_commit": os.environ["MERGE_COMMIT"],
+              "release_url": metadata["url"],
+              "published_at": metadata["publishedAt"],
+              "asset_count": 11,
+              "checksum_entries_verified": 10,
+              "provenance_attestations_verified": 2,
+              "cyclonedx_attestations_verified": 2,
+              "reproduced_files_verified": 3,
+              "general_verified_complete": 2,
+              "specialist_verified_complete": 6,
+              "additional_logical_model_calls": 36,
+              "provider_called": False,
+              "comparative_claim_permitted": False,
+              "security_certification_claimed": False,
+              "production_readiness_claimed": False,
+              "universal_reproducibility_claimed": False,
+          }
+          (evidence_dir / "verification.json").write_text(
+              json.dumps(verification, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload disclosure-safe verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-v0.2.0rc2-consumer-verification
+          path: |
+            ${{ runner.temp }}/published-release-evidence/verification.json
+            ${{ runner.temp }}/published-release-evidence/checksums.log
+            ${{ runner.temp }}/published-release-evidence/provenance-attestations.log
+            ${{ runner.temp }}/published-release-evidence/cyclonedx-attestations.log
+          if-no-files-found: error
+          retention-days: 14
