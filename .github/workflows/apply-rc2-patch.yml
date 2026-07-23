@@ -36,29 +36,49 @@ jobs:
           rm -rf release/rc2-patch
           rm -f .github/workflows/apply-rc2-patch.yml
 
-      - name: Verify final source tree
+      - name: Capture complete verification result
         run: |
-          for attempt in 1 2 3; do
-            python -m pip install --upgrade pip setuptools wheel && break
-            test "$attempt" -lt 3
-            sleep $((attempt * 5))
-          done
-          python -m pip install --editable .
-          python -m compileall -q src tests scripts
-          python -m unittest discover -s tests -p "test_*.py" -v
-          python scripts/verify_release.py
-          python scripts/verify_disclosure_release.py
-          python scripts/verify_repeated_release.py
-          python scripts/verify_showcase_release.py
-          python scripts/verify_launch_package.py
-          python scripts/verify_citation_package.py
-          python scripts/verify_supply_chain.py
-          python scripts/verify_github_prerelease.py
+          set +e
+          {
+            set -x
+            for attempt in 1 2 3; do
+              python -m pip install --upgrade pip setuptools wheel && break
+              test "$attempt" -lt 3
+              sleep $((attempt * 5))
+            done
+            python -m pip install --editable .
+            python -m compileall -q src tests scripts
+            python -m unittest discover -s tests -p "test_*.py" -v
+            python scripts/verify_release.py
+            python scripts/verify_disclosure_release.py
+            python scripts/verify_repeated_release.py
+            python scripts/verify_showcase_release.py
+            python scripts/verify_launch_package.py
+            python scripts/verify_citation_package.py
+            python scripts/verify_supply_chain.py
+            python scripts/verify_github_prerelease.py
+          } > "$RUNNER_TEMP/rc2-applicator.log" 2>&1
+          printf '%s\n' "$?" > "$RUNNER_TEMP/rc2-applicator-status.txt"
+          exit 0
+
+      - name: Upload complete applicator evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc2-applicator-evidence
+          path: |
+            ${{ runner.temp }}/rc2-applicator.log
+            ${{ runner.temp }}/rc2-applicator-status.txt
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Commit exact reviewed implementation
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
+          test "$(cat "$RUNNER_TEMP/rc2-applicator-status.txt")" = "0" || {
+            cat "$RUNNER_TEMP/rc2-applicator.log" >&2
+            exit 1
+          }
           test "$HEAD_REF" = "feature/attested-v0.2.0rc2-prerelease"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
