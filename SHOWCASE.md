@@ -15,6 +15,8 @@ This is the compact public route through Agent Reliability Arena. It presents th
 5. Review the [publication boundary](docs/PUBLICATION_BOUNDARY.md).
 6. Use the [90-second demonstration script](docs/SHOWCASE_DEMO_SCRIPT.md).
 7. Open the [launch and career conversion package](LAUNCH.md) for CV, portfolio, outreach and distribution material.
+8. Read the [citation-ready technical report](docs/TECHNICAL_REPORT.md).
+9. Follow the [provider-free reproducibility statement](docs/REPRODUCIBILITY.md).
 
 ```bash
 python -m http.server 8000 --directory web
@@ -40,6 +42,16 @@ The verifier checks:
 - unsupported performance, cost, safety or production claims.
 
 The locked package is recorded in [`showcase/publication-manifest.json`](showcase/publication-manifest.json).
+
+## Citation and technical review
+
+GitHub can render [`CITATION.cff`](CITATION.cff) through its repository citation interface. The technical report separates deterministic fixture evidence, provider-free integration evidence and the still-unrun real-provider stage.
+
+```bash
+arena-verify-citation-package --root .
+```
+
+The citation verifier independently checks release metadata, report limitations, provider-free commands, the closed provenance schema and pinned source hashes. The machine-readable record is [`citation/provenance.json`](citation/provenance.json).
 
 ## Career and distribution package
 

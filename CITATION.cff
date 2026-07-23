@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "Please cite this software and technical report using the metadata below."
+title: "Agent Reliability Arena"
+type: software
+authors:
+  - family-names: "Panayiotou"
+    given-names: "Luca"
+version: "0.2.0rc1"
+date-released: "2026-07-23"
+url: "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1"
+repository-code: "https://github.com/Luca-1304/agent-reliability-arena"
+license: "MIT"
+abstract: >-
+  A controlled, evidence-first evaluation system for comparing a general agent
+  with bounded specialist orchestration under identical tasks, tools and
+  acceptance rules. Public results are deterministic fixture evidence and
+  provider-free integration evidence. No real-provider benchmark has been run,
+  and the prerelease does not establish production readiness.
+keywords:
+  - AI agents
+  - reliability
+  - evaluation
+  - evidence
+  - multi-agent systems
+notes: "provider_called: false; comparative_claim_permitted: false"
+preferred-citation:
+  type: report
+  title: "Agent Reliability Arena: Evidence-First Evaluation of General and Role-Specialised Agent Orchestration"
+  authors:
+    - family-names: "Panayiotou"
+      given-names: "Luca"
+  year: 2026
+  url: "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1"
