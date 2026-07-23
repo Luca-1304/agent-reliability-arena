@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
 from agent_reliability_arena.github_prerelease import (
     GithubPrereleaseError,
+    build_github_prerelease_bundle,
     verify_github_prerelease_contract,
 )
 
@@ -31,6 +34,36 @@ class GithubPrereleaseTests(unittest.TestCase):
             summary["launch_manifest_digest"],
             "620c658240e4b05571de47dd66be13fbde72a6540ba06ba977d8056caf17427e",
         )
+
+    def test_bundle_records_primary_hashes_commit_and_checksums(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temp = Path(directory)
+            dist = temp / "dist"
+            output = temp / "release"
+            dist.mkdir()
+            wheel = dist / "agent_reliability_arena-0.2.0rc1-py3-none-any.whl"
+            source = dist / "agent_reliability_arena-0.2.0rc1.tar.gz"
+            wheel.write_bytes(b"fixture wheel bytes")
+            source.write_bytes(b"fixture source bytes")
+
+            summary = build_github_prerelease_bundle(
+                ROOT,
+                dist,
+                output,
+                source_commit="a" * 40,
+            )
+
+            self.assertEqual(summary["source_commit"], "a" * 40)
+            self.assertEqual(summary["primary_artifact_count"], 6)
+            self.assertFalse(summary["provider_called"])
+            self.assertFalse(summary["comparative_claim_permitted"])
+            record = json.loads((output / "release-record.json").read_text(encoding="utf-8"))
+            self.assertEqual(record["source_commit"], "a" * 40)
+            self.assertEqual(record["artifacts"][wheel.name], hashlib.sha256(wheel.read_bytes()).hexdigest())
+            self.assertEqual(record["artifacts"][source.name], hashlib.sha256(source.read_bytes()).hexdigest())
+            checksum_lines = (output / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
+            self.assertTrue(any(line.endswith("  release-record.json") for line in checksum_lines))
+            self.assertEqual(len(checksum_lines), 7)
 
     def test_contract_and_notes_are_publication_safe(self) -> None:
         contract = json.loads((ROOT / "release/github-prerelease.json").read_text(encoding="utf-8"))
