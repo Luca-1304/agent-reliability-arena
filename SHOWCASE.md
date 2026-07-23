@@ -17,6 +17,7 @@ This is the compact public route through Agent Reliability Arena. It presents th
 7. Open the [launch and career conversion package](LAUNCH.md) for CV, portfolio, outreach and distribution material.
 8. Read the [citation-ready technical report](docs/TECHNICAL_REPORT.md).
 9. Follow the [provider-free reproducibility statement](docs/REPRODUCIBILITY.md).
+10. Review the [security policy](SECURITY.md) and [supply-chain hardening note](docs/SUPPLY_CHAIN_SECURITY.md).
 
 ```bash
 python -m http.server 8000 --directory web
@@ -52,6 +53,16 @@ arena-verify-citation-package --root .
 ```
 
 The citation verifier independently checks release metadata, report limitations, provider-free commands, the closed provenance schema and pinned source hashes. The machine-readable record is [`citation/provenance.json`](citation/provenance.json).
+
+## Security and supply-chain review
+
+The root [`SECURITY.md`](SECURITY.md) provides private-reporting and coordinated-disclosure guidance. The deterministic CycloneDX inventory is [`security/sbom.cdx.json`](security/sbom.cdx.json), linked through [`security/supply-chain-manifest.json`](security/supply-chain-manifest.json).
+
+```bash
+arena-verify-supply-chain --root .
+```
+
+The verifier regenerates the SBOM byte-for-byte, checks the project and vendored-verifier identities, verifies five pinned public files, and enforces the CodeQL, Dependabot and least-privilege workflow boundaries. A successful result is not an exhaustive security audit or a guarantee that no vulnerability exists.
 
 ## Career and distribution package
 
