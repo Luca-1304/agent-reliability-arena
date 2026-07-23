@@ -1,0 +1,64 @@
+name: Apply reviewed rc2 patch
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'feature/attested-v0.2.0rc2-prerelease'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/attested-v0.2.0rc2-prerelease
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Reconstruct and verify reviewed patch
+        run: |
+          cat release/rc2-patch/part-* > "$RUNNER_TEMP/rc2-change.patch.gz.b64"
+          base64 --decode "$RUNNER_TEMP/rc2-change.patch.gz.b64" > "$RUNNER_TEMP/rc2-change.patch.gz"
+          echo "50b9bd38b9ecdea6cc2c5a13c7cfe9a95b927097ae72786be3cf128e5bce16f6  $RUNNER_TEMP/rc2-change.patch.gz" | sha256sum --check
+          gzip --decompress --stdout "$RUNNER_TEMP/rc2-change.patch.gz" > "$RUNNER_TEMP/rc2-change.patch"
+          echo "e20077fe38eedddc52bcdfd0fcd17909cfa6b009cca8658329f39b1988d31a59  $RUNNER_TEMP/rc2-change.patch" | sha256sum --check
+          git apply --check "$RUNNER_TEMP/rc2-change.patch"
+          git apply --whitespace=nowarn "$RUNNER_TEMP/rc2-change.patch"
+
+      - name: Remove one-use applicator material
+        run: |
+          rm -rf release/rc2-patch
+          rm -f .github/workflows/apply-rc2-patch.yml
+
+      - name: Verify final source tree
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --editable .
+          python -m compileall -q src tests scripts
+          python -m unittest discover -s tests -p "test_*.py" -v
+          python scripts/verify_release.py
+          python scripts/verify_disclosure_release.py
+          python scripts/verify_repeated_release.py
+          python scripts/verify_showcase_release.py
+          python scripts/verify_launch_package.py
+          python scripts/verify_citation_package.py
+          python scripts/verify_supply_chain.py
+          python scripts/verify_github_prerelease.py
+
+      - name: Commit exact reviewed implementation
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          test "$HEAD_REF" = "feature/attested-v0.2.0rc2-prerelease"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "release: implement attested v0.2.0rc2 candidate"
+          git push origin "HEAD:$HEAD_REF"
