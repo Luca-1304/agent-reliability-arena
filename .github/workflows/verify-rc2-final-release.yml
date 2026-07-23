@@ -73,10 +73,13 @@ jobs:
 
           record = json.loads((release_dir / 'release-record.json').read_text(encoding='utf-8'))
           expected_primary = expected_assets - {'release-record.json', 'SHA256SUMS'}
-          assert record['schema_version'] == 'arena-github-prerelease-record-v1'
+          assert record['schema_version'] == 'arena-github-prerelease-record-v2'
           assert record['version'] == '0.2.0rc2'
           assert record['tag'] == 'v0.2.0rc2'
           assert record['source_commit'] == os.environ['MERGE_COMMIT']
+          assert record['provenance_attestation_required'] is True
+          assert record['sbom_attestation_required'] is True
+          assert record['attestation_signer_workflow'] == '.github/workflows/release.yml'
           assert record['provider_called'] is False
           assert record['comparative_claim_permitted'] is False
           assert set(record['artifacts']) == expected_primary
