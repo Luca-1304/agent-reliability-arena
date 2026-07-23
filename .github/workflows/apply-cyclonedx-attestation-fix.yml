@@ -65,7 +65,7 @@ jobs:
           path.write_text(text, encoding='utf-8')
           PY
 
-      - name: Regenerate deterministic SBOM and manifest hash
+      - name: Regenerate SBOM and repin manifests
         run: |
           PYTHONPATH=src python - <<'PY'
           import hashlib
@@ -80,14 +80,21 @@ jobs:
           parsed = json.loads(sbom_path.read_text(encoding='utf-8'))
           assert parsed['serialNumber'] == 'urn:uuid:a051633f-39f2-5f1b-b7af-3272e34636df'
           assert parsed['bomFormat'] and parsed['serialNumber'] and parsed['specVersion']
+          sbom_digest = hashlib.sha256(sbom_path.read_bytes()).hexdigest()
 
           manifest_path = root / 'security/supply-chain-manifest.json'
           manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-          digest = hashlib.sha256(sbom_path.read_bytes()).hexdigest()
           matches = [item for item in manifest['files'] if item['path'] == 'security/sbom.cdx.json']
           assert len(matches) == 1
-          matches[0]['sha256'] = digest
+          matches[0]['sha256'] = sbom_digest
           manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+          manifest_digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+
+          contract_path = root / 'release/github-prerelease.json'
+          contract = json.loads(contract_path.read_text(encoding='utf-8'))
+          contract['source_sbom_sha256'] = sbom_digest
+          contract['source_supply_chain_manifest_sha256'] = manifest_digest
+          contract_path.write_text(json.dumps(contract, indent=2) + '\n', encoding='utf-8')
           PY
 
       - name: Capture complete verification
@@ -135,8 +142,9 @@ jobs:
           git add \
             src/agent_reliability_arena/supply_chain.py \
             security/sbom.cdx.json \
-            security/supply-chain-manifest.json
+            security/supply-chain-manifest.json \
+            release/github-prerelease.json
           git diff --cached --check
-          test "$(git diff --cached --name-only | wc -l)" -eq 3
+          test "$(git diff --cached --name-only | wc -l)" -eq 4
           git commit -m "fix: add deterministic CycloneDX serial number"
           git push origin "HEAD:$HEAD_REF"
