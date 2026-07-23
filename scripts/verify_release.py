@@ -37,7 +37,7 @@ from agent_reliability_arena.transports.base import canonical_json_sha256
 
 ROOT = Path(__file__).resolve().parents[1]
 MINIMUM_DISCOVERED_TESTS = 50
-EXPECTED_VERSION = "0.2.0rc1"
+EXPECTED_VERSION = "0.2.0rc2"
 
 
 class _ReleaseFixtureTransport:

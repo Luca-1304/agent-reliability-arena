@@ -7,7 +7,8 @@ Agent Reliability Arena is an alpha-stage research and engineering project. Secu
 | Version | Security support |
 |---|---|
 | Current `main` branch | Best-effort fixes and review |
-| `v0.2.0rc1` prerelease | Critical disclosure review; fixes may land on `main` first |
+| `v0.2.0rc2` prerelease | Current release candidate and best-effort fixes |
+| `v0.2.0rc1` prerelease | Historical release candidate; critical disclosure review only |
 | Older snapshots | Not actively supported |
 
 ## Private vulnerability reporting

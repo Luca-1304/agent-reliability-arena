@@ -1,8 +1,8 @@
 # Agent Reliability Arena: Technical Report
 
-**Author:** Luca Panayiotou  
-**Public version:** `0.2.0rc1`  
-**Release date:** 23 July 2026  
+**Author:** Luca Panayiotou
+**Public version:** `0.2.0rc2`
+**Release date:** 23 July 2026
 **Evidence status:** deterministic fixture and provider-free integration evidence
 
 ## Abstract
@@ -73,7 +73,7 @@ This class proves software behavior around an external-provider boundary. It doe
 
 This class remains uncollected. A future pilot would require a dated model snapshot, a reviewed policy digest, exact call-plan approval, a local environment credential, a hard spend ceiling, private evidence retention and independent verification before any public export.
 
-`provider_called: false`  
+`provider_called: false`
 `comparative_claim_permitted: false`
 
 ## Reliability controls
@@ -105,7 +105,7 @@ The public fixture, preflight, release verifiers, showcase verifier, launch-pack
 
 This report is linked to:
 
-- release tag `v0.2.0rc1`;
+- release tag `v0.2.0rc2`;
 - the public prerelease URL;
 - showcase manifest digest `30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7`;
 - launch-package manifest digest `620c658240e4b05571de47dd66be13fbde72a6540ba06ba977d8056caf17427e`;

@@ -2,7 +2,7 @@
 
 ## Scope and evidence boundary
 
-This document describes the public software-supply-chain controls around Agent Reliability Arena. It is derived from the repository, the published `v0.2.0rc1` prerelease, the vendored-verifier snapshot and the public evidence manifests.
+This document describes the public software-supply-chain controls around Agent Reliability Arena. It is derived from the repository, the immutable `v0.2.0rc1` prerelease and the `v0.2.0rc2` release path, the vendored-verifier snapshot and the public evidence manifests.
 
 It is **not an exhaustive security audit**, penetration test, formal verification result or guarantee that no vulnerability exists. No real-provider request, credential or private operational evidence is needed to reproduce these checks.
 
@@ -38,7 +38,7 @@ We want the following properties to remain falsifiable and reviewable:
 
 `security/sbom.cdx.json` is generated from public repository inputs using the Python standard library. It records:
 
-- `agent-reliability-arena` version `0.2.0rc1`;
+- `agent-reliability-arena` version `0.2.0rc2`;
 - vendored `agent-completion-verifier` version `0.6.0` and source commit;
 - zero declared runtime dependencies;
 - the relationship between the main project and the vendored verifier;
@@ -63,7 +63,7 @@ Dependabot checks both Python packaging metadata and GitHub Actions. CodeQL anal
 - The repository has not undergone an exhaustive, multi-pass security scan in this workflow.
 - CodeQL cannot prove the absence of logic, protocol, authorisation or operational vulnerabilities.
 - A dependency-free runtime still relies on Python, the operating system, GitHub Actions, the build backend and release infrastructure.
-- Existing `v0.2.0rc1` assets predate this SBOM package and are not silently modified. A future release should publish its SBOM and build attestation as first-class assets.
+- Existing `v0.2.0rc1` assets remain immutable and predate the SBOM package. The `v0.2.0rc2` release path publishes the SBOM and supply-chain manifest as first-class assets and generates GitHub provenance and SBOM attestations for the wheel and source distribution.
 - GitHub-hosted actions are external dependencies. Dependabot reduces staleness, while full commit-SHA pinning remains a future hardening option that must preserve maintainability.
 - Private real-provider evidence remains outside the public repository and requires separate local controls.
 
@@ -79,8 +79,8 @@ Add a closed component inventory, byte-reproducible SBOM, local verifier, Depend
 
 ### Option 3 — Fully attested release pipeline
 
-For the next version, add GitHub artifact attestations, a release SBOM asset and stricter action pinning. This offers stronger provenance but should be introduced with a new release rather than rewriting the already-published `v0.2.0rc1` record.
+Add GitHub artifact attestations and release the deterministic SBOM without rewriting `v0.2.0rc1`. The `v0.2.0rc2` pipeline implements this option with job-scoped signing permissions and online verification before publication.
 
 ## Recommendation
 
-We should keep Option 2 as the current baseline and implement Option 3 for the next prerelease after the artifact names, tag and release process are versioned again. Tactical findings from future CodeQL, dependency or manual reviews still require individual validation and fixes; architecture and automation do not close a vulnerability on their own.
+We should keep Option 2 as the repository baseline and use the rc2 implementation of Option 3 for downloadable release artifacts. Future hardening can pin third-party action revisions more strictly and move the builder into a reviewed reusable workflow if the maintenance tradeoff remains acceptable. Tactical findings from future CodeQL, dependency or manual reviews still require individual validation and fixes; architecture and automation do not close a vulnerability on their own.

@@ -40,7 +40,7 @@ class ReleaseTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertEqual(payload["tests_expected_minimum"], 50)
         self.assertGreaterEqual(payload["tests_discovered"], 50)
-        self.assertEqual(payload["release_candidate_version"], "0.2.0rc1")
+        self.assertEqual(payload["release_candidate_version"], "0.2.0rc2")
         self.assertEqual(payload["release_candidate_documents_verified"], 6)
         self.assertTrue(payload["reference_manifest_verified"])
         self.assertEqual(payload["specialist_verified"], 6)

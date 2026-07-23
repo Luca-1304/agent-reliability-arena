@@ -20,12 +20,12 @@ class CitationPackageTests(unittest.TestCase):
         summary = verify_citation_package(ROOT)
 
         self.assertEqual(summary["project"], "Agent Reliability Arena")
-        self.assertEqual(summary["version"], "0.2.0rc1")
-        self.assertEqual(summary["release_tag"], "v0.2.0rc1")
+        self.assertEqual(summary["version"], "0.2.0rc2")
+        self.assertEqual(summary["release_tag"], "v0.2.0rc2")
         self.assertEqual(summary["release_date"], "2026-07-23")
         self.assertEqual(
             summary["release_url"],
-            "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc1",
+            "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc2",
         )
         self.assertEqual(summary["files_verified"], 4)
         self.assertFalse(summary["provider_called"])

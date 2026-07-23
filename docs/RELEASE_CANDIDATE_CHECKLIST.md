@@ -1,11 +1,11 @@
-# v0.2.0rc1 release checklist
+# v0.2.0rc2 release checklist
 
 This checklist is evidence-gated. A box is complete only when the candidate tree—not an earlier implementation stage—passes the stated verification.
 
 ## Metadata
 
-- [x] `pyproject.toml` version is `0.2.0rc1`.
-- [x] `agent_reliability_arena.__version__` is `0.2.0rc1`.
+- [x] `pyproject.toml` version is `0.2.0rc2`.
+- [x] `agent_reliability_arena.__version__` is `0.2.0rc2`.
 - [x] installed-distribution version is tested.
 - [x] README, changelog and project status identify the release candidate accurately.
 
