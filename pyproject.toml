@@ -32,6 +32,7 @@ arena-verify-live-export = "agent_reliability_arena.cli_disclosure:verify_main"
 arena-verify-showcase = "agent_reliability_arena.cli_showcase:verify_main"
 arena-verify-launch-package = "agent_reliability_arena.cli_launch:verify_main"
 arena-verify-citation-package = "agent_reliability_arena.cli_citation:verify_main"
+arena-verify-supply-chain = "agent_reliability_arena.cli_supply_chain:verify_main"
 
 [project.urls]
 Repository = "https://github.com/Luca-1304/agent-reliability-arena"
