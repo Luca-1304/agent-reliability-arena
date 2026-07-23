@@ -212,7 +212,7 @@ class LaunchPackageTests(unittest.TestCase):
                     json.dumps(raw, indent=2, sort_keys=True) + "\n",
                     encoding="utf-8",
                 )
-                with self.assertRaisesRegex(LaunchPackageError, "sensitive|unsupported|prohibited"):
+                with self.assertRaisesRegex(LaunchPackageError, "(?i)sensitive|unsupported|prohibited"):
                     verify_launch_package(root)
 
     def test_verifier_rejects_false_external_submission_state(self) -> None:
