@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "updated": "2026-07-24",
+  "preview": true,
+  "controls": {
+    "public_source": "active",
+    "third_party_tracking": "disabled",
+    "demo_external_mutations": "none",
+    "external_link_isolation": "active",
+    "production_claim_boundaries": "active",
+    "runtime_phone_secret": "designed",
+    "protected_phone_endpoint": "designed",
+    "rate_limiting": "designed",
+    "origin_allow_list": "designed",
+    "bot_control": "designed",
+    "security_response_headers": "deployment_template"
+  },
+  "not_claimed": [
+    "formal penetration test",
+    "security certification",
+    "zero vulnerabilities",
+    "active protected phone endpoint on branch preview"
+  ]
+}
