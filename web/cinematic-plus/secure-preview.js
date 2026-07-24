@@ -18,3 +18,5 @@ async function requestProtectedPhone(){const endpoint=document.body.dataset.call
 requestButton?.addEventListener('click',requestProtectedPhone);
 addEventListener('keydown',event=>{if(event.key==='Escape'){closeCall();nav?.classList.remove('open');menu?.setAttribute('aria-expanded','false')}});
 showDemo('evaluation');
+
+if(!document.querySelector('script[data-flagship-loader]')){const flagship=document.createElement('script');flagship.src='flagship.js';flagship.defer=true;flagship.dataset.flagshipLoader='true';document.head.append(flagship)}
