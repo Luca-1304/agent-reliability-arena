@@ -3,6 +3,7 @@ const header=$('[data-header]');const menu=$('[data-menu]');const nav=$('[data-n
 addEventListener('scroll',()=>header?.classList.toggle('scrolled',scrollY>18),{passive:true});
 menu?.addEventListener('click',()=>{const open=nav?.classList.toggle('open')??false;menu.setAttribute('aria-expanded',String(open))});
 $$('[data-nav] a').forEach(link=>link.addEventListener('click',()=>{nav?.classList.remove('open');menu?.setAttribute('aria-expanded','false')}));
+document.addEventListener('click',event=>{if(event.target.closest('[data-nav] a')){nav?.classList.remove('open');menu?.setAttribute('aria-expanded','false')}});
 
 function showDemo(key){$$('[data-demo]').forEach(tab=>{const active=tab.dataset.demo===key;tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active))});$$('[data-demo-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.demoPanel===key))}
 $$('[data-demo]').forEach(tab=>tab.addEventListener('click',()=>showDemo(tab.dataset.demo)));
