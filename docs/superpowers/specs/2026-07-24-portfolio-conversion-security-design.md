@@ -41,7 +41,7 @@ The site must not split employment and project work into separate brands. They a
 
 ### Protected contact
 
-- Phone number: `+44 7443 634888`
+- Phone number value: stored only in a deployment environment secret and intentionally omitted from repository files.
 - The phone number must not be committed to the public repository, embedded in client-side JavaScript, exposed in metadata, included in static HTML, or written into public build artefacts.
 - The visible action is **Call Luca**.
 - The number is retrieved only after a user-initiated protected request.
