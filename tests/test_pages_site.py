@@ -62,7 +62,7 @@ class PagesSiteTests(unittest.TestCase):
             self.assertFalse(summary["comparative_claim_permitted"])
             self.assertEqual(
                 summary["site_title"],
-                "Luca Panayiotou — AI Evaluation &amp; Agent Reliability",
+                "Luca Panayiotou — AI Evaluation &amp; Applied AI",
             )
 
     def test_stage_pages_site_refuses_existing_or_dirty_destination(self) -> None:
@@ -112,7 +112,7 @@ class PagesSiteTests(unittest.TestCase):
             "actions/setup-python@v5",
             "python scripts/verify_showcase_release.py",
             "python scripts/verify_launch_package.py",
-            "python -m unittest tests.test_lean_portfolio",
+            "python -m unittest tests.test_pages_site tests.test_lean_portfolio",
             "python scripts/stage_pages_site.py --root . --output _site",
             "actions/upload-pages-artifact@v4",
             "path: _site",
