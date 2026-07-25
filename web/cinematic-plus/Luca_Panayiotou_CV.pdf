@@ -1,0 +1,552 @@
+%PDF-1.4
+%ASCII
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>
+endobj
+4 0 obj
+<< /Type /Pages /Count 2 /Kids [ 6 0 R 8 0 R ] >>
+endobj
+5 0 obj
+<< /Length 6132 >>
+stream
+BT
+/F2 23.00 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 200.90 798.00 Tm
+(LUCA PANAYIOTOU) Tj
+ET
+BT
+/F2 11.00 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 146.58 773.00 Tm
+(AI Evaluation | Applied AI | Technical Operations) Tj
+ET
+BT
+/F1 8.20 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 73.64 756.00 Tm
+(United Kingdom | lucapanay13@gmail.com | linkedin.com/in/luca-panayiotou-64936b256 | github.com/Luca-1304) Tj
+ET
+q
+0.150 0.420 0.650 RG
+1.10 w
+42.00 749.00 m 553.00 749.00 l S
+Q
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 728.00 Tm
+(PROFILE) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 724.00 m 553.00 724.00 l S
+Q
+BT
+/F1 9.20 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 42.00 709.00 Tm
+(Evidence-led AI evaluator and practical problem solver with experience across insurance operations, fire-safety) Tj
+ET
+BT
+/F1 9.20 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 42.00 697.00 Tm
+(compliance and customer-facing work. I focus on turning unclear capability claims into testable workflows,) Tj
+ET
+BT
+/F1 9.20 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 42.00 685.00 Tm
+(observable evidence and bounded decisions, while keeping human ownership, limitations and consequences explicit.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 42.00 673.00 Tm
+(Strong communicator with an IT foundation and a track record of learning quickly across technical and) Tj
+ET
+BT
+/F1 9.20 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 42.00 661.00 Tm
+(operational environments.) Tj
+ET
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 641.00 Tm
+(SELECTED TECHNICAL WORK) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 637.00 m 553.00 637.00 l S
+Q
+BT
+/F2 9.70 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 42.00 622.00 Tm
+(Agent Completion Verifier / Agent Reliability Arena | Independent public project | 2026) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 609.00 Tm
+(- Designed an evidence-led evaluation approach that separates an AI agent's completion claim from) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 597.60 Tm
+(  independently observable state and a fixed acceptance contract.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 586.20 Tm
+(- Built and documented a controlled deterministic fixture in which independently verified outcomes) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 574.80 Tm
+(  moved from 2/8 to 6/8, while three unsupported completion claims were reduced to zero.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 563.40 Tm
+(- Made architecture, trace evidence, limitations, human ownership and next-test requirements explicit) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 552.00 Tm
+(  rather than treating a system's own success message as proof.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 540.60 Tm
+(- Used Python, JavaScript, HTML/CSS and Git/GitHub to create public, inspectable artefacts and) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 529.20 Tm
+(  employer-facing documentation.) Tj
+ET
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 510.80 Tm
+(CORE CAPABILITIES) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 506.80 m 553.00 506.80 l S
+Q
+q
+0.950 0.970 0.980 rg
+42.00 400.80 511.00 91.00 re f
+Q
+BT
+/F2 9.50 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 52.00 491.80 Tm
+(AI evaluation & quality) Tj
+ET
+BT
+/F1 8.80 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 52.00 478.80 Tm
+(Acceptance criteria, failure modes, evidence fields) Tj
+ET
+BT
+/F1 8.80 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 52.00 467.80 Tm
+(and trace review.) Tj
+ET
+BT
+/F2 9.50 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 307.00 491.80 Tm
+(Applied AI & automation) Tj
+ET
+BT
+/F1 8.80 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 307.00 478.80 Tm
+(Workflow design, human approval, recovery boundaries) Tj
+ET
+BT
+/F1 8.80 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 307.00 467.80 Tm
+(and prototyping.) Tj
+ET
+BT
+/F2 9.50 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 52.00 448.80 Tm
+(Technical delivery) Tj
+ET
+BT
+/F1 8.80 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 52.00 435.80 Tm
+(Python, JavaScript, HTML/CSS, Git/GitHub and) Tj
+ET
+BT
+/F1 8.80 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 52.00 424.80 Tm
+(structured documentation.) Tj
+ET
+BT
+/F2 9.50 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 307.00 448.80 Tm
+(Operations & communication) Tj
+ET
+BT
+/F1 8.80 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 307.00 435.80 Tm
+(Stakeholder support, policy/admin accuracy, client) Tj
+ET
+BT
+/F1 8.80 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 307.00 424.80 Tm
+(relationships and compliance awareness.) Tj
+ET
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 378.80 Tm
+(PROFESSIONAL EXPERIENCE) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 374.80 m 553.00 374.80 l S
+Q
+BT
+/F2 9.70 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 42.00 359.80 Tm
+(Insurance Operations & Relationship Support | Stanborough Underwriting | 2023-Present) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 346.80 Tm
+(- Supported policy-related administration, professional correspondence and varied operational tasks in) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 335.40 Tm
+(  a structured insurance environment.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 324.00 Tm
+(- Developed professional networking and relationship-management skills across clients, brokers and) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 312.60 Tm
+(  wider business contacts.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 301.20 Tm
+(- Handled changing priorities with discretion, accuracy and a practical problem-solving approach.) Tj
+ET
+BT
+/F2 9.70 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 42.00 286.80 Tm
+(Fire Safety Technician | MJ Fire \(now FAFS\) | 2022) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 273.80 Tm
+(- Conducted water-pressure testing on dry risers to support fire-safety compliance.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 262.40 Tm
+(- Identified and reported potential faults, following procedures where accuracy and public safety) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 251.00 Tm
+(  mattered.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 239.60 Tm
+(- Built practical awareness of regulated systems, documentation and consequence-sensitive work.) Tj
+ET
+BT
+/F1 7.80 Tf
+0.380 0.420 0.470 rg
+1 0 0 1 204.21 24.00 Tm
+(Luca Panayiotou - Public developer CV - Page 1) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 4 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 4238 >>
+stream
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 794.00 Tm
+(ADDITIONAL EXPERIENCE) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 790.00 m 553.00 790.00 l S
+Q
+BT
+/F2 9.70 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 42.00 775.00 Tm
+(Labourer | Various residential construction projects | 2021) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 762.00 Tm
+(- Assisted with building, repair and renovation work in residential properties.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 750.60 Tm
+(- Worked physically and collaboratively while adapting to changing site requirements.) Tj
+ET
+BT
+/F2 9.70 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 42.00 736.20 Tm
+(Ticketing Assistant | Welling United Football Club | 2020-2021) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 723.20 Tm
+(- Managed ticket distribution and customer enquiries on match days.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 711.80 Tm
+(- Delivered friendly service in a fast-paced public environment.) Tj
+ET
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 693.40 Tm
+(EDUCATION) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 689.40 m 553.00 689.40 l S
+Q
+BT
+/F2 9.70 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 42.00 674.40 Tm
+(BTEC Diploma in Information Technology - Merit | North Kent College | Completed 2022) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 661.40 Tm
+(- Developed a practical foundation in IT, digital systems and structured technical work.) Tj
+ET
+BT
+/F2 9.70 Tf
+0.080 0.260 0.430 rg
+1 0 0 1 42.00 647.00 Tm
+(GCSEs | Stationers' Crown Woods Academy | Completed 2020) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 634.00 Tm
+(- Subjects included English Language and Literature, Mathematics, Spanish, Religious Studies,) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 622.60 Tm
+(  Geography, Drama, Public Services and Hospitality & Catering.) Tj
+ET
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 604.20 Tm
+(PROFESSIONAL DEVELOPMENT & CERTIFICATIONS) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 600.20 m 553.00 600.20 l S
+Q
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 585.20 Tm
+(- OpenAI Academy: Agents and Workflows; AI Foundations; Applied AI Foundations \(2026\).) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 573.80 Tm
+(- OpenLearn / The Open University: Business Models in Strategic Management; Financial Statement) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 562.40 Tm
+(  Analysis and Interpretation; Fundamentals of Cost Accounting and Environmental Management) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 551.00 Tm
+(  Accounting; Risk Management; Working in Teams \(2025\).) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 539.60 Tm
+(- Focus Awards Level 3 Diploma Practitioner in Personal Training \(RQF\), PT Academy \(2026\).) Tj
+ET
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 519.20 Tm
+(WORKING STYLE) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 515.20 m 553.00 515.20 l S
+Q
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 500.20 Tm
+(- Evidence before claims: separate what was observed from what is inferred or still uncertain.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 488.80 Tm
+(- Human-directed delivery: keep authority, approval and accountability visible.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 477.40 Tm
+(- Clear communication: explain technical ideas in practical language and adapt to different audiences.) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 466.00 Tm
+(- Continuous learning: move quickly across unfamiliar domains without pretending expertise that has) Tj
+ET
+BT
+/F1 9.00 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 47.00 454.60 Tm
+(  not been earned.) Tj
+ET
+BT
+/F2 11.20 Tf
+0.150 0.420 0.650 rg
+1 0 0 1 42.00 434.20 Tm
+(INTERESTS) Tj
+ET
+q
+0.150 0.420 0.650 RG
+0.80 w
+42.00 430.20 m 553.00 430.20 l S
+Q
+BT
+/F1 9.20 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 42.00 415.20 Tm
+(AI reliability, adaptive systems, mathematical modelling, physics and materials, human-AI systems, visual) Tj
+ET
+BT
+/F1 9.20 Tf
+0.120 0.150 0.190 rg
+1 0 0 1 42.00 403.20 Tm
+(communication, football and strength training.) Tj
+ET
+BT
+/F1 7.80 Tf
+0.380 0.420 0.470 rg
+1 0 0 1 204.21 24.00 Tm
+(Luca Panayiotou - Public developer CV - Page 2) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 4 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Title (Luca Panayiotou - Public Developer CV) /Author (Luca Panayiotou) /Subject (AI evaluation, applied AI and technical operations) >>
+endobj
+10 0 obj
+<< /Type /Catalog /Pages 4 0 R >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000016 00000 n 
+0000000086 00000 n 
+0000000161 00000 n 
+0000000239 00000 n 
+0000000304 00000 n 
+0000006487 00000 n 
+0000006633 00000 n 
+0000010922 00000 n 
+0000011068 00000 n 
+0000011224 00000 n 
+trailer
+<< /Size 11 /Root 10 0 R /Info 9 0 R >>
+startxref
+11274
+%%EOF
