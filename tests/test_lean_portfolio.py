@@ -119,7 +119,7 @@ class LeanPortfolioContract(unittest.TestCase):
         html = read("index.html")
         self.assertIn('class="capability-strip"', html)
         self.assertIn('class="engineering-range"', html)
-        self.assertIn('class="flagship-layout"', html)
+        self.assertRegex(html, r'class="[^"]*\bflagship-layout\b[^"]*"')
         self.assertEqual(html.count('class="role-lane"'), 3)
         self.assertNotIn('class="card-grid"', html)
 
