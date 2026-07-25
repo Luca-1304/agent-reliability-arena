@@ -7,18 +7,27 @@ from .launch_package import verify_launch_package
 from .showcase_release import verify_showcase_release
 
 
+_PORTFOLIO_SOURCE_TO_TARGET = {
+    "web/cinematic-plus/Luca_Panayiotou_CV.pdf": "Luca_Panayiotou_CV.pdf",
+    "web/cinematic-plus/evidence.html": "evidence.html",
+    "web/cinematic-plus/index.html": "index.html",
+    "web/cinematic-plus/interests.html": "interests.html",
+    "web/cinematic-plus/portfolio.css": "portfolio.css",
+    "web/cinematic-plus/site.js": "site.js",
+}
+_ARENA_SOURCE_TO_TARGET = {
+    "web/app.js": "arena/app.js",
+    "web/data/fixture-v1.json": "arena/data/fixture-v1.json",
+    "web/index.html": "arena/index.html",
+    "web/styles.css": "arena/styles.css",
+}
 _SOURCE_TO_TARGET = {
-    "web/app.js": "app.js",
-    "web/data/fixture-v1.json": "data/fixture-v1.json",
-    "web/index.html": "index.html",
-    "web/styles.css": "styles.css",
+    **_PORTFOLIO_SOURCE_TO_TARGET,
+    **_ARENA_SOURCE_TO_TARGET,
 }
 _EXPECTED_STAGED_FILES = {
     ".nojekyll",
-    "app.js",
-    "data/fixture-v1.json",
-    "index.html",
-    "styles.css",
+    *_SOURCE_TO_TARGET.values(),
 }
 _TITLE = re.compile(r"<title>(?P<title>[^<]+)</title>", re.IGNORECASE)
 
