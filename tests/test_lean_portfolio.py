@@ -38,6 +38,42 @@ def parse(name: str) -> LinkParser:
     return parser
 
 
+def section_html(html: str, section_id: str) -> str:
+    match = re.search(
+        rf'<section\b[^>]*id="{re.escape(section_id)}"[^>]*>(.*?)</section>',
+        html,
+        flags=re.DOTALL,
+    )
+    if not match:
+        raise AssertionError(f"missing section {section_id}")
+    return match.group(1)
+
+
+def css_hex_token(css: str, name: str) -> str:
+    match = re.search(rf"{re.escape(name)}\s*:\s*(#[0-9a-fA-F]{{6}})", css)
+    if not match:
+        raise AssertionError(f"missing CSS token {name}")
+    return match.group(1)
+
+
+def relative_luminance(value: str) -> float:
+    channels = [int(value[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    linear = [
+        channel / 12.92
+        if channel <= 0.04045
+        else ((channel + 0.055) / 1.055) ** 2.4
+        for channel in channels
+    ]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast_ratio(first: str, second: str) -> float:
+    high, low = sorted(
+        [relative_luminance(first), relative_luminance(second)], reverse=True
+    )
+    return (high + 0.05) / (low + 0.05)
+
+
 class LeanPortfolioContract(unittest.TestCase):
     def test_canonical_files_exist(self) -> None:
         for name in [*PAGES, "portfolio.css", "site.js", CV_NAME]:
@@ -66,12 +102,12 @@ class LeanPortfolioContract(unittest.TestCase):
             self.assertRegex(html, r"<nav\b")
             self.assertRegex(html, r"<main\b")
             self.assertRegex(html, r"<footer\b")
-            self.assertIn('data-menu', html)
-            self.assertIn('data-nav', html)
+            self.assertIn("data-menu", html)
+            self.assertIn("data-nav", html)
 
     def test_index_has_exact_five_sections(self) -> None:
         html = read("index.html")
-        ids = re.findall(r"<section[^>]+id=\"([^\"]+)\"", html)
+        ids = re.findall(r'<section[^>]+id="([^"]+)"', html)
         self.assertEqual(ids, ["hero", "capabilities", "evidence", "fit", "contact"])
         self.assertNotIn("MATHEMATICS &amp; MODELLING", html)
         self.assertNotIn("MARKETS, FOREX &amp; RISK", html)
@@ -79,29 +115,100 @@ class LeanPortfolioContract(unittest.TestCase):
         self.assertIn('href="interests.html"', html)
         self.assertIn(f'href="{CV_NAME}"', html)
 
-    def test_evidence_page_contains_required_proof_and_limits(self) -> None:
-        html = read("evidence.html")
-        for section_id in [
-            "summary",
-            "problem",
-            "contract",
-            "trace",
-            "results",
-            "limitations",
-            "source",
+    def test_main_page_uses_premium_editorial_components(self) -> None:
+        html = read("index.html")
+        self.assertIn('class="capability-strip"', html)
+        self.assertIn('class="engineering-range"', html)
+        self.assertIn('class="flagship-layout"', html)
+        self.assertEqual(html.count('class="role-lane"'), 3)
+        self.assertNotIn('class="card-grid"', html)
+
+        hero = section_html(html, "hero")
+        self.assertEqual(hero.count('class="button'), 3)
+        self.assertNotIn('href="interests.html"', hero)
+
+    def test_main_page_shows_range_and_fact_checked_flagship(self) -> None:
+        html = read("index.html")
+        for label in [
+            "Evaluation",
+            "Agent architecture",
+            "Python systems",
+            "Adversarial testing",
+            "AI assurance",
+            "Release engineering",
+            "Technical interfaces",
         ]:
-            self.assertIn(f'id="{section_id}"', html)
+            self.assertIn(label, html)
+
         for text in [
             "2/8 → 6/8",
             "3 → 0",
+            "0 → 4",
+            "+36 logical role calls",
+            "No real-provider benchmark has been executed",
+        ]:
+            self.assertIn(text, html)
+        self.assertNotIn("0.25 → 1.00", html)
+
+    def test_evidence_page_contains_required_story_proof_and_limits(self) -> None:
+        html = read("evidence.html")
+        for section_id in [
+            "summary",
+            "flow",
+            "trace",
+            "results",
+            "software",
+            "boundaries",
+            "next",
+        ]:
+            self.assertIn(f'id="{section_id}"', html)
+
+        for text in [
+            "2/8 → 6/8",
+            "3 → 0",
+            "0 → 4",
             "0.25 → 1.00",
-            "four recovered mismatch",
-            "controlled deterministic",
-            "not universal production performance",
+            "8 → 44",
+            "+36 additional calls",
+            "No real-provider benchmark has been executed",
+            "not production readiness",
         ]:
             self.assertIn(text, html)
 
-    def test_interests_are_direct_static_html(self) -> None:
+        for stage in [
+            "Task contract",
+            "Agent action",
+            "Raw evidence",
+            "Independent observation",
+            "Verifier",
+            "Canonical verdict",
+        ]:
+            self.assertIn(stage, html)
+
+    def test_evidence_page_uses_defensible_software_statuses(self) -> None:
+        combined = "\n".join(read(page) for page in PAGES)
+        evidence = read("evidence.html")
+        for name in [
+            "Agent Reliability Arena",
+            "Agent Completion Verifier",
+            "ACE Master Nexus",
+        ]:
+            self.assertIn(name, evidence)
+        self.assertNotIn("Veritas Trace", evidence)
+        self.assertGreaterEqual(evidence.count("Released and reproducible"), 2)
+        self.assertIn("Architecture / active research", evidence)
+
+        for upstream in [
+            "gpt-oss",
+            "the_well",
+            "Ruflo",
+            "Graphify",
+            "OpenAgentSkill",
+            "VisionClaw",
+        ]:
+            self.assertNotIn(upstream, combined)
+
+    def test_interests_are_direct_static_paired_rows(self) -> None:
         html = read("interests.html")
         labels = [
             "AI RELIABILITY",
@@ -115,6 +222,10 @@ class LeanPortfolioContract(unittest.TestCase):
         ]
         for label in labels:
             self.assertEqual(html.count(label), 1, label)
+
+        self.assertEqual(html.count('class="interest-pair"'), 4)
+        self.assertIn('class="personal-strip"', html)
+
         for text in [
             "Fluid dynamics &amp; Navier–Stokes",
             "Heat transfer",
@@ -126,8 +237,11 @@ class LeanPortfolioContract(unittest.TestCase):
             "Invalidation &amp; risk control",
         ]:
             self.assertIn(text, html)
+
         self.assertNotIn("refineInterestCard", html)
         self.assertNotIn("COMMON THREAD", html)
+        self.assertNotIn('class="interest-grid"', html)
+        self.assertNotIn('class="card-grid"', section_html(html, "personal"))
 
     def test_internal_links_resolve(self) -> None:
         for page in PAGES:
@@ -181,15 +295,36 @@ class LeanPortfolioContract(unittest.TestCase):
         self.assertIn("document.documentElement.classList.add('js')", js)
         self.assertIn(".js .menu-button", css)
         self.assertIn(".js .site-nav", css)
-        self.assertIn(".site-nav{display:flex", css)
+        self.assertIn(".site-nav{display:flex", css.replace(" ", ""))
 
     def test_mobile_trace_table_is_stacked(self) -> None:
         css = read("portfolio.css")
-        self.assertIn("@media(max-width:680px)", css)
-        self.assertIn(".trace-table thead{position:absolute", css)
-        self.assertIn(".trace-table td{padding:4px 0;border:0;overflow-wrap:anywhere}", css)
-        self.assertIn('content:"Raw state"', css)
-        self.assertIn('content:"Judgement"', css)
+        self.assertRegex(css, r"@media\s*\(max-width:\s*720px\)")
+        self.assertIn(".trace-table thead", css)
+        self.assertIn("overflow-wrap:anywhere", css.replace(" ", ""))
+        self.assertIn('content:"Observable state"', css.replace(" ", ""))
+        self.assertIn('content:"Verifier judgement"', css.replace(" ", ""))
+
+    def test_semantic_text_tokens_meet_wcag_contrast(self) -> None:
+        css = read("portfolio.css")
+        pairs = [
+            ("--bg", "--text-on-dark-primary", 4.5),
+            ("--bg", "--text-on-dark-secondary", 4.5),
+            ("--paper", "--text-on-light-primary", 4.5),
+            ("--paper", "--text-on-light-secondary", 4.5),
+            ("--paper", "--accent-readable-on-light", 4.5),
+            ("--bg", "--focus-ring", 3.0),
+            ("--paper", "--focus-ring", 3.0),
+        ]
+        for background, foreground, minimum in pairs:
+            self.assertGreaterEqual(
+                contrast_ratio(
+                    css_hex_token(css, background),
+                    css_hex_token(css, foreground),
+                ),
+                minimum,
+                f"{foreground} on {background}",
+            )
 
 
 if __name__ == "__main__":
