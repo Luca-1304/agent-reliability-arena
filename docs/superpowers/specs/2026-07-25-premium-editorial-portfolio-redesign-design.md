@@ -6,6 +6,8 @@ Refine the lean three-page portfolio so it feels premium, distinctive and employ
 
 The redesign must shorten the perceived and actual reading length, vary the visual rhythm between sections, and preserve the static, accessible and evidence-led architecture already established.
 
+It must also show credible breadth across advanced applied-AI engineering without using vague claims such as “can do everything” or attributing upstream software to Luca.
+
 ## Direction
 
 Use a **70% premium editorial / 30% restrained futuristic** visual language.
@@ -18,7 +20,7 @@ The site should feel:
 - concise at first glance, with deeper evidence available by choice;
 - recognisably Luca's rather than a generic developer template.
 
-Do not add new topics, claims, projects or decorative technology for its own sake.
+Do not add unsupported claims, invented projects, decorative technology for its own sake or self-awarded proficiency percentages.
 
 ## Fact-Checked Evidence Boundary
 
@@ -42,6 +44,47 @@ The redesigned site must:
 - state that no real-provider benchmark has been executed;
 - avoid universal model-superiority, production-readiness or safety-certification language;
 - distinguish deterministic fixture evidence from future real-model empirical evidence.
+
+## AI Engineering Range and Evidence Tiers
+
+The portfolio should demonstrate broad applied-AI systems capability through inspectable evidence groups rather than one general claim.
+
+### Capability groups
+
+The site may credibly present:
+
+1. **AI evaluation and benchmarking** — fixed acceptance contracts, independently verified completion, false-completion measurement and evidence taxonomy.
+2. **Agent architecture and orchestration** — separated planning, mutation, audit, recovery and synthesis authority.
+3. **Python tools and command-line systems** — typed boundaries, deterministic serialisation, file confinement, machine-readable output and low-dependency packaging.
+4. **Testing and reliability engineering** — adversarial tests, failure injection, malformed-output handling, replay, bounded recovery and regression checks.
+5. **AI assurance and execution safety** — explicit approvals, exact action authorisation, budget ceilings, private/public evidence separation and fail-closed behaviour.
+6. **Release and supply-chain engineering** — clean-wheel verification, manifests, checksums, immutable release records, provenance and software bill-of-materials evidence.
+7. **Technical interface design** — responsive evidence viewers, inspectable traces, accessible static sites and clear human review surfaces.
+8. **Research and system architecture** — adaptive-control, continuity and decision architectures labelled as research or architecture rather than released production systems.
+
+### Evidence status labels
+
+Every project or capability example must carry one visible status:
+
+- **Released and reproducible**
+- **Working prototype**
+- **Architecture / active research**
+- **Upstream project explored or extended**
+
+Status must be written in text and not communicated by colour alone.
+
+Only **Released and reproducible** work may display prominent outcome metrics.
+
+### Public software proof map
+
+The evidence page should include a compact proof map containing:
+
+1. **Agent Reliability Arena** — Released and reproducible; flagship controlled evaluation and release system.
+2. **Agent Completion Verifier** — Released and reproducible; standalone model-agnostic evaluator, CLI, metrics, trace adapters, failure-injection benchmark and confined local postcondition checks.
+3. **Veritas Trace** — Working prototype; include only inspectable functions that are currently public and demonstrable.
+4. **ACE Master Nexus and adaptive-control architecture** — Architecture / active research; present as system design, continuity and control work, not production deployment.
+
+Any upstream mirror or fork—such as `gpt-oss`, `the_well`, Ruflo, Graphify, OpenAgentSkill or VisionClaw—must not be presented as Luca-authored software unless a specific Luca-authored contribution is inspectable and separately attributed. General familiarity with those ecosystems may be mentioned only as exploration, integration study or adaptation work with the upstream creator named.
 
 ## Main Portfolio — `web/cinematic-plus/index.html`
 
@@ -70,7 +113,7 @@ Interests remains in the main navigation rather than competing in the hero actio
 
 The evidence-path visual may use subtle CSS motion, but it must remain understandable when motion is disabled and must not depend on JavaScript.
 
-### 2. Capability Strip
+### 2. Capability and Range Strip
 
 Replace the current four large cards with a compact editorial strip containing four verbs:
 
@@ -79,7 +122,13 @@ Replace the current four large cards with a compact editorial strip containing f
 - **Test** — define acceptance criteria and expose failure modes;
 - **Clarify** — make ownership, limitations and next actions visible.
 
-Below the strip, use one concise role-fit line rather than another grid:
+Directly beneath, add one compact **AI Engineering Range** line or ruled band showing:
+
+`Evaluation · Agent architecture · Python systems · Adversarial testing · AI assurance · Release engineering · Technical interfaces`
+
+This is a capability map, not a claim of mastery in every software domain.
+
+Below the range line, use one concise role-fit line:
 
 `AI evaluation · applied AI · technical operations · implementation support`
 
@@ -101,7 +150,7 @@ Use an asymmetrical editorial layout:
 
 Do not place claim precision on the main page. Keep it on the evidence page where its definition and context can be inspected.
 
-### 4. Role Lanes
+### 4. Role Lanes and Proof Cues
 
 Replace the four-card role grid with three editorial lanes:
 
@@ -175,6 +224,20 @@ Use:
 - explicit cost: **8 → 44 logical role calls / +36 additional calls**.
 
 The section must explain that improved fixture behaviour came with greater orchestration complexity and logical-call overhead.
+
+### Software Proof Map
+
+After the flagship result, show the four evidence-tiered software items defined above.
+
+Each item contains:
+
+- project name;
+- written evidence status;
+- one-sentence capability summary;
+- one direct proof link;
+- no duplicated metric panels.
+
+The proof map should communicate breadth without turning into a repository directory.
 
 ### What This Proves / What It Does Not Prove
 
@@ -272,15 +335,48 @@ Use a deliberate mixture of:
 
 ### Colour and Surfaces
 
-Retain the dark graphite foundation, cyan accent and light editorial sections, but use them more purposefully:
+Retain the dark graphite foundation, cyan accent and light editorial sections, but use them purposefully:
 
 - dark hero;
-- light capability strip;
+- light capability and range strip;
 - dark flagship evidence centrepiece;
 - restrained light role section;
 - dark contact close.
 
 Use violet only as a secondary detail. Avoid repeated gradients on every surface.
+
+#### Text-colour rules
+
+All text must be appropriate to its surface and pass WCAG AA contrast:
+
+- Normal text: minimum **4.5:1** contrast.
+- Large text and essential graphical text: minimum **3:1** contrast.
+- Dark surfaces use near-white for primary text and a sufficiently light cool-grey for secondary copy.
+- Light surfaces use deep navy/charcoal for primary text and a medium-dark slate for secondary copy.
+- Bright cyan is reserved for accents, rules, indicators, focus states and large display figures; it must not be used for small body text on light surfaces.
+- When cyan text appears on a light surface, use a darker teal variant that passes contrast.
+- Violet must not be used for paragraph text.
+- Links must remain identifiable without relying only on colour; use underline, weight, border or clear button treatment.
+- Status colours must always be paired with written labels.
+- Muted text must remain readable and may not be reduced to decorative low-contrast grey.
+- Focus rings must be strongly visible on both dark and light surfaces.
+- Selection, hover and disabled states must be checked on every surface.
+
+Recommended semantic token groups:
+
+- `--text-on-dark-primary`
+- `--text-on-dark-secondary`
+- `--text-on-light-primary`
+- `--text-on-light-secondary`
+- `--accent-bright`
+- `--accent-readable-on-light`
+- `--focus-ring`
+- `--status-released`
+- `--status-prototype`
+- `--status-research`
+- `--status-upstream`
+
+Exact hex values are chosen during implementation only after contrast calculation against their actual backgrounds.
 
 ### Motion
 
@@ -302,6 +398,17 @@ Not permitted:
 
 Respect `prefers-reduced-motion`.
 
+## Attribution and Authorship Rules
+
+The portfolio must preserve the existing ownership boundary:
+
+- Luca owns the problem selection, direction, constraints, standards, judgement, approval and real-world consequences.
+- AI assistance may be credited for research expansion, candidate implementation, testing support, documentation, alternatives and critique.
+- Do not imply unaided coding where the repository records AI-assisted implementation.
+- Do not imply that AI is an employee, legal actor or independent owner.
+- Do not claim upstream projects as original work.
+- Any derivative or integration contribution must link to the exact diff, branch, release or demonstrable artefact.
+
 ## Technical Constraints
 
 - Keep exactly three canonical employer-facing pages.
@@ -319,8 +426,10 @@ Update the contract test to verify:
 
 - the main page still has exactly five sections;
 - evidence figures match the locked fixture;
-- `+36` call overhead appears on the evidence page;
+- `+36` call overhead appears on the main and evidence pages;
 - real-provider and production boundaries are present;
+- capability groups and evidence statuses are direct HTML;
+- no upstream project is labelled as Luca-authored without an exact contribution link;
 - Interests remain direct HTML;
 - Physics and Forex retain their approved key points;
 - no runtime content injection appears;
@@ -334,7 +443,15 @@ Perform visual review at approximately:
 - 1024 × 768
 - 390 × 844
 
-Check reading length, hierarchy, contrast, keyboard focus, reduced motion and overflow before presenting the preview.
+Run an automated contrast check for every text/background token pair and manually inspect:
+
+- primary and secondary text on dark surfaces;
+- primary and secondary text on light surfaces;
+- links, buttons and status labels;
+- keyboard focus;
+- hover and selected states;
+- reduced-motion mode;
+- mobile overflow and line wrapping.
 
 ## Acceptance Criteria
 
@@ -342,10 +459,14 @@ The redesign is ready for Luca's review when:
 
 1. The main page is visibly shorter and no longer reads as repeated cards.
 2. The flagship evidence is the strongest visual section.
-3. Every public metric is traceable to the locked fixture.
-4. Logical-call overhead is visible beside the improvement.
-5. The evidence page clearly separates what is proven from what remains unproven.
-6. The Interests page retains all approved substance with less repetition.
-7. All automated tests pass.
-8. Desktop, tablet, mobile and no-JavaScript reviews are clean.
-9. Nothing has been merged or published.
+3. Broad AI engineering capability is shown through inspectable groups rather than a vague universal claim.
+4. Every project carries a written evidence status.
+5. Every public metric is traceable to the locked fixture.
+6. Logical-call overhead is visible beside the improvement.
+7. The evidence page clearly separates what is proven from what remains unproven.
+8. Upstream projects are not misrepresented as original work.
+9. The Interests page retains all approved substance with less repetition.
+10. Every text/background combination passes the stated contrast requirements.
+11. All automated tests pass.
+12. Desktop, tablet, mobile and no-JavaScript reviews are clean.
+13. Nothing has been merged or published.
