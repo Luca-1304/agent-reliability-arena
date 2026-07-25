@@ -305,6 +305,49 @@ class LeanPortfolioContract(unittest.TestCase):
         self.assertIn('content:"Observable state"', css)
         self.assertIn('content:"Verifier judgement"', css)
 
+    def test_mobile_polish_is_compact_and_readable(self) -> None:
+        compact = re.sub(r"\s+", "", read("portfolio.css"))
+        mobile = compact.split("@media(max-width:720px){", 1)[1].split(
+            "@keyframesevidenceTravelVertical", 1
+        )[0]
+
+        self.assertIn(
+            ".evidence-path{min-height:150px;padding:22px24px;gap:18px;}",
+            mobile,
+        )
+        self.assertIn(
+            ".evidence-path-track{grid-template-columns:autominmax(20px,1fr)"
+            "autominmax(20px,1fr)auto;gap:6px;}",
+            mobile,
+        )
+        self.assertIn(".evidence-pathsmall{font-size:.82rem;line-height:1.5;}", mobile)
+        self.assertIn(
+            ".engineering-range{align-items:flex-start;font-size:.8rem;line-height:1.5;}",
+            mobile,
+        )
+        self.assertIn(
+            ".availability-note{margin-top:10px;font-size:.84rem;line-height:1.55;}",
+            mobile,
+        )
+        self.assertIn(".boundary{font-size:.82rem;line-height:1.55;opacity:1;}", mobile)
+        self.assertIn(
+            ".role-lanea,.proof-itema,.selected-work{font-size:.84rem;line-height:1.55;}",
+            mobile,
+        )
+        self.assertIn(
+            ".proof-note{font-size:.82rem!important;line-height:1.55;}",
+            mobile,
+        )
+        self.assertIn(
+            ".contribution-splitspan,.system-flowsmall,.evidence-boundaryp,"
+            ".interest-terms,.personal-stripspan{font-size:.82rem;line-height:1.55;}",
+            mobile,
+        )
+        self.assertIn(
+            ".trace-tabletbodyth,.trace-tabletd{font-size:.88rem;line-height:1.55;}",
+            mobile,
+        )
+
     def test_semantic_text_tokens_meet_wcag_contrast(self) -> None:
         css = read("portfolio.css")
         pairs = [
