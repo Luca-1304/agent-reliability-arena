@@ -1,4 +1,4 @@
-name: Deploy verified showcase to GitHub Pages
+name: Deploy portfolio and verified Arena to GitHub Pages
 
 on:
   pull_request:
@@ -37,6 +37,7 @@ jobs:
         run: |
           python scripts/verify_showcase_release.py
           python scripts/verify_launch_package.py
+          python -m unittest tests.test_lean_portfolio
 
       - name: Stage exact Pages artifact
         run: python scripts/stage_pages_site.py --root . --output _site
@@ -48,10 +49,16 @@ jobs:
 
           expected = {
               ".nojekyll",
-              "app.js",
-              "data/fixture-v1.json",
+              "Luca_Panayiotou_CV.pdf",
+              "arena/app.js",
+              "arena/data/fixture-v1.json",
+              "arena/index.html",
+              "arena/styles.css",
+              "evidence.html",
               "index.html",
-              "styles.css",
+              "interests.html",
+              "portfolio.css",
+              "site.js",
           }
           root = Path("_site")
           actual = {
@@ -88,12 +95,18 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Verify live claims boundary
+      - name: Verify live portfolio and Arena boundaries
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           test -n "$PAGE_URL"
-          curl --fail --location --retry 12 --retry-delay 5 --retry-all-errors "$PAGE_URL" -o /tmp/pages-index.html
-          grep -F "Agent Reliability Arena — Evidence-first agent evaluation" /tmp/pages-index.html
-          grep -F "No real-provider benchmark request or provider spend has been executed." /tmp/pages-index.html
-          grep -F "comparative_claim_permitted: false" /tmp/pages-index.html
+          BASE_URL="${PAGE_URL%/}"
+
+          curl --fail --location --retry 12 --retry-delay 5 --retry-all-errors "$BASE_URL/" -o /tmp/pages-portfolio.html
+          grep -F "Luca Panayiotou" /tmp/pages-portfolio.html
+          grep -F "Broad enough to build. Disciplined enough to prove." /tmp/pages-portfolio.html
+
+          curl --fail --location --retry 12 --retry-delay 5 --retry-all-errors "$BASE_URL/arena/" -o /tmp/pages-arena.html
+          grep -F "Agent Reliability Arena — Evidence-first agent evaluation" /tmp/pages-arena.html
+          grep -F "No real-provider benchmark request or provider spend has been executed." /tmp/pages-arena.html
+          grep -F "comparative_claim_permitted: false" /tmp/pages-arena.html
