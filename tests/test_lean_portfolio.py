@@ -302,8 +302,8 @@ class LeanPortfolioContract(unittest.TestCase):
         self.assertRegex(css, r"@media\s*\(max-width:\s*720px\)")
         self.assertIn(".trace-table thead", css)
         self.assertIn("overflow-wrap:anywhere", css.replace(" ", ""))
-        self.assertIn('content:"Observable state"', css.replace(" ", ""))
-        self.assertIn('content:"Verifier judgement"', css.replace(" ", ""))
+        self.assertIn('content:"Observable state"', css)
+        self.assertIn('content:"Verifier judgement"', css)
 
     def test_semantic_text_tokens_meet_wcag_contrast(self) -> None:
         css = read("portfolio.css")
