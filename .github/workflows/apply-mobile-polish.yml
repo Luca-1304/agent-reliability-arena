@@ -1,0 +1,59 @@
+name: Apply tested mobile portfolio polish
+
+on:
+  push:
+    branches:
+      - portfolio-canonical-review-v1
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out review branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply exact tested CSS replacements
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("web/cinematic-plus/portfolio.css")
+          css = path.read_text(encoding="utf-8")
+
+          replacements = {
+              ".evidence-path{min-height:210px;padding:26px;}.evidence-path-track{grid-template-columns:1fr;gap:9px;}.evidence-path-track i{height:22px;width:1px;justify-self:start;margin-left:12px;}.evidence-path-track i::after{width:1px;height:44%;animation:evidenceTravelVertical 4.8s ease-in-out infinite;}":
+              ".evidence-path{min-height:150px;padding:22px 24px;gap:18px;}.evidence-path-track{grid-template-columns:auto minmax(20px,1fr) auto minmax(20px,1fr) auto;gap:6px;}.evidence-path-track i{height:1px;width:auto;justify-self:stretch;margin-left:0;}.evidence-path-track i::after{width:44%;height:1px;animation:evidenceTravel 4.8s ease-in-out infinite;}.evidence-path small{font-size:.82rem;line-height:1.5;}",
+              ".engineering-range{align-items:flex-start;}":
+              ".engineering-range{align-items:flex-start;font-size:.8rem;line-height:1.5;}",
+              ".engineering-range strong{width:100%;}":
+              ".engineering-range strong{width:100%;font-size:.72rem;}.availability-note{margin-top:10px;font-size:.84rem;line-height:1.55;}.boundary{font-size:.82rem;line-height:1.55;opacity:1;}.role-lane a,.proof-item a,.selected-work{font-size:.84rem;line-height:1.55;}.proof-note{font-size:.82rem!important;line-height:1.55;}.contribution-split span,.system-flow small,.evidence-boundary p,.interest-terms,.personal-strip span{font-size:.82rem;line-height:1.55;}",
+              ".trace-table th,.trace-table td{padding:4px 0;border:0;overflow-wrap:anywhere;}":
+              ".trace-table th,.trace-table td{padding:4px 0;border:0;overflow-wrap:anywhere;}.trace-table tbody th,.trace-table td{font-size:.88rem;line-height:1.55;}",
+          }
+
+          for old, new in replacements.items():
+              count = css.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected one exact match, found {count}: {old[:80]}")
+              css = css.replace(old, new)
+
+          path.write_text(css, encoding="utf-8")
+
+      - name: Run complete portfolio contract
+        run: python -m unittest tests/test_lean_portfolio.py -v
+
+      - name: Remove one-use workflow and commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-mobile-polish.yml
+          git add web/cinematic-plus/portfolio.css
+          git commit -m "style: polish mobile portfolio readability"
+          git push origin HEAD:portfolio-canonical-review-v1
