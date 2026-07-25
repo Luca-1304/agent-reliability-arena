@@ -37,7 +37,7 @@ jobs:
         run: |
           python scripts/verify_showcase_release.py
           python scripts/verify_launch_package.py
-          python -m unittest tests.test_lean_portfolio
+          python -m unittest tests.test_pages_site tests.test_lean_portfolio
 
       - name: Stage exact Pages artifact
         run: python scripts/stage_pages_site.py --root . --output _site
