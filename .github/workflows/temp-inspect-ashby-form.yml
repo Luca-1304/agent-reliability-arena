@@ -15,37 +15,82 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect Ashby GraphQL schema
+      - name: Fetch Ashby application page and scripts
         run: |
-          cat > payload.json <<'JSON'
-          {
-            "operationName": "InspectJobPostingDetails",
-            "variables": {},
-            "query": "query InspectJobPostingDetails { __type(name: \"JobPostingDetails\") { name fields { name type { kind name ofType { kind name ofType { kind name } } } } } }"
-          }
-          JSON
-
-          curl --fail-with-body --silent --show-error \
-            --request POST 'https://jobs.ashbyhq.com/api/non-user-graphql?op=InspectJobPostingDetails' \
-            --header 'Content-Type: application/json' \
-            --data-binary @payload.json \
-            --output response.json
-
-      - name: Print schema result
-        run: |
+          set -euo pipefail
+          PAGE='https://jobs.ashbyhq.com/ashby/e5863f7c-2238-410f-9a72-d40c944d2511/application'
+          curl --fail --silent --show-error --location "$PAGE" --output page.html
           python - <<'PY'
-          import json
+          import re
           from pathlib import Path
-
-          data = json.loads(Path('response.json').read_text())
-          print(json.dumps(data, indent=2, sort_keys=True))
-          if data.get('errors'):
-              raise SystemExit('Ashby GraphQL returned errors')
+          html = Path('page.html').read_text(encoding='utf-8', errors='replace')
+          srcs = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html)
+          print('SCRIPT_URLS')
+          for src in srcs:
+              if src.startswith('/'):
+                  src = 'https://jobs.ashbyhq.com' + src
+              elif src.startswith('//'):
+                  src = 'https:' + src
+              print(src)
+          Path('script-urls.txt').write_text('\n'.join(srcs), encoding='utf-8')
+          print('\nHTML_MATCHES')
+          for keyword in ('applicationFormDefinition','ApiJobPosting','ApplicationForm','jobPostingId'):
+              for m in re.finditer(keyword, html, re.I):
+                  print(keyword, html[max(0,m.start()-300):m.end()+700])
           PY
 
-      - name: Upload response
+          mkdir -p chunks
+          python - <<'PY'
+          import re, subprocess
+          from pathlib import Path
+          html = Path('page.html').read_text(encoding='utf-8', errors='replace')
+          srcs = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html)
+          for i, src in enumerate(srcs):
+              if src.startswith('/'):
+                  src = 'https://jobs.ashbyhq.com' + src
+              elif src.startswith('//'):
+                  src = 'https:' + src
+              elif not src.startswith('http'):
+                  continue
+              subprocess.run(['curl','--fail','--silent','--show-error','--location',src,'--output',f'chunks/{i:03d}.js'], check=True)
+          PY
+
+      - name: Print relevant bundle contexts
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          keywords = ('applicationFormDefinition','ApiJobPosting','ApplicationForm','organizationHostedJobsPageName','jobPostingId')
+          seen = set()
+          out = []
+          for path in sorted(Path('chunks').glob('*.js')):
+              text = path.read_text(encoding='utf-8', errors='replace')
+              for keyword in keywords:
+                  for m in re.finditer(keyword, text, re.I):
+                      snippet = text[max(0,m.start()-800):m.end()+1800]
+                      key = (keyword, snippet)
+                      if key in seen:
+                          continue
+                      seen.add(key)
+                      out.append(f'\n===== {path} :: {keyword} =====\n{snippet}\n')
+                      if len(out) >= 80:
+                          break
+                  if len(out) >= 80:
+                      break
+              if len(out) >= 80:
+                  break
+          result = ''.join(out)
+          Path('matches.txt').write_text(result, encoding='utf-8')
+          print(result[:120000])
+          PY
+
+      - name: Upload inspection files
         uses: actions/upload-artifact@v4
         with:
           name: ashby-form-schema
-          path: response.json
+          path: |
+            page.html
+            script-urls.txt
+            matches.txt
+            chunks
           retention-days: 1
