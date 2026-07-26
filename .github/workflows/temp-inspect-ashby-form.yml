@@ -1,0 +1,38 @@
+name: Temporary Ashby form inspection
+
+on:
+  push:
+    branches:
+      - temp/inspect-ashby-form
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch public Ashby application form schema
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST 'https://api.ashbyhq.com/applicationForm.info' \
+            --header 'Content-Type: application/json' \
+            --data '{"jobPostingId":"e5863f7c-2238-410f-9a72-d40c944d2511"}' \
+            --output response.json
+
+      - name: Print exact field schema
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('response.json').read_text())
+          print(json.dumps(data, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload response
+        uses: actions/upload-artifact@v4
+        with:
+          name: ashby-form-schema
+          path: response.json
+          retention-days: 1
