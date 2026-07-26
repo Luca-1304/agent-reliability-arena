@@ -19,16 +19,17 @@ jobs:
         run: |
           cat > payload.json <<'JSON'
           {
-            "operationName": "ApiApplicationFormQuery",
+            "operationName": "ApiJobPosting",
             "variables": {
+              "organizationHostedJobsPageName": "ashby",
               "jobPostingId": "e5863f7c-2238-410f-9a72-d40c944d2511"
             },
-            "query": "query ApiApplicationFormQuery($jobPostingId: String!) { jobPosting(id: $jobPostingId) { id title applicationFormDefinition { sections { title descriptionPlain fields { path isRequired descriptionPlain type selectableValues { label value } } } } } }"
+            "query": "query ApiJobPosting($organizationHostedJobsPageName: String!, $jobPostingId: String!) { jobPosting(organizationHostedJobsPageName: $organizationHostedJobsPageName, jobPostingId: $jobPostingId) { applicationFormDefinition { sections { fields { path isRequired descriptionPlain type selectableValues { label value } } } } } }"
           }
           JSON
 
           curl --fail-with-body --silent --show-error \
-            --request POST 'https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiApplicationFormQuery' \
+            --request POST 'https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting' \
             --header 'Content-Type: application/json' \
             --data-binary @payload.json \
             --output response.json
