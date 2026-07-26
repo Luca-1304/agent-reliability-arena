@@ -15,6 +15,7 @@ EXPECTED_STAGED_FILES = {
     "arena/data/fixture-v1.json",
     "arena/index.html",
     "arena/styles.css",
+    "desktop-headings.css",
     "evidence.html",
     "index.html",
     "interests.html",
@@ -41,6 +42,10 @@ class PagesSiteTests(unittest.TestCase):
             self.assertEqual((output / "evidence.html").read_bytes(), (portfolio / "evidence.html").read_bytes())
             self.assertEqual((output / "interests.html").read_bytes(), (portfolio / "interests.html").read_bytes())
             self.assertEqual((output / "portfolio.css").read_bytes(), (portfolio / "portfolio.css").read_bytes())
+            self.assertEqual(
+                (output / "desktop-headings.css").read_bytes(),
+                (portfolio / "desktop-headings.css").read_bytes(),
+            )
             self.assertEqual((output / "site.js").read_bytes(), (portfolio / "site.js").read_bytes())
             self.assertEqual(
                 (output / "Luca_Panayiotou_CV.pdf").read_bytes(),
