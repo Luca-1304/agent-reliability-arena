@@ -15,75 +15,127 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch Ashby application frontend
+      - name: Fetch exact rendered Ashby form
         run: |
           set -euo pipefail
-          BASE='https://cdn.ashbyprd.com/frontend_non_user/b64b15684e07f11907fce272dd68392607dfd3dd/'
-          PAGE='https://jobs.ashbyhq.com/ashby/e5863f7c-2238-410f-9a72-d40c944d2511/application'
-          curl --fail --silent --show-error --location "$PAGE" --output page.html
-          curl --fail --silent --show-error --location "${BASE}.vite/manifest.json" --output manifest.json
+          cat > query.graphql <<'GRAPHQL'
+          query ApiJobPosting($organizationHostedJobsPageName: String!, $jobPostingId: String!) {
+            jobPosting(
+              organizationHostedJobsPageName: $organizationHostedJobsPageName
+              jobPostingId: $jobPostingId
+            ) {
+              id
+              title
+              applicationForm { ...FormRenderParts }
+              surveyForms { ...FormRenderParts }
+              shouldAskForTextingConsent
+              shouldAskForWhatsAppConsent
+              applicationLimitCalloutHtml
+            }
+          }
 
-          mkdir -p chunks
+          fragment JSONBoxParts on JSONBox {
+            value
+          }
+
+          fragment FileParts on File {
+            id
+            filename
+          }
+
+          fragment FormFieldEntryParts on FormFieldEntry {
+            id
+            field
+            fieldValue {
+              ... on JSONBox { ...JSONBoxParts }
+              ... on File { ...FileParts }
+              ... on FileList { files { ...FileParts } }
+            }
+            isRequired
+            descriptionHtml
+            isHidden
+          }
+
+          fragment FormRenderParts on FormRender {
+            id
+            formControls { identifier title }
+            errorMessages
+            formErrors { message fieldEntryId }
+            sections {
+              title
+              descriptionHtml
+              fieldEntries { ...FormFieldEntryParts }
+              isHidden
+            }
+            sourceFormDefinitionId
+          }
+          GRAPHQL
+
           python - <<'PY'
-          import json, subprocess
+          import json
           from pathlib import Path
-
-          base = 'https://cdn.ashbyprd.com/frontend_non_user/b64b15684e07f11907fce272dd68392607dfd3dd/'
-          manifest = json.loads(Path('manifest.json').read_text())
-          files = set()
-          for item in manifest.values():
-              if isinstance(item, dict):
-                  f = item.get('file')
-                  if isinstance(f, str) and f.endswith(('.js', '.mjs')):
-                      files.add(f)
-                  for key in ('css', 'assets'):
-                      for value in item.get(key) or []:
-                          if isinstance(value, str) and value.endswith(('.js', '.mjs')):
-                              files.add(value)
-          print('Downloading', len(files), 'JavaScript files')
-          for i, file in enumerate(sorted(files)):
-              target = Path('chunks') / f'{i:04d}-{Path(file).name}'
-              subprocess.run(['curl','--fail','--silent','--show-error','--location',base + file,'--output',str(target)], check=True)
-          Path('downloaded-files.txt').write_text('\n'.join(sorted(files)), encoding='utf-8')
+          payload = {
+              'operationName': 'ApiJobPosting',
+              'variables': {
+                  'organizationHostedJobsPageName': 'Ashby',
+                  'jobPostingId': 'e5863f7c-2238-410f-9a72-d40c944d2511',
+              },
+              'query': Path('query.graphql').read_text(),
+          }
+          Path('payload.json').write_text(json.dumps(payload), encoding='utf-8')
           PY
 
-      - name: Extract relevant operation and field contexts
+          curl --fail-with-body --silent --show-error \
+            --request POST 'https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting' \
+            --header 'Content-Type: application/json' \
+            --data-binary @payload.json \
+            --output response.json
+
+      - name: Print exact form fields
         run: |
           python - <<'PY'
-          import json, re
+          import json
           from pathlib import Path
 
-          keywords = (
-              'applicationFormDefinition', 'applicationForm', 'fieldSubmissions',
-              'selectableValues', 'ApiJobPosting', 'jobPostingId',
-              'organizationHostedJobsPageName', 'SubmitApplication',
-              'work authorization', 'sponsorship', 'linkedin', 'cover letter'
+          data = json.loads(Path('response.json').read_text())
+          print(json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True))
+          if data.get('errors'):
+              raise SystemExit('Ashby returned GraphQL errors')
+
+          posting = (data.get('data') or {}).get('jobPosting') or {}
+          forms = [posting.get('applicationForm'), *(posting.get('surveyForms') or [])]
+          fields = []
+          for form in forms:
+              if not form:
+                  continue
+              for section in form.get('sections') or []:
+                  for entry in section.get('fieldEntries') or []:
+                      field = entry.get('field')
+                      if isinstance(field, str):
+                          try:
+                              field = json.loads(field)
+                          except json.JSONDecodeError:
+                              pass
+                      fields.append({
+                          'section': section.get('title'),
+                          'isRequired': entry.get('isRequired'),
+                          'isHidden': entry.get('isHidden'),
+                          'descriptionHtml': entry.get('descriptionHtml'),
+                          'field': field,
+                      })
+          Path('fields.json').write_text(
+              json.dumps(fields, indent=2, ensure_ascii=False, sort_keys=True),
+              encoding='utf-8',
           )
-          output = []
-          for path in sorted(Path('chunks').glob('*')):
-              text = path.read_text(encoding='utf-8', errors='replace')
-              for keyword in keywords:
-                  matches = list(re.finditer(re.escape(keyword), text, re.I))
-                  for m in matches[:12]:
-                      output.append(
-                          f'\n===== {path.name} :: {keyword} =====\n'
-                          + text[max(0, m.start()-1800):m.end()+4200]
-                          + '\n'
-                      )
-          result = ''.join(output)
-          Path('matches.txt').write_text(result, encoding='utf-8')
-          print(result[:500000])
-          print('\nTOTAL_MATCH_OUTPUT_CHARS', len(result))
+          print('\n===== NORMALIZED FIELDS =====')
+          print(Path('fields.json').read_text())
           PY
 
-      - name: Upload inspection files
+      - name: Upload form response
         uses: actions/upload-artifact@v4
         with:
           name: ashby-form-schema
           path: |
-            page.html
-            manifest.json
-            downloaded-files.txt
-            matches.txt
-            chunks
+            response.json
+            fields.json
           retention-days: 1
