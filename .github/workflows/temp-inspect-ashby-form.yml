@@ -15,73 +15,65 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch Ashby application page and scripts
+      - name: Fetch Ashby application frontend
         run: |
           set -euo pipefail
+          BASE='https://cdn.ashbyprd.com/frontend_non_user/b64b15684e07f11907fce272dd68392607dfd3dd/'
           PAGE='https://jobs.ashbyhq.com/ashby/e5863f7c-2238-410f-9a72-d40c944d2511/application'
           curl --fail --silent --show-error --location "$PAGE" --output page.html
-          python - <<'PY'
-          import re
-          from pathlib import Path
-          html = Path('page.html').read_text(encoding='utf-8', errors='replace')
-          srcs = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html)
-          print('SCRIPT_URLS')
-          for src in srcs:
-              if src.startswith('/'):
-                  src = 'https://jobs.ashbyhq.com' + src
-              elif src.startswith('//'):
-                  src = 'https:' + src
-              print(src)
-          Path('script-urls.txt').write_text('\n'.join(srcs), encoding='utf-8')
-          print('\nHTML_MATCHES')
-          for keyword in ('applicationFormDefinition','ApiJobPosting','ApplicationForm','jobPostingId'):
-              for m in re.finditer(keyword, html, re.I):
-                  print(keyword, html[max(0,m.start()-300):m.end()+700])
-          PY
+          curl --fail --silent --show-error --location "${BASE}.vite/manifest.json" --output manifest.json
 
           mkdir -p chunks
           python - <<'PY'
-          import re, subprocess
+          import json, subprocess
           from pathlib import Path
-          html = Path('page.html').read_text(encoding='utf-8', errors='replace')
-          srcs = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html)
-          for i, src in enumerate(srcs):
-              if src.startswith('/'):
-                  src = 'https://jobs.ashbyhq.com' + src
-              elif src.startswith('//'):
-                  src = 'https:' + src
-              elif not src.startswith('http'):
-                  continue
-              subprocess.run(['curl','--fail','--silent','--show-error','--location',src,'--output',f'chunks/{i:03d}.js'], check=True)
+
+          base = 'https://cdn.ashbyprd.com/frontend_non_user/b64b15684e07f11907fce272dd68392607dfd3dd/'
+          manifest = json.loads(Path('manifest.json').read_text())
+          files = set()
+          for item in manifest.values():
+              if isinstance(item, dict):
+                  f = item.get('file')
+                  if isinstance(f, str) and f.endswith(('.js', '.mjs')):
+                      files.add(f)
+                  for key in ('css', 'assets'):
+                      for value in item.get(key) or []:
+                          if isinstance(value, str) and value.endswith(('.js', '.mjs')):
+                              files.add(value)
+          print('Downloading', len(files), 'JavaScript files')
+          for i, file in enumerate(sorted(files)):
+              target = Path('chunks') / f'{i:04d}-{Path(file).name}'
+              subprocess.run(['curl','--fail','--silent','--show-error','--location',base + file,'--output',str(target)], check=True)
+          Path('downloaded-files.txt').write_text('\n'.join(sorted(files)), encoding='utf-8')
           PY
 
-      - name: Print relevant bundle contexts
+      - name: Extract relevant operation and field contexts
         run: |
           python - <<'PY'
-          import re
+          import json, re
           from pathlib import Path
-          keywords = ('applicationFormDefinition','ApiJobPosting','ApplicationForm','organizationHostedJobsPageName','jobPostingId')
-          seen = set()
-          out = []
-          for path in sorted(Path('chunks').glob('*.js')):
+
+          keywords = (
+              'applicationFormDefinition', 'applicationForm', 'fieldSubmissions',
+              'selectableValues', 'ApiJobPosting', 'jobPostingId',
+              'organizationHostedJobsPageName', 'SubmitApplication',
+              'work authorization', 'sponsorship', 'linkedin', 'cover letter'
+          )
+          output = []
+          for path in sorted(Path('chunks').glob('*')):
               text = path.read_text(encoding='utf-8', errors='replace')
               for keyword in keywords:
-                  for m in re.finditer(keyword, text, re.I):
-                      snippet = text[max(0,m.start()-800):m.end()+1800]
-                      key = (keyword, snippet)
-                      if key in seen:
-                          continue
-                      seen.add(key)
-                      out.append(f'\n===== {path} :: {keyword} =====\n{snippet}\n')
-                      if len(out) >= 80:
-                          break
-                  if len(out) >= 80:
-                      break
-              if len(out) >= 80:
-                  break
-          result = ''.join(out)
+                  matches = list(re.finditer(re.escape(keyword), text, re.I))
+                  for m in matches[:12]:
+                      output.append(
+                          f'\n===== {path.name} :: {keyword} =====\n'
+                          + text[max(0, m.start()-1800):m.end()+4200]
+                          + '\n'
+                      )
+          result = ''.join(output)
           Path('matches.txt').write_text(result, encoding='utf-8')
-          print(result[:120000])
+          print(result[:500000])
+          print('\nTOTAL_MATCH_OUTPUT_CHARS', len(result))
           PY
 
       - name: Upload inspection files
@@ -90,7 +82,8 @@ jobs:
           name: ashby-form-schema
           path: |
             page.html
-            script-urls.txt
+            manifest.json
+            downloaded-files.txt
             matches.txt
             chunks
           retention-days: 1
