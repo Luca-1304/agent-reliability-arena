@@ -1,552 +1,99 @@
 %PDF-1.4
-%ASCII
+%“Œ‹ž ReportLab Generated PDF document (opensource)
 1 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+<<
+/F1 2 0 R /F2 3 0 R /F3 4 0 R
+>>
 endobj
 2 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
 endobj
 3 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>
+<<
+/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font
+>>
 endobj
 4 0 obj
-<< /Type /Pages /Count 2 /Kids [ 6 0 R 8 0 R ] >>
+<<
+/BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding /Name /F3 /Subtype /Type1 /Type /Font
+>>
 endobj
 5 0 obj
-<< /Length 6132 >>
-stream
-BT
-/F2 23.00 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 200.90 798.00 Tm
-(LUCA PANAYIOTOU) Tj
-ET
-BT
-/F2 11.00 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 146.58 773.00 Tm
-(AI Evaluation | Applied AI | Technical Operations) Tj
-ET
-BT
-/F1 8.20 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 73.64 756.00 Tm
-(United Kingdom | lucapanay13@gmail.com | linkedin.com/in/luca-panayiotou-64936b256 | github.com/Luca-1304) Tj
-ET
-q
-0.150 0.420 0.650 RG
-1.10 w
-42.00 749.00 m 553.00 749.00 l S
-Q
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 728.00 Tm
-(PROFILE) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 724.00 m 553.00 724.00 l S
-Q
-BT
-/F1 9.20 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 42.00 709.00 Tm
-(Evidence-led AI evaluator and practical problem solver with experience across insurance operations, fire-safety) Tj
-ET
-BT
-/F1 9.20 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 42.00 697.00 Tm
-(compliance and customer-facing work. I focus on turning unclear capability claims into testable workflows,) Tj
-ET
-BT
-/F1 9.20 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 42.00 685.00 Tm
-(observable evidence and bounded decisions, while keeping human ownership, limitations and consequences explicit.) Tj
-ET
-BT
-/F1 9.20 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 42.00 673.00 Tm
-(Strong communicator with an IT foundation and a track record of learning quickly across technical and) Tj
-ET
-BT
-/F1 9.20 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 42.00 661.00 Tm
-(operational environments.) Tj
-ET
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 641.00 Tm
-(SELECTED TECHNICAL WORK) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 637.00 m 553.00 637.00 l S
-Q
-BT
-/F2 9.70 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 42.00 622.00 Tm
-(Agent Completion Verifier / Agent Reliability Arena | Independent public project | 2026) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 609.00 Tm
-(- Designed an evidence-led evaluation approach that separates an AI agent's completion claim from) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 597.60 Tm
-(  independently observable state and a fixed acceptance contract.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 586.20 Tm
-(- Built and documented a controlled deterministic fixture in which independently verified outcomes) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 574.80 Tm
-(  moved from 2/8 to 6/8, while three unsupported completion claims were reduced to zero.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 563.40 Tm
-(- Made architecture, trace evidence, limitations, human ownership and next-test requirements explicit) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 552.00 Tm
-(  rather than treating a system's own success message as proof.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 540.60 Tm
-(- Used Python, JavaScript, HTML/CSS and Git/GitHub to create public, inspectable artefacts and) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 529.20 Tm
-(  employer-facing documentation.) Tj
-ET
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 510.80 Tm
-(CORE CAPABILITIES) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 506.80 m 553.00 506.80 l S
-Q
-q
-0.950 0.970 0.980 rg
-42.00 400.80 511.00 91.00 re f
-Q
-BT
-/F2 9.50 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 52.00 491.80 Tm
-(AI evaluation & quality) Tj
-ET
-BT
-/F1 8.80 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 52.00 478.80 Tm
-(Acceptance criteria, failure modes, evidence fields) Tj
-ET
-BT
-/F1 8.80 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 52.00 467.80 Tm
-(and trace review.) Tj
-ET
-BT
-/F2 9.50 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 307.00 491.80 Tm
-(Applied AI & automation) Tj
-ET
-BT
-/F1 8.80 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 307.00 478.80 Tm
-(Workflow design, human approval, recovery boundaries) Tj
-ET
-BT
-/F1 8.80 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 307.00 467.80 Tm
-(and prototyping.) Tj
-ET
-BT
-/F2 9.50 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 52.00 448.80 Tm
-(Technical delivery) Tj
-ET
-BT
-/F1 8.80 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 52.00 435.80 Tm
-(Python, JavaScript, HTML/CSS, Git/GitHub and) Tj
-ET
-BT
-/F1 8.80 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 52.00 424.80 Tm
-(structured documentation.) Tj
-ET
-BT
-/F2 9.50 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 307.00 448.80 Tm
-(Operations & communication) Tj
-ET
-BT
-/F1 8.80 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 307.00 435.80 Tm
-(Stakeholder support, policy/admin accuracy, client) Tj
-ET
-BT
-/F1 8.80 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 307.00 424.80 Tm
-(relationships and compliance awareness.) Tj
-ET
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 378.80 Tm
-(PROFESSIONAL EXPERIENCE) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 374.80 m 553.00 374.80 l S
-Q
-BT
-/F2 9.70 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 42.00 359.80 Tm
-(Insurance Operations & Relationship Support | Stanborough Underwriting | 2023-Present) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 346.80 Tm
-(- Supported policy-related administration, professional correspondence and varied operational tasks in) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 335.40 Tm
-(  a structured insurance environment.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 324.00 Tm
-(- Developed professional networking and relationship-management skills across clients, brokers and) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 312.60 Tm
-(  wider business contacts.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 301.20 Tm
-(- Handled changing priorities with discretion, accuracy and a practical problem-solving approach.) Tj
-ET
-BT
-/F2 9.70 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 42.00 286.80 Tm
-(Fire Safety Technician | MJ Fire \(now FAFS\) | 2022) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 273.80 Tm
-(- Conducted water-pressure testing on dry risers to support fire-safety compliance.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 262.40 Tm
-(- Identified and reported potential faults, following procedures where accuracy and public safety) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 251.00 Tm
-(  mattered.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 239.60 Tm
-(- Built practical awareness of regulated systems, documentation and consequence-sensitive work.) Tj
-ET
-BT
-/F1 7.80 Tf
-0.380 0.420 0.470 rg
-1 0 0 1 204.21 24.00 Tm
-(Luca Panayiotou - Public developer CV - Page 1) Tj
-ET
-endstream
+<<
+/Contents 10 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 9 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
 endobj
 6 0 obj
-<< /Type /Page /Parent 4 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 5 0 R >>
+<<
+/Contents 11 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 9 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
 endobj
 7 0 obj
-<< /Length 4238 >>
-stream
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 794.00 Tm
-(ADDITIONAL EXPERIENCE) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 790.00 m 553.00 790.00 l S
-Q
-BT
-/F2 9.70 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 42.00 775.00 Tm
-(Labourer | Various residential construction projects | 2021) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 762.00 Tm
-(- Assisted with building, repair and renovation work in residential properties.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 750.60 Tm
-(- Worked physically and collaboratively while adapting to changing site requirements.) Tj
-ET
-BT
-/F2 9.70 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 42.00 736.20 Tm
-(Ticketing Assistant | Welling United Football Club | 2020-2021) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 723.20 Tm
-(- Managed ticket distribution and customer enquiries on match days.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 711.80 Tm
-(- Delivered friendly service in a fast-paced public environment.) Tj
-ET
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 693.40 Tm
-(EDUCATION) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 689.40 m 553.00 689.40 l S
-Q
-BT
-/F2 9.70 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 42.00 674.40 Tm
-(BTEC Diploma in Information Technology - Merit | North Kent College | Completed 2022) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 661.40 Tm
-(- Developed a practical foundation in IT, digital systems and structured technical work.) Tj
-ET
-BT
-/F2 9.70 Tf
-0.080 0.260 0.430 rg
-1 0 0 1 42.00 647.00 Tm
-(GCSEs | Stationers' Crown Woods Academy | Completed 2020) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 634.00 Tm
-(- Subjects included English Language and Literature, Mathematics, Spanish, Religious Studies,) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 622.60 Tm
-(  Geography, Drama, Public Services and Hospitality & Catering.) Tj
-ET
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 604.20 Tm
-(PROFESSIONAL DEVELOPMENT & CERTIFICATIONS) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 600.20 m 553.00 600.20 l S
-Q
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 585.20 Tm
-(- OpenAI Academy: Agents and Workflows; AI Foundations; Applied AI Foundations \(2026\).) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 573.80 Tm
-(- OpenLearn / The Open University: Business Models in Strategic Management; Financial Statement) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 562.40 Tm
-(  Analysis and Interpretation; Fundamentals of Cost Accounting and Environmental Management) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 551.00 Tm
-(  Accounting; Risk Management; Working in Teams \(2025\).) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 539.60 Tm
-(- Focus Awards Level 3 Diploma Practitioner in Personal Training \(RQF\), PT Academy \(2026\).) Tj
-ET
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 519.20 Tm
-(WORKING STYLE) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 515.20 m 553.00 515.20 l S
-Q
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 500.20 Tm
-(- Evidence before claims: separate what was observed from what is inferred or still uncertain.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 488.80 Tm
-(- Human-directed delivery: keep authority, approval and accountability visible.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 477.40 Tm
-(- Clear communication: explain technical ideas in practical language and adapt to different audiences.) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 466.00 Tm
-(- Continuous learning: move quickly across unfamiliar domains without pretending expertise that has) Tj
-ET
-BT
-/F1 9.00 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 47.00 454.60 Tm
-(  not been earned.) Tj
-ET
-BT
-/F2 11.20 Tf
-0.150 0.420 0.650 rg
-1 0 0 1 42.00 434.20 Tm
-(INTERESTS) Tj
-ET
-q
-0.150 0.420 0.650 RG
-0.80 w
-42.00 430.20 m 553.00 430.20 l S
-Q
-BT
-/F1 9.20 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 42.00 415.20 Tm
-(AI reliability, adaptive systems, mathematical modelling, physics and materials, human-AI systems, visual) Tj
-ET
-BT
-/F1 9.20 Tf
-0.120 0.150 0.190 rg
-1 0 0 1 42.00 403.20 Tm
-(communication, football and strength training.) Tj
-ET
-BT
-/F1 7.80 Tf
-0.380 0.420 0.470 rg
-1 0 0 1 204.21 24.00 Tm
-(Luca Panayiotou - Public developer CV - Page 2) Tj
-ET
-endstream
+<<
+/PageMode /UseNone /Pages 9 0 R /Type /Catalog
+>>
 endobj
 8 0 obj
-<< /Type /Page /Parent 4 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 7 0 R >>
+<<
+/Author (\(anonymous\)) /CreationDate (D:20260726113237+00'00') /Creator (\(unspecified\)) /Keywords () /ModDate (D:20260726113237+00'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+  /Subject (\(unspecified\)) /Title (Luca Panayiotou CV) /Trapped /False
+>>
 endobj
 9 0 obj
-<< /Title (Luca Panayiotou - Public Developer CV) /Author (Luca Panayiotou) /Subject (AI evaluation, applied AI and technical operations) >>
+<<
+/Count 2 /Kids [ 5 0 R 6 0 R ] /Type /Pages
+>>
 endobj
 10 0 obj
-<< /Type /Catalog /Pages 4 0 R >>
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 3116
+>>
+stream
+Gau0E>?fiQ&q/qEeC,t:cNr?<B4&Y%O<Hus,^;7$H"kH=]*Cp0d05=(p;cX$DI6qo#*Y/<,t:pBl>ioi<5g'u5G%[0c&(;9kk)_:c_o0T][-t!F@GAfUVDi%jiXgr7,B%-:m+5,)[o("_e[:%"#!3dEK`*IaRT0V*)JLS_MR.G&fdD$!hXj]JT$SC@aB$!0u"f)kkM/P"^R$Qgah4Ep(`SdUsZAfZFpZ%IDX;_\RN#mfCnl4bQ>"l=%:L:.l`6iK@iopjS4j!^dhf35^GKbifLmq\li]0Tds!]*k`S?1&8S6,VlYG00fHFogApMKE9%X8H"#;M7"4C/m2a=phc<)PrYhh&)HiH8i,9uGg"63O'!dbo%H:HGM90/0l+Yd\"]"\Vt<GYc29GE!=d4EA`UI@G_dmlDHtAJciS">+$!23V<Q#a`$K&(T0L(P.a/JbKnI,"#I0>FN,J?\n%7EI%n!9/X>&qM&;bN=N3:d<Wc]J(?N[EO=Yroi(rqapkZBq=]Hlp\/a5X"^W@$(,;8G$XmL@&L,3+/eHAtJW7Ip\j%PUa-C!gch*J&4Nu"a`PG#LdF>9PEY&6fhF-W2:JdTo4'pK8>Q)Wo;)GT6mAJ<3Sh'hWgA0r4kMgDPKRT)RO]Jq?/.OQ`pO(E=/E'2mJG3G*>]Y#gqb%Onu/F/FcLpE_h>*[rVp\*mXXL(O]Pg2^`a^QT4.k;*t\$ZikhP7H[Pce.A.rAFG[)'<+qJ$uOV=TmSB6PnEY)5e&)j\A+3h8lZ\WaOHXDpAZb>K*l[$;moQ(i"1[t5MIE%c]h8Kp*^W!7ue_kako8Qss$lg$>UWe0^$*OA?kR^lpPAm4*_$g`MG\157kqGq01D:ZjJV6#n4;TUg3<,&j[0pe/9qh]oFE=6,O/d7k3D)5'MXPPoATI^M`./Q<#IqhELVX-uG_;<qAfSKk4!5BdskB>Ii[^VYsibm2`<ZQ0/MOkV"^([V:mdmVAejdVKNU0#^^r(8kJZY?q/%$2dSKr<*$?t#*0<eO1F'8G&7JfNLj#<b)1O?+E9]q"UHWa$bPoK&:8>buFB6n_s-hIE>YW9TdktL8O-3:O+8=.'*=(E^#^Q>-KF$V?&Z@C4=^g#/%PdQs7WL1d)rW'"d.]VHO)"$/4c$9bfC`C4H=Qd>aAZD>CadohK-Ku>X;N7b;IA$jp&C"IcOjgm32^j;\Moo:]>kI6dbg]<0CltaPM3<""*P_'=SlMMThtQ?G*G7p$2mU"n.?`([j2nL.HM"hP9@X<3++Kt?A@7:>HaR7:RGQumT1;Y+=go#&6HOEUG]H0S>KGt8;nPFq^&">Lmpfq=.:5.=)hH`MX^1I4A%!>qqnaEYXO:$Mf?+f4[h:,fQ^koq7p.^qM>7-VXHRW.OZs+kf-'4=NR'd:L<mA?S\9IP.d8rbi!5opGXBiJrd&ghL]P<dJ8k/l6/K@Q%#1*QORHSCeTQO`!3A7*/&@j+5DUj0>f2iS)Xi`R0X9>X@J!G01RrHm27;KQ$JdPfMg?$hd-*g*`MDNZq`RQ6K"*o!mh-V+L?;9)I'BHN\6dT4NTQE!Go__@/l8;n0(hHgK'6nbo\CPaK^nd^HE`V8!CS%%6tV/mh)%YnEeZFA!DImL@>.1k$WVua/?M8WBo(]ZYEa7kAV&?/<mml,c:7LA0,M,&2!%E_fU8W+@'_%!k8Onc$T?U\enkopXQnQ2+u5DX7)cQ+jGtH/m(ZL*?K`*6H+4D#C<n>7O1mCgbm=B%)kFRVl!Y0LO;8);iJKE>"maTdD7HUJYADO-^G)[@.Vo.]r97Zn5?Q'g\W/Td=AmQ/@p-KoBT6N=G0fmr^].C9^K@B2DSH2='aL]'T=XQDIX/1\\T1?pT^]t*Y.=8B$ieV_beZ*QFKViq.jQ1RRlS@h=UE52eX=j`gi\RlrDD'Bc#ES.9bea&(nKm.^fY@#Ak?kgVQ.dIR]uue>glYo26rOkfWMakYpjQ,pKpc,8-`47H=YXffa)YYBZW-AdWW\95;LtqpX#rWmag!-B45GpNe<icMS?RY3FDuH%oU_/"D]0h)35SODG-_l)a(6/KNiJP.r!QSJkoW9XJFNBU4QdR#A4o?Ln##op$io&_`d)-[cM*6*DkbJ0&3itp]ahYMq>#jDK7VDQ7>n2D#h)PKB)9@=bksArZ132?ctNKk#:Nk7nqaVKQKYP!h*/Q)d"^=2E>S7dKR+Aopj,d?k-42,#&s?4<(5A>G:)ad&_M+5R$]lc,H6,>a"j:iS`NgHY>t=-/6XZf]cqBEbXa]e$o4ZlU3Bc9&X"5&;23TO]f]l!%6a4FeNq6(0O+>=Z\MLbj=>Y6GL?H"[Vm%8rr*i.s[VP@_h09ZD!,TRnAZEj*Uq=.2p'3bG=1F0WXldGub3D6;T#Kn.ob/#9]9_oUT)+LAZV_gXLVeHgTl<iss%eC(t/D9P&kU7K<O6UgjNY<@L^'cdZeZnPjP[B&*iVH'I59766e"/``@oG_(:A@aa9(HU^*<$..a`#N5ijAO\15]!S\FlEg[=2Rer3Ya/u*>;dGfa-?k[$_EU<(4)+ba_WsXR4=V!YTL<S>D9lP@7gW;baQ'c?CQf#9(YG.$VP(AJ?f\j6n\aUL(^%q#!=h]Sr7?541u6DpV'"RGU:B'//D6p)!af'ZT4+0Ok$1(NMRY^CF<@>h70eLI41Yu2(B*%=[%YZ`'rb?U$U[U>GoaF;EU;(2?X-p#YqO>V0i&^YFfcrHWIe+S_473"m[G[0a9[1aSlF^="d-Gr@`\)G2)#sE4$VIm6UFaG0>4R;(ZdYpueXM%M:35:)kA$:!FfFLU>6mV<&]S#T[&`S&At''*V/+oCP$rk%s/d-\9Rqg5LAQ[]hb(Baq^ieY@7VeB^tpJ\>#npO^1f0DOLVrU?C23+7;"7e3=4iPj'n=*.od].ln4c4@`<6ubK-Gd6;DCq/mT9!3(Q$ogbm#X?B(B,V(,jf5uO,.B14"S-,sM^Y-h.TNJQ.:QC1X/DqN-aje6b1bfV@/B[4'tZ;MDJD-S6Eu\)1hS&h/;`4_Zrpm<@\SDRQH[jeoU:^<RS%t3;K9d7kGKc:8ZJL>C;;omIj,i*17N=2'M/t2TZV%FZ!eg%dD_%eXY-6+kii%#T*d[~>endstream
+endobj
+11 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 1642
+>>
+stream
+Gau0C968iG&AII3m,X7J3Yk?Wc!)4?:7Xs3M5@YI>X/XZ@$,s@J6)=2])_M3>hbAfnn;hG`"Mt7mY?3e#k14[s/H*E4,2Xr.F8XG;kPk%@Jg//`e/13\rhqmP0bC)+NlPR6q*('iAM#%Ldi8D+H$m?KSE''J=[5>7(Q;0OqbnFWX,;;B2?4<%rh5nQ)`A>_[ufU>,^#fV38j`[^&4kpoN!dYH3!Oj#\+Xjrf)gcXX2bJ0]JD;,H=>$m\I*/4b?1#sNS:([Z01ODf*s.3;V/K_,8H8OT;d<Z4o*Tf1[6Z5cE&jli9@C8o[OFF#D$c+I@T]LR\ob)@]ep6B5->Sn]EjV&1<b#["*+_SUO">jI@U"ua?(&H9:+oDrd0!/M=/@AZ%D$;k/CWPZ-BC(IQ6=8$0G>(Q7Ar\4*+bl>57tcK;MEC;:P:bds4X\OkEn7=V??h+MR'Pl!d&?d^bs'.ALr:6j*Z(Kk:>hK7r%G6h(R;b3E+-@Zb*K-3iNd>ojS2hV$Z;M#(Ki*PcT.:,3@R_HlsP&T^!iL7m,dI#O\%Gu2d,SbR%QsV-sM2m?-oY'=Ogf&i::*1F@V?A7h]+O@D^Scn2a;(IWd]Y+df.pn_WpM)m8Wu7r&<-B'aKY.MUh3?>(W(]VEN?V^-bP_eC+W":jU6[,iu>UGFOf8F.tbec'=_aXn2!!Gi&eP.mHMpQrp5KrNMigiY]q]g:Au!2mhb/MnOf2W]+q8,i%lIsql*X^H_[O=(780<Rg#j%f/sKJ/,X7[d@67t;WF&SA+BC":Mkkjo,4.kU*bkr;9+53?3_l=_@+qW[,b8P**="o\dZT%:\qG?TCG'C7OM%m<\qERqho!0;=HV='&_NJTaUkm5)XV.uH"MMh5jp):r?iq=Yk0MY1OUGkpPiH&'e@FUQ="E?/)9?Tq)$bLj#8.&dO%)X+t/EmH&_f`N7Nh\3grnR:Nl<cIK/Mj,QS$BH6_5rRr=`Wj!gG>-C-dr!N>8QYOl^'K+<=;lKL;hIRJtK[6<&gDq[IAD:@`:0jg_fg4jt[O-\d\7XJ+(.dGm)fIr4<o0gijbac[mF_n"OSiDVkm7`+gD,?Q)4_pDthdNfpoP@H9A!rq#''a2))b-h74H#l_g]"SH6t#S[.(Cj,ZM/V#hI^PT"nVNCL1E7JfY=@Bj3S]9JpU[cN+#qaG['.1*$<*?dja)sU*dW4^;%iKiU2!iP!-Z<p<[`7l!h3M,D$C\E3@TdcNYh!uJXmXni2lrtH8G7+ln9\KBV'GuJSNh=H?A5SWlt2P<U@t.tiFO9pj*nmeC4i_NSQ^YC(!][nCko0JGO:1H.p-hG`h0m5Mp%NZF6Rk$$Q8Y47S+S1N3>uH(_pX9ffs?Le4$=u9ZsOq*RZQrbblm@;UlasNQ*+^m@7<q>q;Gg0PA3qX-K4t@2Q<J"WONb%9o9D2-72SXj:F9bn\5&9#jW_`cO\Qk3G_EU#^9<c]OF?.39[M]lo1tQ=,A_IF15&O:aB_a,cH\jb-k+TiCr?7"Et[k^1_+m2R-`L;hXmIs%M$.pKaGYAesH/O$;h6qC=85GZ_N^2W*@X%9ifThC*H6'gG_YNB(3!#kaAA,Fnk6/O.CCU]*pi^H7'6'`VsA"#h@Y58*Aj!W3/(h)nU<aViU~>endstream
 endobj
 xref
-0 11
+0 12
 0000000000 65535 f 
-0000000016 00000 n 
-0000000086 00000 n 
-0000000161 00000 n 
-0000000239 00000 n 
-0000000304 00000 n 
-0000006487 00000 n 
-0000006633 00000 n 
-0000010922 00000 n 
-0000011068 00000 n 
-0000011224 00000 n 
+0000000061 00000 n 
+0000000112 00000 n 
+0000000219 00000 n 
+0000000331 00000 n 
+0000000446 00000 n 
+0000000650 00000 n 
+0000000854 00000 n 
+0000000922 00000 n 
+0000001207 00000 n 
+0000001272 00000 n 
+0000004480 00000 n 
 trailer
-<< /Size 11 /Root 10 0 R /Info 9 0 R >>
+<<
+/ID 
+[<6598fea173aa1ac1d2521f72fcc0524b><6598fea173aa1ac1d2521f72fcc0524b>]
+% ReportLab generated PDF document -- digest (opensource)
+
+/Info 8 0 R
+/Root 7 0 R
+/Size 12
+>>
 startxref
-11274
+6214
 %%EOF
