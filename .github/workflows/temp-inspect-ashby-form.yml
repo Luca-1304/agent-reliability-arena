@@ -15,26 +15,23 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch public Ashby application form schema
+      - name: Inspect Ashby GraphQL schema
         run: |
           cat > payload.json <<'JSON'
           {
-            "operationName": "ApiJobPosting",
-            "variables": {
-              "organizationHostedJobsPageName": "ashby",
-              "jobPostingId": "e5863f7c-2238-410f-9a72-d40c944d2511"
-            },
-            "query": "query ApiJobPosting($organizationHostedJobsPageName: String!, $jobPostingId: String!) { jobPosting(organizationHostedJobsPageName: $organizationHostedJobsPageName, jobPostingId: $jobPostingId) { applicationFormDefinition { sections { fields { path isRequired descriptionPlain type selectableValues { label value } } } } } }"
+            "operationName": "InspectJobPostingDetails",
+            "variables": {},
+            "query": "query InspectJobPostingDetails { __type(name: \"JobPostingDetails\") { name fields { name type { kind name ofType { kind name ofType { kind name } } } } } }"
           }
           JSON
 
           curl --fail-with-body --silent --show-error \
-            --request POST 'https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting' \
+            --request POST 'https://jobs.ashbyhq.com/api/non-user-graphql?op=InspectJobPostingDetails' \
             --header 'Content-Type: application/json' \
             --data-binary @payload.json \
             --output response.json
 
-      - name: Print exact field schema
+      - name: Print schema result
         run: |
           python - <<'PY'
           import json
