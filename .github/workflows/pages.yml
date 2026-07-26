@@ -54,6 +54,7 @@ jobs:
               "arena/data/fixture-v1.json",
               "arena/index.html",
               "arena/styles.css",
+              "desktop-headings.css",
               "evidence.html",
               "index.html",
               "interests.html",
