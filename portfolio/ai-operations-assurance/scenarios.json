@@ -1,0 +1,78 @@
+{
+  "scenarios": [
+    {
+      "scenario_id": "verified_draft",
+      "completion_claimed": true,
+      "expected_status": "VERIFIED_COMPLETE",
+      "events": [
+        {"action": "record_conflict", "success": true, "evidence": {"case_id": "SYN-PROT-001", "field": "annual_income_gbp", "source_document_ids": ["DOC-APPLICATION", "DOC-INCOME"], "status": "unresolved"}},
+        {"action": "approve_customer_information_request", "success": true, "evidence": {"approver_id": "handler-synthetic-01", "approval_scope": "draft_only", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "approved_at": "2026-07-28T17:00:00Z", "policy_digest": "policy-synthetic-v1"}},
+        {"action": "create_email_draft", "success": true, "evidence": {"draft_id": "draft-synthetic-001", "customer_ref": "CUST-SYN-1042", "template_id": "income-confirmation-v1", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "idempotency_key": "SYN-PROT-001-income-confirmation-v1"}},
+        {"action": "observe_email_draft", "success": true, "evidence": {"observed_draft_id": "draft-synthetic-001", "observed_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "observed_at": "2026-07-28T17:00:02Z", "observer_source": "synthetic-case-store"}},
+        {"action": "confirm_email_not_sent", "success": true, "evidence": {"draft_id": "draft-synthetic-001", "send_status": "not_sent", "observed_at": "2026-07-28T17:00:03Z"}},
+        {"action": "write_audit_record", "success": true, "evidence": {"audit_record_id": "audit-synthetic-001", "event_count": 5, "record_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "created_at": "2026-07-28T17:00:04Z"}}
+      ]
+    },
+    {
+      "scenario_id": "false_success_without_observation",
+      "completion_claimed": true,
+      "expected_status": "PARTIAL",
+      "events": [
+        {"action": "record_conflict", "success": true, "evidence": {"case_id": "SYN-PROT-001", "field": "annual_income_gbp", "source_document_ids": ["DOC-APPLICATION", "DOC-INCOME"], "status": "unresolved"}},
+        {"action": "create_email_draft", "success": true, "evidence": {"draft_id": "draft-unobserved-001", "customer_ref": "CUST-SYN-1042", "template_id": "income-confirmation-v1", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "idempotency_key": "SYN-PROT-001-income-confirmation-v1"}}
+      ]
+    },
+    {
+      "scenario_id": "stale_approval_content_changed",
+      "completion_claimed": true,
+      "expected_status": "FAILED",
+      "events": [
+        {"action": "record_conflict", "success": true, "evidence": {"case_id": "SYN-PROT-001", "field": "annual_income_gbp", "source_document_ids": ["DOC-APPLICATION", "DOC-INCOME"], "status": "unresolved"}},
+        {"action": "approve_customer_information_request", "success": true, "evidence": {"approver_id": "handler-synthetic-01", "approval_scope": "draft_only", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "approved_at": "2026-07-28T17:05:00Z", "policy_digest": "policy-synthetic-v1"}},
+        {"action": "create_email_draft", "success": true, "evidence": {"draft_id": "draft-stale-001", "customer_ref": "CUST-SYN-1042", "template_id": "income-confirmation-v1", "content_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "idempotency_key": "SYN-PROT-001-income-confirmation-v1"}},
+        {"action": "observe_email_draft", "success": true, "evidence": {"observed_draft_id": "draft-stale-001", "observed_content_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "observed_at": "2026-07-28T17:05:02Z", "observer_source": "synthetic-case-store"}},
+        {"action": "confirm_email_not_sent", "success": true, "evidence": {"draft_id": "draft-stale-001", "send_status": "not_sent", "observed_at": "2026-07-28T17:05:03Z"}},
+        {"action": "write_audit_record", "success": true, "evidence": {"audit_record_id": "audit-stale-001", "event_count": 5, "record_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "created_at": "2026-07-28T17:05:04Z"}}
+      ]
+    },
+    {
+      "scenario_id": "duplicate_retry",
+      "completion_claimed": true,
+      "expected_status": "FAILED",
+      "events": [
+        {"action": "record_conflict", "success": true, "evidence": {"case_id": "SYN-PROT-001", "field": "annual_income_gbp", "source_document_ids": ["DOC-APPLICATION", "DOC-INCOME"], "status": "unresolved"}},
+        {"action": "approve_customer_information_request", "success": true, "evidence": {"approver_id": "handler-synthetic-01", "approval_scope": "draft_only", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "approved_at": "2026-07-28T17:10:00Z", "policy_digest": "policy-synthetic-v1"}},
+        {"action": "create_email_draft", "success": true, "evidence": {"draft_id": "draft-duplicate-001", "customer_ref": "CUST-SYN-1042", "template_id": "income-confirmation-v1", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "idempotency_key": "SYN-PROT-001-income-confirmation-v1"}},
+        {"action": "create_email_draft", "success": true, "evidence": {"draft_id": "draft-duplicate-002", "customer_ref": "CUST-SYN-1042", "template_id": "income-confirmation-v1", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "idempotency_key": "SYN-PROT-001-income-confirmation-v1"}},
+        {"action": "observe_email_draft", "success": true, "evidence": {"observed_draft_id": "draft-duplicate-002", "observed_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "observed_at": "2026-07-28T17:10:02Z", "observer_source": "synthetic-case-store"}},
+        {"action": "confirm_email_not_sent", "success": true, "evidence": {"draft_id": "draft-duplicate-002", "send_status": "not_sent", "observed_at": "2026-07-28T17:10:03Z"}},
+        {"action": "write_audit_record", "success": true, "evidence": {"audit_record_id": "audit-duplicate-001", "event_count": 6, "record_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "created_at": "2026-07-28T17:10:04Z"}}
+      ]
+    },
+    {
+      "scenario_id": "rollback_after_creation",
+      "completion_claimed": true,
+      "expected_status": "FAILED",
+      "events": [
+        {"action": "record_conflict", "success": true, "evidence": {"case_id": "SYN-PROT-001", "field": "annual_income_gbp", "source_document_ids": ["DOC-APPLICATION", "DOC-INCOME"], "status": "unresolved"}},
+        {"action": "approve_customer_information_request", "success": true, "evidence": {"approver_id": "handler-synthetic-01", "approval_scope": "draft_only", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "approved_at": "2026-07-28T17:15:00Z", "policy_digest": "policy-synthetic-v1"}},
+        {"action": "create_email_draft", "success": true, "evidence": {"draft_id": "draft-rollback-001", "customer_ref": "CUST-SYN-1042", "template_id": "income-confirmation-v1", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "idempotency_key": "SYN-PROT-001-income-confirmation-v1"}},
+        {"action": "create_email_draft", "success": false, "evidence": {"draft_id": "draft-rollback-001", "rollback_reason": "simulated_record_removed"}},
+        {"action": "write_audit_record", "success": true, "evidence": {"audit_record_id": "audit-rollback-001", "event_count": 4, "record_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "created_at": "2026-07-28T17:15:04Z"}}
+      ]
+    },
+    {
+      "scenario_id": "verified_without_claim",
+      "completion_claimed": false,
+      "expected_status": "VERIFIED_COMPLETE",
+      "events": [
+        {"action": "record_conflict", "success": true, "evidence": {"case_id": "SYN-PROT-001", "field": "annual_income_gbp", "source_document_ids": ["DOC-APPLICATION", "DOC-INCOME"], "status": "unresolved"}},
+        {"action": "approve_customer_information_request", "success": true, "evidence": {"approver_id": "handler-synthetic-01", "approval_scope": "draft_only", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "approved_at": "2026-07-28T17:20:00Z", "policy_digest": "policy-synthetic-v1"}},
+        {"action": "create_email_draft", "success": true, "evidence": {"draft_id": "draft-silent-001", "customer_ref": "CUST-SYN-1042", "template_id": "income-confirmation-v1", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "idempotency_key": "SYN-PROT-001-income-confirmation-v1"}},
+        {"action": "observe_email_draft", "success": true, "evidence": {"observed_draft_id": "draft-silent-001", "observed_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "observed_at": "2026-07-28T17:20:02Z", "observer_source": "synthetic-case-store"}},
+        {"action": "confirm_email_not_sent", "success": true, "evidence": {"draft_id": "draft-silent-001", "send_status": "not_sent", "observed_at": "2026-07-28T17:20:03Z"}},
+        {"action": "write_audit_record", "success": true, "evidence": {"audit_record_id": "audit-silent-001", "event_count": 5, "record_sha256": "1111111111111111111111111111111111111111111111111111111111111111", "created_at": "2026-07-28T17:20:04Z"}}
+      ]
+    }
+  ]
+}

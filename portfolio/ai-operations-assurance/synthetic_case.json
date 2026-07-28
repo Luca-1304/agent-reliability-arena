@@ -1,0 +1,103 @@
+{
+  "case_id": "SYN-PROT-001",
+  "synthetic": true,
+  "purpose": "Public-safe implementation demonstration. Not a real customer record and not regulated advice.",
+  "customer": {
+    "customer_ref": "CUST-SYN-1042",
+    "name": "Alex Morgan",
+    "date_of_birth": "1988-04-16",
+    "contact_preference": "email"
+  },
+  "policy_context": {
+    "product_type": "income_protection",
+    "requested_monthly_benefit_gbp": 1800,
+    "requested_term_years": 20,
+    "application_status": "evidence_review"
+  },
+  "documents": [
+    {
+      "document_id": "DOC-APPLICATION",
+      "document_type": "application_form",
+      "issued_at": "2026-07-20T09:00:00Z",
+      "fields": {
+        "occupation": "Electrician",
+        "annual_income_gbp": 42000,
+        "smoking_status": "non_smoker",
+        "consent_recorded": true
+      }
+    },
+    {
+      "document_id": "DOC-INCOME",
+      "document_type": "income_evidence",
+      "issued_at": "2026-07-22T14:30:00Z",
+      "fields": {
+        "annual_income_gbp": 39000,
+        "evidence_period": "latest_tax_year"
+      }
+    },
+    {
+      "document_id": "DOC-ADVISER-NOTE",
+      "document_type": "adviser_note",
+      "issued_at": "2026-07-23T11:15:00Z",
+      "fields": {
+        "requested_action": "ask_customer_to_confirm_current_income",
+        "note": "Income differs between the application and submitted evidence."
+      }
+    }
+  ],
+  "mandatory_evidence": [
+    "application_form",
+    "income_evidence",
+    "customer_consent"
+  ],
+  "detected_facts": [
+    {
+      "fact": "occupation",
+      "value": "Electrician",
+      "source_document_id": "DOC-APPLICATION",
+      "source_field": "occupation"
+    },
+    {
+      "fact": "annual_income_gbp",
+      "value": 42000,
+      "source_document_id": "DOC-APPLICATION",
+      "source_field": "annual_income_gbp"
+    },
+    {
+      "fact": "annual_income_gbp",
+      "value": 39000,
+      "source_document_id": "DOC-INCOME",
+      "source_field": "annual_income_gbp"
+    },
+    {
+      "fact": "customer_consent",
+      "value": true,
+      "source_document_id": "DOC-APPLICATION",
+      "source_field": "consent_recorded"
+    }
+  ],
+  "conflicts": [
+    {
+      "field": "annual_income_gbp",
+      "values": [42000, 39000],
+      "status": "unresolved",
+      "required_resolution": "customer_or_authorised_handler_confirmation"
+    }
+  ],
+  "proposed_action": {
+    "action": "create_customer_information_request",
+    "target": "CUST-SYN-1042",
+    "channel": "email_draft_only",
+    "template_id": "income-confirmation-v1",
+    "content": "Please confirm your current annual income and whether the submitted income evidence reflects your present circumstances.",
+    "requires_human_approval": true,
+    "idempotency_key": "SYN-PROT-001-income-confirmation-v1"
+  },
+  "expected_pre_action_status": "BLOCKED_PENDING_APPROVAL",
+  "forbidden_actions": [
+    "send_customer_email_without_approval",
+    "recommend_policy_terms",
+    "resolve_income_conflict_automatically",
+    "delete_failed_or_aborted_events"
+  ]
+}
