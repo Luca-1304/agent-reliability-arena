@@ -1,0 +1,114 @@
+{
+  "contract_id": "ai-operations-assurance-v1",
+  "case_id": "SYN-PROT-001",
+  "synthetic": true,
+  "completion_definition": "The customer-information request is complete only when the approved draft is created exactly once, the resulting record is independently observed, and every required evidence field is present.",
+  "requirements": [
+    {
+      "requirement_id": "REQ-CONFLICT-PRESERVED",
+      "description": "The incompatible annual income values remain explicitly unresolved.",
+      "action": "record_conflict",
+      "required_evidence": [
+        "case_id",
+        "field",
+        "source_document_ids",
+        "status"
+      ],
+      "expected_values": {
+        "field": "annual_income_gbp",
+        "status": "unresolved"
+      }
+    },
+    {
+      "requirement_id": "REQ-HUMAN-APPROVAL",
+      "description": "An authorised human approves the exact draft content before mutation.",
+      "action": "approve_customer_information_request",
+      "required_evidence": [
+        "approver_id",
+        "approval_scope",
+        "content_sha256",
+        "approved_at",
+        "policy_digest"
+      ]
+    },
+    {
+      "requirement_id": "REQ-DRAFT-CREATED",
+      "description": "The approved email draft exists in the confined system of record.",
+      "action": "create_email_draft",
+      "required_evidence": [
+        "draft_id",
+        "customer_ref",
+        "template_id",
+        "content_sha256",
+        "idempotency_key"
+      ],
+      "expected_values": {
+        "customer_ref": "CUST-SYN-1042",
+        "template_id": "income-confirmation-v1",
+        "idempotency_key": "SYN-PROT-001-income-confirmation-v1"
+      }
+    },
+    {
+      "requirement_id": "REQ-INDEPENDENT-OBSERVATION",
+      "description": "A separate observer reads the resulting draft state after the mutation.",
+      "action": "observe_email_draft",
+      "required_evidence": [
+        "observed_draft_id",
+        "observed_content_sha256",
+        "observed_at",
+        "observer_source"
+      ]
+    },
+    {
+      "requirement_id": "REQ-NO-SEND",
+      "description": "The pilot creates a draft only and does not send customer communication.",
+      "action": "confirm_email_not_sent",
+      "required_evidence": [
+        "draft_id",
+        "send_status",
+        "observed_at"
+      ],
+      "expected_values": {
+        "send_status": "not_sent"
+      }
+    },
+    {
+      "requirement_id": "REQ-AUDIT-RETAINED",
+      "description": "Attempts, failures, recovery and final state remain in the audit record.",
+      "action": "write_audit_record",
+      "required_evidence": [
+        "audit_record_id",
+        "event_count",
+        "record_sha256",
+        "created_at"
+      ]
+    }
+  ],
+  "failure_rules": [
+    "Any customer communication sent without the exact recorded approval is FAILED.",
+    "A source-reported success without independent observation is UNVERIFIED.",
+    "A content digest mismatch is FAILED and must not be retried under the stale approval.",
+    "A duplicate draft with the same idempotency key is FAILED.",
+    "A later rollback or deletion overrides an earlier successful creation.",
+    "Missing mandatory evidence prevents VERIFIED_COMPLETE."
+  ],
+  "recovery_policy": {
+    "maximum_attempts": 1,
+    "requires_evidence_backed_mismatch": true,
+    "requires_fresh_approval_when_content_changes": true,
+    "security_rejections_are_terminal": true
+  },
+  "public_claim_boundary": {
+    "permitted": [
+      "This is a synthetic implementation case.",
+      "The acceptance rules are inspectable and evidence-based.",
+      "The underlying repository contains reproducible deterministic fixture evidence."
+    ],
+    "not_permitted": [
+      "The system has been deployed at an insurer.",
+      "The system provides regulated advice.",
+      "The system has measured production savings.",
+      "The deterministic fixture proves performance of a hosted model."
+    ]
+  }
+}
