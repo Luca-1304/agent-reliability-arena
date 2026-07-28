@@ -15,6 +15,23 @@ A synthetic protection-insurance operations case demonstrating:
 - operational metrics and an explicitly illustrative value model;
 - honest evidence and publication boundaries.
 
+### Run the evidence-contract demo
+
+From an editable install at the repository root:
+
+```bash
+python -m pip install --editable .
+python -m agent_reliability_arena.portfolio_demo
+```
+
+Use `--json` for the full canonical event and evaluation report:
+
+```bash
+python -m agent_reliability_arena.portfolio_demo --json
+```
+
+The committed suite covers verified completion, false success without observation, stale approval, duplicate retry, rollback and completion proved despite no agent claim. The branch's Python test matrix and CodeQL workflow verify the executable path.
+
 Start here:
 
 1. [`ai-operations-assurance/HIRING_MANAGER_BRIEF.md`](ai-operations-assurance/HIRING_MANAGER_BRIEF.md)
@@ -22,6 +39,7 @@ Start here:
 3. [`ai-operations-assurance/DEMO_SCRIPT.md`](ai-operations-assurance/DEMO_SCRIPT.md)
 4. [`ai-operations-assurance/synthetic_case.json`](ai-operations-assurance/synthetic_case.json)
 5. [`ai-operations-assurance/acceptance_contract.json`](ai-operations-assurance/acceptance_contract.json)
+6. [`ai-operations-assurance/scenarios.json`](ai-operations-assurance/scenarios.json)
 
 ## Evidence boundary
 
