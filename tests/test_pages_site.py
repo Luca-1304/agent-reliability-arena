@@ -15,6 +15,7 @@ EXPECTED_STAGED_FILES = {
     "arena/data/fixture-v1.json",
     "arena/index.html",
     "arena/styles.css",
+    "audit.html",
     "desktop-headings.css",
     "evidence.html",
     "index.html",
@@ -38,19 +39,17 @@ class PagesSiteTests(unittest.TestCase):
             self.assertEqual(staged, EXPECTED_STAGED_FILES)
 
             portfolio = ROOT / "web" / "cinematic-plus"
-            self.assertEqual((output / "index.html").read_bytes(), (portfolio / "index.html").read_bytes())
-            self.assertEqual((output / "evidence.html").read_bytes(), (portfolio / "evidence.html").read_bytes())
-            self.assertEqual((output / "interests.html").read_bytes(), (portfolio / "interests.html").read_bytes())
-            self.assertEqual((output / "portfolio.css").read_bytes(), (portfolio / "portfolio.css").read_bytes())
-            self.assertEqual(
-                (output / "desktop-headings.css").read_bytes(),
-                (portfolio / "desktop-headings.css").read_bytes(),
-            )
-            self.assertEqual((output / "site.js").read_bytes(), (portfolio / "site.js").read_bytes())
-            self.assertEqual(
-                (output / "Luca_Panayiotou_CV.pdf").read_bytes(),
-                (portfolio / "Luca_Panayiotou_CV.pdf").read_bytes(),
-            )
+            for name in (
+                "index.html",
+                "audit.html",
+                "evidence.html",
+                "interests.html",
+                "portfolio.css",
+                "desktop-headings.css",
+                "site.js",
+                "Luca_Panayiotou_CV.pdf",
+            ):
+                self.assertEqual((output / name).read_bytes(), (portfolio / name).read_bytes())
 
             self.assertEqual((output / "arena/index.html").read_bytes(), (ROOT / "web/index.html").read_bytes())
             self.assertEqual((output / "arena/styles.css").read_bytes(), (ROOT / "web/styles.css").read_bytes())
@@ -117,14 +116,15 @@ class PagesSiteTests(unittest.TestCase):
             "actions/setup-python@v7",
             "python scripts/verify_showcase_release.py",
             "python scripts/verify_launch_package.py",
-            "python -m unittest tests.test_pages_site tests.test_lean_portfolio",
+            "python scripts/verify_audit_package.py",
+            "tests.test_audit_service_page",
             "python scripts/stage_pages_site.py --root . --output _site",
             "actions/upload-pages-artifact@v5",
             "path: _site",
             "actions/configure-pages@v6",
             "actions/deploy-pages@v5",
             "Luca Panayiotou",
-            "Broad enough to build. Disciplined enough to prove.",
+            "AI Agent Reliability Audit",
             "Agent Reliability Arena — Evidence-first agent evaluation",
         ):
             self.assertIn(marker, workflow)
