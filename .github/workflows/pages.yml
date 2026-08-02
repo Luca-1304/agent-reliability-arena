@@ -37,7 +37,8 @@ jobs:
         run: |
           python scripts/verify_showcase_release.py
           python scripts/verify_launch_package.py
-          python -m unittest tests.test_pages_site tests.test_lean_portfolio
+          python scripts/verify_audit_package.py
+          python -m unittest tests.test_pages_site tests.test_lean_portfolio tests.test_audit_service_page tests.test_audit_package
 
       - name: Stage exact Pages artifact
         run: python scripts/stage_pages_site.py --root . --output _site
@@ -54,6 +55,7 @@ jobs:
               "arena/data/fixture-v1.json",
               "arena/index.html",
               "arena/styles.css",
+              "audit.html",
               "desktop-headings.css",
               "evidence.html",
               "index.html",
@@ -96,7 +98,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v5
 
-      - name: Verify live portfolio and Arena boundaries
+      - name: Verify live portfolio, audit and Arena boundaries
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
@@ -106,6 +108,10 @@ jobs:
           curl --fail --location --retry 12 --retry-delay 5 --retry-all-errors "$BASE_URL/" -o /tmp/pages-portfolio.html
           grep -F "Luca Panayiotou" /tmp/pages-portfolio.html
           grep -F "Broad enough to build. Disciplined enough to prove." /tmp/pages-portfolio.html
+
+          curl --fail --location --retry 12 --retry-delay 5 --retry-all-errors "$BASE_URL/audit.html" -o /tmp/pages-audit.html
+          grep -F "AI Agent Reliability Audit" /tmp/pages-audit.html
+          grep -F "No production mutation or provider spend without separate written approval." /tmp/pages-audit.html
 
           curl --fail --location --retry 12 --retry-delay 5 --retry-all-errors "$BASE_URL/arena/" -o /tmp/pages-arena.html
           grep -F "Agent Reliability Arena — Evidence-first agent evaluation" /tmp/pages-arena.html

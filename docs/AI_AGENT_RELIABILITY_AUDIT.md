@@ -44,9 +44,10 @@ After the audit, implementation can be scoped separately. Possible work includes
 ## Working model
 
 - A short fit review establishes whether the workflow is sufficiently bounded.
-- Scope, evidence access, exclusions, delivery format and fixed price are agreed before work begins.
+- The fixed scope, evidence access, exclusions, delivery format and fixed price are agreed before work begins.
 - Sensitive data should be minimised, redacted or replaced with representative fixtures wherever possible.
-- No open-ended provider spend or production change is made without explicit written approval.
+- Credentials are not requested during ordinary intake and should never be pasted into email, chat or shared documents.
+- No production mutation or provider spend is made without separate explicit written approval.
 - Findings are evidence-led: uncertain or inaccessible facts are labelled rather than guessed.
 
 ## What the audit is not
