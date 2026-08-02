@@ -1,0 +1,78 @@
+name: One-time historical CV purge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/purge-historical-cv.yml
+
+permissions:
+  contents: write
+
+jobs:
+  purge:
+    if: github.repository == 'Luca-1304/agent-reliability-arena'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Remove historical CV and restore only sanitised version
+        env:
+          CV_PATH: web/cinematic-plus/Luca_Panayiotou_CV.pdf
+          WORKFLOW_PATH: .github/workflows/purge-historical-cv.yml
+        run: |
+          set -euo pipefail
+
+          SAFE_CV="$(mktemp)"
+          cp "$CV_PATH" "$SAFE_CV"
+          SAFE_HASH="$(sha256sum "$SAFE_CV" | awk '{print $1}')"
+
+          sudo apt-get update
+          sudo apt-get install --yes poppler-utils
+          python -m pip install --disable-pip-version-check git-filter-repo
+
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+          while IFS= read -r ref; do
+            branch="${ref#refs/remotes/origin/}"
+            if [[ "$branch" != "HEAD" && "$branch" != "main" ]]; then
+              git branch -f "$branch" "$ref"
+            fi
+          done < <(git for-each-ref --format='%(refname)' refs/remotes/origin)
+
+          git config user.name 'Luca-1304 security maintenance'
+          git config user.email '224096495+Luca-1304@users.noreply.github.com'
+
+          git filter-repo --force --path "$CV_PATH" --invert-paths
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git checkout main
+
+          mkdir -p "$(dirname "$CV_PATH")"
+          cp "$SAFE_CV" "$CV_PATH"
+          rm -f "$WORKFLOW_PATH"
+          test "$(sha256sum "$CV_PATH" | awk '{print $1}')" = "$SAFE_HASH"
+          python scripts/verify_public_cv.py --pdf "$CV_PATH"
+
+          git add "$CV_PATH" "$WORKFLOW_PATH"
+          git commit -m 'security: purge historical private CV and restore sanitised public copy'
+          FINAL_SHA="$(git rev-parse HEAD)"
+
+          for branch in update/cv-certifications-v1 update/cv-portfolio-link; do
+            git branch -f "$branch" "$FINAL_SHA"
+          done
+
+          git push --force origin 'refs/heads/*:refs/heads/*'
+          git push --force origin --tags
+
+          test "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$FINAL_SHA"
+          for branch in update/cv-certifications-v1 update/cv-portfolio-link; do
+            test "$(git ls-remote origin "refs/heads/$branch" | awk '{print $1}')" = "$FINAL_SHA"
+          done
+
+          if git log --all --format='%H' -- "$CV_PATH" | tail -n +2 | grep -q .; then
+            echo 'Historical CV path still appears before the sanitised restoration commit.' >&2
+            exit 1
+          fi
