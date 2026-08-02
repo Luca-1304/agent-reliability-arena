@@ -9,6 +9,7 @@ from .showcase_release import verify_showcase_release
 
 _PORTFOLIO_SOURCE_TO_TARGET = {
     "web/cinematic-plus/Luca_Panayiotou_CV.pdf": "Luca_Panayiotou_CV.pdf",
+    "web/cinematic-plus/audit.html": "audit.html",
     "web/cinematic-plus/desktop-headings.css": "desktop-headings.css",
     "web/cinematic-plus/evidence.html": "evidence.html",
     "web/cinematic-plus/index.html": "index.html",
