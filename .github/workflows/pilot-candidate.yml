@@ -1,0 +1,84 @@
+name: Provider-free pilot candidate
+
+on:
+  pull_request:
+    paths:
+      - "examples/pilot_experiment.gpt-5-mini-2025-08-07.json"
+      - "examples/pilot_policy.gpt-5-mini-2025-08-07.review.json"
+      - "docs/PILOT_CANDIDATE_GPT5_MINI_2025_08_07.md"
+      - ".github/workflows/pilot-candidate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Provider-free preflight — Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install candidate package
+        run: python -m pip install --disable-pip-version-check --editable .
+      - name: Build provider-free preflight
+        run: |
+          arena-preflight-pilot \
+            --config examples/pilot_experiment.gpt-5-mini-2025-08-07.json \
+            --catalog examples/live_prompt_catalog.json \
+            --policy examples/pilot_policy.gpt-5-mini-2025-08-07.review.json \
+            > pilot-preflight.json
+      - name: Enforce reviewed boundary
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("pilot-preflight.json").read_text(encoding="utf-8"))
+          expected = {
+              "provider_called": False,
+              "external_execution_enabled": False,
+              "provider": "openai-responses",
+              "model_id": "gpt-5-mini-2025-08-07",
+              "model_version": "2025-08-07",
+              "prompt_version": "fixture-prompts-v1",
+              "planned_call_ceiling": 8,
+              "reserved_total_tokens": 16384,
+              "max_reserved_total_tokens": 16384,
+              "reserved_cost_minor_units": 16,
+              "max_cost_minor_units": 20,
+              "currency": "GBP",
+              "scenario_ids": ["success"],
+          }
+          for key, value in expected.items():
+              actual = payload.get(key)
+              if actual != value:
+                  raise SystemExit(f"{key}: expected {value!r}, got {actual!r}")
+          for digest in (
+              "policy_digest",
+              "config_digest",
+              "contract_digest",
+              "prompt_catalog_digest",
+              "manifest_digest",
+          ):
+              value = payload.get(digest)
+              if not isinstance(value, str) or len(value) != 64:
+                  raise SystemExit(f"Missing or invalid {digest}")
+          print("Provider-free pilot candidate: verified")
+          PY
+      - name: Confirm no credential field exists
+        shell: bash
+        run: |
+          if grep -RniE 'api[_-]?key|authorization' \
+            examples/pilot_experiment.gpt-5-mini-2025-08-07.json \
+            examples/pilot_policy.gpt-5-mini-2025-08-07.review.json; then
+            echo "Credential-shaped field found in public candidate files." >&2
+            exit 1
+          fi
