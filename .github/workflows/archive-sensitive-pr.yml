@@ -1,0 +1,31 @@
+name: Archive historical sensitive CV pull request
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Archive PR 55 and verify state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PR_ID="$(gh api graphql \
+            -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){id}}}' \
+            -f owner='Luca-1304' \
+            -f name='agent-reliability-arena' \
+            -F number=55 \
+            --jq '.data.repository.pullRequest.id')"
+          test -n "$PR_ID"
+          gh api graphql \
+            -f query='mutation($id:ID!){archivePullRequest(input:{pullRequestId:$id}){pullRequest{number isArchived closed locked}}}' \
+            -f id="$PR_ID" \
+            --jq '.data.archivePullRequest.pullRequest | select(.number == 55 and .isArchived == true and .closed == true and .locked == true)'
