@@ -1,0 +1,68 @@
+name: Archive historical CV pull request
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/archive-historical-cv-pr.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  statuses: write
+
+jobs:
+  archive:
+    if: github.repository == 'Luca-1304/agent-reliability-arena'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+
+      - name: Archive, verify and remove this workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_PATH: .github/workflows/archive-historical-cv-pr.yml
+        run: |
+          set -euo pipefail
+
+          read_state() {
+            gh api graphql \
+              -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){id number isArchived closed locked}}}' \
+              -f owner='Luca-1304' \
+              -f name='agent-reliability-arena' \
+              -F number=55
+          }
+
+          STATE="$(read_state)"
+          PR_ID="$(jq -r '.data.repository.pullRequest.id' <<<"$STATE")"
+          test -n "$PR_ID"
+
+          if [[ "$(jq -r '.data.repository.pullRequest.isArchived' <<<"$STATE")" != 'true' ]]; then
+            gh api graphql \
+              -f query='mutation($id:ID!){archivePullRequest(input:{pullRequestId:$id}){pullRequest{number isArchived closed locked}}}' \
+              -f id="$PR_ID" >/tmp/archive-result.json
+          fi
+
+          FINAL_STATE="$(read_state)"
+          test "$(jq -r '.data.repository.pullRequest.number' <<<"$FINAL_STATE")" = '55'
+          test "$(jq -r '.data.repository.pullRequest.isArchived' <<<"$FINAL_STATE")" = 'true'
+          test "$(jq -r '.data.repository.pullRequest.closed' <<<"$FINAL_STATE")" = 'true'
+          test "$(jq -r '.data.repository.pullRequest.locked' <<<"$FINAL_STATE")" = 'true'
+
+          git config user.name 'Luca-1304 security maintenance'
+          git config user.email '224096495+Luca-1304@users.noreply.github.com'
+          rm -f "$WORKFLOW_PATH"
+          git add "$WORKFLOW_PATH"
+          git commit -m 'security: remove completed PR archival workflow'
+          git push origin HEAD:main
+
+          FINAL_SHA="$(git rev-parse HEAD)"
+          gh api --method POST "/repos/${GITHUB_REPOSITORY}/statuses/${FINAL_SHA}" \
+            -f state='success' \
+            -f context='security/pr-55-archived' \
+            -f description='Historical CV PR archived, closed and locked' \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/55"
