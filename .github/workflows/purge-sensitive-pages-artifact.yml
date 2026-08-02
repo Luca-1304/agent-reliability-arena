@@ -2,7 +2,7 @@ name: Purge known unsafe Pages artifact
 
 on:
   push:
-    branches: [security/purge-sensitive-artifact]
+    branches: [main]
 
 permissions:
   actions: write
