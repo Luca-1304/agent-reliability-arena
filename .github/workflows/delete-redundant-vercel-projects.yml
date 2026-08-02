@@ -1,0 +1,66 @@
+name: Delete redundant Vercel projects
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/delete-redundant-vercel-projects.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.repository == 'Luca-1304/agent-reliability-arena'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+
+      - name: Delete redundant projects and remove this workflow
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          TEAM_ID: team_DOce8meNJ0XSMFi5sj38znT1
+          PRIMARY_PROJECT: prj_D70P1zacfiKIKWTa1xqUjCzCuYlL
+          DUPLICATE_PROJECT: prj_8AosI8EjO9LmEqW2CLVeIuoutaLA
+          WORKFLOW_PATH: .github/workflows/delete-redundant-vercel-projects.yml
+        run: |
+          set -u
+          RESULT='missing-token'
+
+          if [[ -n "${VERCEL_TOKEN:-}" ]]; then
+            RESULT='success'
+            for project in "$DUPLICATE_PROJECT" "$PRIMARY_PROJECT"; do
+              code="$(curl --silent --show-error --output "/tmp/${project}.json" --write-out '%{http_code}' \
+                --request DELETE \
+                --url "https://api.vercel.com/v9/projects/${project}?teamId=${TEAM_ID}" \
+                --header "Authorization: Bearer ${VERCEL_TOKEN}")"
+              if [[ "$code" != '200' && "$code" != '204' && "$code" != '404' ]]; then
+                RESULT='api-failed'
+              fi
+            done
+          fi
+
+          git config user.name 'Luca-1304 security maintenance'
+          git config user.email '224096495+Luca-1304@users.noreply.github.com'
+          rm -f "$WORKFLOW_PATH"
+          git add "$WORKFLOW_PATH"
+
+          case "$RESULT" in
+            success)
+              MESSAGE='security: delete redundant Vercel projects and remove cleanup workflow'
+              ;;
+            missing-token)
+              MESSAGE='security: remove unavailable Vercel API cleanup workflow'
+              ;;
+            *)
+              MESSAGE='security: remove unsuccessful Vercel API cleanup workflow'
+              ;;
+          esac
+
+          git commit -m "$MESSAGE"
+          git push origin HEAD:main
+
+          [[ "$RESULT" == 'success' ]]
