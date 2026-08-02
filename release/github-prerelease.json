@@ -29,7 +29,7 @@
   "source_repository": "https://github.com/Luca-1304/agent-reliability-arena",
   "source_sbom_sha256": "d571b710b7a12fb47d0da151cf923a82dccf666e1c2f2c207342777c01ce500d",
   "source_showcase_manifest_digest": "30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7",
-  "source_supply_chain_manifest_sha256": "30b786122b6b210147666e81c6adcfc63488c75e00337da0c12241254de43cb6",
+  "source_supply_chain_manifest_sha256": "826f18371820dc54d6ff803b0b940eb7bebb83964e56151d74caa1d194dc5e3e",
   "tag": "v0.2.0rc2",
   "target_branch": "main",
   "version": "0.2.0rc2"
