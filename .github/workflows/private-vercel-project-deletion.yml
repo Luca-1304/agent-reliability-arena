@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   delete-projects:
@@ -17,12 +16,8 @@ jobs:
       - name: Install official Vercel CLI
         run: npm install --global vercel@58.0.0
 
-      - name: Request private device approval
+      - name: Start private device approval session
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/vercel-auth /tmp/vercel-device
@@ -43,7 +38,7 @@ jobs:
           -----END PUBLIC KEY-----
           KEY
 
-          cat > /tmp/vercel-device/login.py <<'PY'
+          cat > /tmp/vercel-device/login_daemon.py <<'PY'
           import base64
           import json
           import os
@@ -52,50 +47,40 @@ jobs:
           import select
           import subprocess
           import time
+          from pathlib import Path
 
-          def encrypt(payload: bytes, marker: str, post: bool = False) -> None:
+          root = Path('/tmp/vercel-device')
+
+          def encrypt(payload: bytes, destination: Path) -> None:
               if len(payload) > 400:
                   payload = payload[-400:]
-              with open('/tmp/vercel-device/payload.bin', 'wb') as handle:
-                  handle.write(payload)
+              plain = root / 'payload.bin'
+              cipher = root / 'cipher.bin'
+              plain.write_bytes(payload)
               subprocess.run(
                   [
                       'openssl', 'pkeyutl', '-encrypt', '-pubin',
-                      '-inkey', '/tmp/vercel-device/public.pem',
-                      '-in', '/tmp/vercel-device/payload.bin',
-                      '-out', '/tmp/vercel-device/cipher.bin',
+                      '-inkey', str(root / 'public.pem'),
+                      '-in', str(plain), '-out', str(cipher),
                       '-pkeyopt', 'rsa_padding_mode:oaep',
                       '-pkeyopt', 'rsa_oaep_md:sha256',
                   ],
                   check=True,
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL,
               )
-              ciphertext = base64.b64encode(open('/tmp/vercel-device/cipher.bin', 'rb').read()).decode()
-              print(f'{marker}={ciphertext}', flush=True)
-              if post:
-                  body = f'Encrypted owner approval handoff only. No token or plaintext device code is present.\n\n`{marker}={ciphertext}`'
-                  subprocess.run(
-                      [
-                          'gh', 'api',
-                          f"repos/{os.environ['REPOSITORY']}/issues/{os.environ['PR_NUMBER']}/comments",
-                          '-f', f'body={body}',
-                      ],
-                      check=True,
-                      stdout=subprocess.DEVNULL,
-                  )
+              destination.write_text(base64.b64encode(cipher.read_bytes()).decode() + '\n')
 
-          command = [
-              'vercel', 'login', '--no-color',
-              '--global-config', '/tmp/vercel-auth',
-          ]
           environment = os.environ.copy()
           environment.pop('CI', None)
           environment.pop('GITHUB_ACTIONS', None)
+          environment.pop('RUNNER_TRACKING_ID', None)
           environment['VERCEL_TELEMETRY_DISABLED'] = '1'
           environment['BROWSER'] = '/bin/true'
 
           master, slave = pty.openpty()
           process = subprocess.Popen(
-              command,
+              ['vercel', 'login', '--no-color', '--global-config', '/tmp/vercel-auth'],
               stdin=subprocess.PIPE,
               stdout=slave,
               stderr=slave,
@@ -134,9 +119,10 @@ jobs:
                   codes = re.findall(r'\b[A-Z0-9]{4,}-[A-Z0-9]{4,}\b', text)
                   code = codes[-1] if codes else None
                   if url:
-                      payload = json.dumps({'url': url, 'code': code}, separators=(',', ':')).encode()
-                      encrypt(payload, 'VERCEL_DEVICE_CIPHERTEXT', post=True)
-                      print('VERCEL_DEVICE_READY=true', flush=True)
+                      encrypt(
+                          json.dumps({'url': url, 'code': code}, separators=(',', ':')).encode(),
+                          root / 'device-ciphertext.txt',
+                      )
                       published = True
 
               if process.poll() is not None:
@@ -144,31 +130,75 @@ jobs:
 
           text = ansi.sub('', captured.decode('utf-8', errors='ignore'))
           if not published:
-              diagnostic = re.sub(r'\s+', ' ', text).strip().encode()
-              encrypt(diagnostic, 'VERCEL_LOGIN_DIAGNOSTIC_CIPHERTEXT')
+              encrypt(re.sub(r'\s+', ' ', text).strip().encode(), root / 'diagnostic-ciphertext.txt')
+              (root / 'failed').write_text('device URL not produced\n')
               process.terminate()
-              raise SystemExit('Vercel device approval URL was not produced')
+              raise SystemExit(1)
 
           remaining = max(1, int(deadline - time.time()))
           try:
               return_code = process.wait(timeout=remaining)
           except subprocess.TimeoutExpired:
               process.terminate()
-              raise SystemExit('Vercel device approval expired')
+              (root / 'failed').write_text('device approval expired\n')
+              raise SystemExit(1)
+
           if return_code != 0:
-              encrypt(re.sub(r'\s+', ' ', text).strip().encode(), 'VERCEL_LOGIN_FAILURE_CIPHERTEXT')
-              raise SystemExit('Vercel device authentication was not approved')
-          print('VERCEL_DEVICE_AUTHENTICATED=true', flush=True)
+              encrypt(re.sub(r'\s+', ' ', text).strip().encode(), root / 'failure-ciphertext.txt')
+              (root / 'failed').write_text('device authentication failed\n')
+              raise SystemExit(1)
+
+          (root / 'authenticated').write_text('true\n')
           PY
 
-          python /tmp/vercel-device/login.py
+          (
+            unset RUNNER_TRACKING_ID
+            nohup python /tmp/vercel-device/login_daemon.py >/dev/null 2>&1 &
+            echo $! > /tmp/vercel-device/daemon.pid
+          )
+
+          for _ in $(seq 1 90); do
+            if test -s /tmp/vercel-device/device-ciphertext.txt; then
+              echo 'Encrypted device handoff prepared.'
+              exit 0
+            fi
+            if test -f /tmp/vercel-device/failed; then
+              echo 'Device flow failed before handoff.' >&2
+              exit 1
+            fi
+            sleep 1
+          done
+          echo 'Device handoff was not produced.' >&2
+          exit 1
+
+      - name: Upload encrypted approval handoff
+        uses: actions/upload-artifact@v7
+        with:
+          name: encrypted-vercel-device-handoff
+          path: /tmp/vercel-device/device-ciphertext.txt
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Wait for owner approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 900); do
+            if test -f /tmp/vercel-device/authenticated; then
+              echo 'Vercel device authentication approved.'
+              exit 0
+            fi
+            if test -f /tmp/vercel-device/failed; then
+              echo 'Vercel device authentication failed or expired.' >&2
+              exit 1
+            fi
+            sleep 1
+          done
+          echo 'Vercel device authentication expired.' >&2
+          exit 1
 
       - name: Delete both redundant projects
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           set +e
@@ -190,7 +220,6 @@ jobs:
               raise SystemExit(f'Project deletion did not complete: {sorted(remaining)}')
           print('VERCEL_PROJECTS_REMOVED=true')
           PY
-          gh api "repos/$REPOSITORY/issues/$PR_NUMBER/comments" -f body='Vercel project deletion completed and independently verified by project listing. No authentication material was retained.' >/dev/null
           echo "PRIMARY_DELETE_EXIT=$primary_status"
           echo "DUPLICATE_DELETE_EXIT=$duplicate_status"
           rm -rf /tmp/vercel-auth /tmp/vercel-device /tmp/delete-primary.log /tmp/delete-duplicate.log /tmp/projects.json
