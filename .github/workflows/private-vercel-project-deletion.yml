@@ -46,13 +46,37 @@ jobs:
           import re
           import select
           import subprocess
-          import sys
           import time
 
+          def encrypt(payload: bytes, marker: str) -> None:
+              if len(payload) > 400:
+                  payload = payload[-400:]
+              with open('/tmp/vercel-device/payload.bin', 'wb') as handle:
+                  handle.write(payload)
+              subprocess.run(
+                  [
+                      'openssl', 'pkeyutl', '-encrypt', '-pubin',
+                      '-inkey', '/tmp/vercel-device/public.pem',
+                      '-in', '/tmp/vercel-device/payload.bin',
+                      '-out', '/tmp/vercel-device/cipher.bin',
+                      '-pkeyopt', 'rsa_padding_mode:oaep',
+                      '-pkeyopt', 'rsa_oaep_md:sha256',
+                  ],
+                  check=True,
+              )
+              ciphertext = base64.b64encode(open('/tmp/vercel-device/cipher.bin', 'rb').read()).decode()
+              print(f'{marker}={ciphertext}', flush=True)
+
           command = [
-              "vercel", "login", "--no-browser", "--no-color",
-              "--global-config", "/tmp/vercel-auth",
+              'vercel', 'login', '--no-color',
+              '--global-config', '/tmp/vercel-auth',
           ]
+          environment = os.environ.copy()
+          environment.pop('CI', None)
+          environment.pop('GITHUB_ACTIONS', None)
+          environment['VERCEL_TELEMETRY_DISABLED'] = '1'
+          environment['BROWSER'] = '/bin/true'
+
           master, slave = pty.openpty()
           process = subprocess.Popen(
               command,
@@ -60,12 +84,13 @@ jobs:
               stdout=slave,
               stderr=slave,
               close_fds=True,
+              env=environment,
           )
           os.close(slave)
           captured = bytearray()
           published = False
           deadline = time.time() + 900
-          ansi = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+          ansi = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
 
           while time.time() < deadline:
               try:
@@ -78,50 +103,46 @@ jobs:
               except OSError:
                   break
 
-              text = ansi.sub("", captured.decode("utf-8", errors="ignore"))
+              text = ansi.sub('', captured.decode('utf-8', errors='ignore'))
               if not published:
-                  urls = re.findall(r"https://[^\s<>\"']+", text)
-                  url = next((item.rstrip(".,);]") for item in urls if "vercel.com" in item), None)
-                  codes = re.findall(r"\b[A-Z0-9]{4,}-[A-Z0-9]{4,}\b", text)
+                  urls = [item.rstrip('.,);]') for item in re.findall(r'https://[^\s<>\"\']+', text)]
+                  url = next(
+                      (
+                          item for item in urls
+                          if 'vercel.com' in item
+                          and any(word in item.lower() for word in ('oauth', 'device', 'authorize', 'login'))
+                          and 'telemetry' not in item.lower()
+                      ),
+                      None,
+                  )
+                  codes = re.findall(r'\b[A-Z0-9]{4,}-[A-Z0-9]{4,}\b', text)
                   code = codes[-1] if codes else None
                   if url:
-                      payload = json.dumps({"url": url, "code": code}, separators=(",", ":")).encode()
-                      if len(payload) > 400:
-                          raise SystemExit("Device payload exceeded encrypted boundary")
-                      with open("/tmp/vercel-device/payload.json", "wb") as handle:
-                          handle.write(payload)
-                      subprocess.run(
-                          [
-                              "openssl", "pkeyutl", "-encrypt", "-pubin",
-                              "-inkey", "/tmp/vercel-device/public.pem",
-                              "-in", "/tmp/vercel-device/payload.json",
-                              "-out", "/tmp/vercel-device/payload.bin",
-                              "-pkeyopt", "rsa_padding_mode:oaep",
-                              "-pkeyopt", "rsa_oaep_md:sha256",
-                          ],
-                          check=True,
-                      )
-                      ciphertext = base64.b64encode(open("/tmp/vercel-device/payload.bin", "rb").read()).decode()
-                      print(f"VERCEL_DEVICE_CIPHERTEXT={ciphertext}", flush=True)
-                      print("VERCEL_DEVICE_READY=true", flush=True)
+                      payload = json.dumps({'url': url, 'code': code}, separators=(',', ':')).encode()
+                      encrypt(payload, 'VERCEL_DEVICE_CIPHERTEXT')
+                      print('VERCEL_DEVICE_READY=true', flush=True)
                       published = True
 
               if process.poll() is not None:
                   break
 
+          text = ansi.sub('', captured.decode('utf-8', errors='ignore'))
           if not published:
+              diagnostic = re.sub(r'\s+', ' ', text).strip().encode()
+              encrypt(diagnostic, 'VERCEL_LOGIN_DIAGNOSTIC_CIPHERTEXT')
               process.terminate()
-              raise SystemExit("Vercel device approval URL was not produced")
+              raise SystemExit('Vercel device approval URL was not produced')
 
           remaining = max(1, int(deadline - time.time()))
           try:
               return_code = process.wait(timeout=remaining)
           except subprocess.TimeoutExpired:
               process.terminate()
-              raise SystemExit("Vercel device approval expired")
+              raise SystemExit('Vercel device approval expired')
           if return_code != 0:
-              raise SystemExit("Vercel device authentication was not approved")
-          print("VERCEL_DEVICE_AUTHENTICATED=true", flush=True)
+              encrypt(re.sub(r'\s+', ' ', text).strip().encode(), 'VERCEL_LOGIN_FAILURE_CIPHERTEXT')
+              raise SystemExit('Vercel device authentication was not approved')
+          print('VERCEL_DEVICE_AUTHENTICATED=true', flush=True)
           PY
 
           python /tmp/vercel-device/login.py
