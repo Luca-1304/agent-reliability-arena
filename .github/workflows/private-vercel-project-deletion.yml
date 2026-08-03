@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   delete-projects:
@@ -18,6 +19,10 @@ jobs:
 
       - name: Request private device approval
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/vercel-auth /tmp/vercel-device
@@ -48,7 +53,7 @@ jobs:
           import subprocess
           import time
 
-          def encrypt(payload: bytes, marker: str) -> None:
+          def encrypt(payload: bytes, marker: str, post: bool = False) -> None:
               if len(payload) > 400:
                   payload = payload[-400:]
               with open('/tmp/vercel-device/payload.bin', 'wb') as handle:
@@ -66,6 +71,17 @@ jobs:
               )
               ciphertext = base64.b64encode(open('/tmp/vercel-device/cipher.bin', 'rb').read()).decode()
               print(f'{marker}={ciphertext}', flush=True)
+              if post:
+                  body = f'Encrypted owner approval handoff only. No token or plaintext device code is present.\n\n`{marker}={ciphertext}`'
+                  subprocess.run(
+                      [
+                          'gh', 'api',
+                          f"repos/{os.environ['REPOSITORY']}/issues/{os.environ['PR_NUMBER']}/comments",
+                          '-f', f'body={body}',
+                      ],
+                      check=True,
+                      stdout=subprocess.DEVNULL,
+                  )
 
           command = [
               'vercel', 'login', '--no-color',
@@ -119,7 +135,7 @@ jobs:
                   code = codes[-1] if codes else None
                   if url:
                       payload = json.dumps({'url': url, 'code': code}, separators=(',', ':')).encode()
-                      encrypt(payload, 'VERCEL_DEVICE_CIPHERTEXT')
+                      encrypt(payload, 'VERCEL_DEVICE_CIPHERTEXT', post=True)
                       print('VERCEL_DEVICE_READY=true', flush=True)
                       published = True
 
@@ -149,6 +165,10 @@ jobs:
 
       - name: Delete both redundant projects
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           set +e
@@ -170,6 +190,7 @@ jobs:
               raise SystemExit(f'Project deletion did not complete: {sorted(remaining)}')
           print('VERCEL_PROJECTS_REMOVED=true')
           PY
+          gh api "repos/$REPOSITORY/issues/$PR_NUMBER/comments" -f body='Vercel project deletion completed and independently verified by project listing. No authentication material was retained.' >/dev/null
           echo "PRIMARY_DELETE_EXIT=$primary_status"
           echo "DUPLICATE_DELETE_EXIT=$duplicate_status"
           rm -rf /tmp/vercel-auth /tmp/vercel-device /tmp/delete-primary.log /tmp/delete-duplicate.log /tmp/projects.json
