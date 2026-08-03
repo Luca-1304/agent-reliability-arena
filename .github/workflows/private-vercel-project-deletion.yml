@@ -1,0 +1,154 @@
+name: Encrypted one-time Vercel project deletion
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  delete-projects:
+    if: github.head_ref == 'security/private-vercel-project-deletion'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install official Vercel CLI
+        run: npm install --global vercel@58.0.0
+
+      - name: Request private device approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/vercel-auth /tmp/vercel-device
+          cat > /tmp/vercel-device/public.pem <<'KEY'
+          -----BEGIN PUBLIC KEY-----
+          MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA0cDGIRB8CrE4BoAle7l+
+          Rx4i3oi+j55PSG8CRbehhGlNVLazPUZL6B+y/AaubuYoeIGP9pWSyHX5yNPDISpg
+          NRNEy4dICIrFFfHtqxJW0KVLEJvAOdVESynhnDb8qX4uFsDlU9YBChZBCI+frQ4A
+          StuK5bXS+v7ZwwWNBCpBTROvHDoztv8rjvbS2G+nAkqd6vnVlO7MiYnoPdqynRJF
+          6iFs0AAkVkneFynj3460FLGXmtfdO+UkAW/i7S3MGuJZn2LVJhPnG0UbaHbhO+Ha
+          6AL6rAQz04ICN76jRzmfOVk2bZtxJocQ9er2xNI5KBvwzp3hc7kQ6Fe8utdSca3q
+          C82iyC8Q1//KfVfjSFuS8aRkxD0hsElAYnUx4hg1KjnouyvgeaugirHBkPXfUK+B
+          1KcMZB297cYyio4GzqFPo/1SWBGBAKGk0ZXN0WJTw29Pxu4RgZajzr1wOjvDP17a
+          6kNFQhGdKrxI/3FJNYdKyZsmmqNq+GLz6msNpho6KpvzPe9Q+m6M8xSDzltGneg3
+          ws/PcxEFz+ACyZtA5sBfLEc2/FYSmGM7zG63cPe6xFRQaLUgMqe/meHGr3KJP1Ue
+          AryY3xW7aNmF4rSbxq+dkXJ72MkEX0bFO9OshQAb93YnkFvL97gE2xR09MdT4KLt
+          oASYdKD3d/EUl8vVIJDouvcCAwEAAQ==
+          -----END PUBLIC KEY-----
+          KEY
+
+          cat > /tmp/vercel-device/login.py <<'PY'
+          import base64
+          import json
+          import os
+          import pty
+          import re
+          import select
+          import subprocess
+          import sys
+          import time
+
+          command = [
+              "vercel", "login", "--no-browser", "--no-color",
+              "--global-config", "/tmp/vercel-auth",
+          ]
+          master, slave = pty.openpty()
+          process = subprocess.Popen(
+              command,
+              stdin=subprocess.PIPE,
+              stdout=slave,
+              stderr=slave,
+              close_fds=True,
+          )
+          os.close(slave)
+          captured = bytearray()
+          published = False
+          deadline = time.time() + 900
+          ansi = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+          while time.time() < deadline:
+              try:
+                  ready, _, _ = select.select([master], [], [], 1.0)
+                  if ready:
+                      chunk = os.read(master, 4096)
+                      if not chunk:
+                          break
+                      captured.extend(chunk)
+              except OSError:
+                  break
+
+              text = ansi.sub("", captured.decode("utf-8", errors="ignore"))
+              if not published:
+                  urls = re.findall(r"https://[^\s<>\"']+", text)
+                  url = next((item.rstrip(".,);]") for item in urls if "vercel.com" in item), None)
+                  codes = re.findall(r"\b[A-Z0-9]{4,}-[A-Z0-9]{4,}\b", text)
+                  code = codes[-1] if codes else None
+                  if url:
+                      payload = json.dumps({"url": url, "code": code}, separators=(",", ":")).encode()
+                      if len(payload) > 400:
+                          raise SystemExit("Device payload exceeded encrypted boundary")
+                      with open("/tmp/vercel-device/payload.json", "wb") as handle:
+                          handle.write(payload)
+                      subprocess.run(
+                          [
+                              "openssl", "pkeyutl", "-encrypt", "-pubin",
+                              "-inkey", "/tmp/vercel-device/public.pem",
+                              "-in", "/tmp/vercel-device/payload.json",
+                              "-out", "/tmp/vercel-device/payload.bin",
+                              "-pkeyopt", "rsa_padding_mode:oaep",
+                              "-pkeyopt", "rsa_oaep_md:sha256",
+                          ],
+                          check=True,
+                      )
+                      ciphertext = base64.b64encode(open("/tmp/vercel-device/payload.bin", "rb").read()).decode()
+                      print(f"VERCEL_DEVICE_CIPHERTEXT={ciphertext}", flush=True)
+                      print("VERCEL_DEVICE_READY=true", flush=True)
+                      published = True
+
+              if process.poll() is not None:
+                  break
+
+          if not published:
+              process.terminate()
+              raise SystemExit("Vercel device approval URL was not produced")
+
+          remaining = max(1, int(deadline - time.time()))
+          try:
+              return_code = process.wait(timeout=remaining)
+          except subprocess.TimeoutExpired:
+              process.terminate()
+              raise SystemExit("Vercel device approval expired")
+          if return_code != 0:
+              raise SystemExit("Vercel device authentication was not approved")
+          print("VERCEL_DEVICE_AUTHENTICATED=true", flush=True)
+          PY
+
+          python /tmp/vercel-device/login.py
+
+      - name: Delete both redundant projects
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          vercel project rm agent-reliability-arena --yes --scope luca-1304s-projects --global-config /tmp/vercel-auth --no-color >/tmp/delete-primary.log 2>&1
+          primary_status=$?
+          vercel project rm agent-reliability-arena-ytop --yes --scope luca-1304s-projects --global-config /tmp/vercel-auth --no-color >/tmp/delete-duplicate.log 2>&1
+          duplicate_status=$?
+          set -e
+          vercel project ls --json --scope luca-1304s-projects --global-config /tmp/vercel-auth --no-color >/tmp/projects.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/projects.json').read_text())
+          projects = data if isinstance(data, list) else data.get('projects', [])
+          names = {item.get('name') for item in projects if isinstance(item, dict)}
+          remaining = {'agent-reliability-arena', 'agent-reliability-arena-ytop'} & names
+          if remaining:
+              raise SystemExit(f'Project deletion did not complete: {sorted(remaining)}')
+          print('VERCEL_PROJECTS_REMOVED=true')
+          PY
+          echo "PRIMARY_DELETE_EXIT=$primary_status"
+          echo "DUPLICATE_DELETE_EXIT=$duplicate_status"
+          rm -rf /tmp/vercel-auth /tmp/vercel-device /tmp/delete-primary.log /tmp/delete-duplicate.log /tmp/projects.json
