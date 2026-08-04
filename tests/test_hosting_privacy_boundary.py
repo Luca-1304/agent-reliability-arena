@@ -17,9 +17,10 @@ class HostingPrivacyBoundaryTests(unittest.TestCase):
         self.assertIn("No real-provider pilot", policy)
         self.assertIn("affected immutable Vercel deployment URLs return `404` or `410`", policy)
 
-    def test_vercel_remains_fail_closed_until_platform_deletion(self) -> None:
+    def test_vercel_git_deployments_are_disabled_until_platform_deletion(self) -> None:
         config = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
-        self.assertEqual(config.get("ignoreCommand"), "exit 0")
+        self.assertIs(config.get("git", {}).get("deploymentEnabled"), False)
+        self.assertNotIn("ignoreCommand", config)
         self.assertEqual(config.get("outputDirectory"), "web/cinematic-plus")
 
     def test_pages_keeps_source_staged_and_live_cv_verification(self) -> None:
