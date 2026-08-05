@@ -1,0 +1,92 @@
+/* Desktop-only editorial title expansion. Mobile keeps the base portfolio layout. */
+@media (min-width: 900px) {
+  .section-intro,
+  .section-intro h2,
+  .evidence-opening h1,
+  .interests-opening h1,
+  .contact-editorial h2,
+  .next-editorial h2,
+  .personal-editorial h2 {
+    width: 100%;
+    max-width: none;
+  }
+
+  .hero-editorial,
+  .evidence-opening-grid,
+  .interests-opening-grid,
+  .section-intro-split,
+  .contact-editorial,
+  .next-editorial,
+  .personal-editorial {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .hero-editorial {
+    min-height: auto;
+    gap: 52px;
+  }
+
+  .hero-copy,
+  .hero-copy h1,
+  .evidence-opening-grid > div:first-child,
+  .interests-opening-grid > div:first-child,
+  .section-intro-split > div {
+    width: 100%;
+    max-width: none;
+  }
+
+  .evidence-path {
+    min-height: 220px;
+  }
+
+  .evidence-opening-grid,
+  .interests-opening-grid {
+    gap: 44px;
+  }
+
+  .section-intro-split {
+    gap: 22px;
+  }
+
+  .section-intro-split > p {
+    max-width: 72ch;
+    margin-bottom: 0;
+  }
+
+  .flagship-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .flagship-copy {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-height: 0;
+    padding: 0 0 34px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .flagship-copy h2 {
+    width: 100%;
+    max-width: none;
+    font-size: clamp(2.75rem, 5.2vw, 5rem);
+  }
+
+  .flagship-result {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .flagship-support {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .contact-editorial,
+  .next-editorial,
+  .personal-editorial {
+    gap: 26px;
+  }
+}

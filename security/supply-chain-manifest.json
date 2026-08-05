@@ -1,0 +1,54 @@
+{
+  "build_requirements": [
+    "setuptools>=68"
+  ],
+  "claims_boundary": "Public supply-chain visibility and integrity checks only. This is not an exhaustive security audit, penetration test, production-readiness certification or guarantee that no vulnerability exists.",
+  "comparative_claim_permitted": false,
+  "components": [
+    {
+      "name": "agent-reliability-arena",
+      "source": "pyproject.toml",
+      "type": "application",
+      "version": "0.2.0rc2"
+    },
+    {
+      "name": "agent-completion-verifier",
+      "source": "https://github.com/Luca-1304/agent-completion-verifier",
+      "source_commit": "f65fb3450e3c1d7db17f0192667b854d126cd190",
+      "type": "vendored-library",
+      "version": "0.6.0"
+    }
+  ],
+  "exhaustive_security_scan_claimed": false,
+  "files": [
+    {
+      "path": ".github/dependabot.yml",
+      "sha256": "2da3ee476fa71aaccdff4b1a3341d22c6007db4c80d8a453277352917e6b56f5"
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "sha256": "d077a385de066ee83294e10f4f8d7016074e5925cff7b61a44239446a7b8d98c"
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "d99c194f01da3d424f34356983fd8343729ab1b7f3c246f5924a4f7c20990334"
+    },
+    {
+      "path": "docs/SUPPLY_CHAIN_SECURITY.md",
+      "sha256": "5ec1e60bfec1be4753609731e299ae2c68dac059a9ef03dffda98939036de521"
+    },
+    {
+      "path": "security/sbom.cdx.json",
+      "sha256": "d571b710b7a12fb47d0da151cf923a82dccf666e1c2f2c207342777c01ce500d"
+    }
+  ],
+  "launch_manifest_digest": "620c658240e4b05571de47dd66be13fbde72a6540ba06ba977d8056caf17427e",
+  "project": "Agent Reliability Arena",
+  "provider_called": false,
+  "release_tag": "v0.2.0rc2",
+  "release_url": "https://github.com/Luca-1304/agent-reliability-arena/releases/tag/v0.2.0rc2",
+  "runtime_dependency_count": 0,
+  "schema_version": "arena-supply-chain-v1",
+  "showcase_manifest_digest": "30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7",
+  "version": "0.2.0rc2"
+}

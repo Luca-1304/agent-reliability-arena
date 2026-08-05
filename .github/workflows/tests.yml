@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -41,13 +41,24 @@ jobs:
         run: python -m unittest discover -s tests -p "test_*.py" -v
 
       - name: Run release verifier
-        run: python scripts/verify_release.py
+        run: |
+          python scripts/verify_release.py
+          python scripts/verify_disclosure_release.py
+          python scripts/verify_repeated_release.py
+          python scripts/verify_showcase_release.py
+          python scripts/verify_launch_package.py
+          python scripts/verify_citation_package.py
+          python scripts/verify_supply_chain.py
 
       - name: Run installed commands
         run: |
           arena-run --config examples/fixture_experiment.json --output /tmp/arena-editable
           arena-replay --input /tmp/arena-editable > /tmp/editable-replay.json
           arena-export-web --input /tmp/arena-editable --output /tmp/editable-public.json
+          arena-verify-showcase --root . > /tmp/editable-showcase.json
+          arena-verify-launch-package --root . > /tmp/editable-launch-package.json
+          arena-verify-citation-package --root . > /tmp/editable-citation-package.json
+          arena-verify-supply-chain --root . > /tmp/editable-supply-chain.json
 
       - name: Build wheel
         run: python -m pip wheel . --no-deps --no-build-isolation --wheel-dir dist
@@ -58,9 +69,19 @@ jobs:
           /tmp/arena-wheel/bin/python -m pip install --no-deps dist/*.whl
           PATH="/tmp/arena-wheel/bin:$PATH" /tmp/arena-wheel/bin/python -m unittest discover -s tests -p "test_*.py" -v
           /tmp/arena-wheel/bin/python scripts/verify_release.py
+          /tmp/arena-wheel/bin/python scripts/verify_disclosure_release.py
+          /tmp/arena-wheel/bin/python scripts/verify_repeated_release.py
+          /tmp/arena-wheel/bin/python scripts/verify_showcase_release.py
+          /tmp/arena-wheel/bin/python scripts/verify_launch_package.py
+          /tmp/arena-wheel/bin/python scripts/verify_citation_package.py
+          /tmp/arena-wheel/bin/python scripts/verify_supply_chain.py
           /tmp/arena-wheel/bin/arena-run --config examples/fixture_experiment.json --output /tmp/arena-wheel-run
           /tmp/arena-wheel/bin/arena-replay --input /tmp/arena-wheel-run > /tmp/wheel-replay.json
           /tmp/arena-wheel/bin/arena-export-web --input /tmp/arena-wheel-run --output /tmp/wheel-public.json
+          /tmp/arena-wheel/bin/arena-verify-showcase --root . > /tmp/wheel-showcase.json
+          /tmp/arena-wheel/bin/arena-verify-launch-package --root . > /tmp/wheel-launch-package.json
+          /tmp/arena-wheel/bin/arena-verify-citation-package --root . > /tmp/wheel-citation-package.json
+          /tmp/arena-wheel/bin/arena-verify-supply-chain --root . > /tmp/wheel-supply-chain.json
           /tmp/arena-wheel/bin/python - <<'PY'
           from pathlib import Path
           import json
@@ -74,6 +95,28 @@ jobs:
           assert public["metrics"]["conditions"]["general"]["verified_complete"] == 2
           assert public["metrics"]["conditions"]["specialist"]["verified_complete"] == 6
           assert public["metrics"]["paired"]["additional_logical_model_calls"] == 36
+          showcase = json.loads(Path("/tmp/wheel-showcase.json").read_text(encoding="utf-8"))
+          assert showcase["files_verified"] == 7
+          assert showcase["provider_called"] is False
+          assert showcase["comparative_claim_permitted"] is False
+          launch = json.loads(Path("/tmp/wheel-launch-package.json").read_text(encoding="utf-8"))
+          assert launch["files_verified"] == 8
+          assert launch["repository_publications"] == 1
+          assert launch["prepared_external_actions"] >= 4
+          assert launch["submitted_external_actions"] == 0
+          assert launch["provider_called"] is False
+          assert launch["comparative_claim_permitted"] is False
+          citation = json.loads(Path("/tmp/wheel-citation-package.json").read_text(encoding="utf-8"))
+          assert citation["files_verified"] == 4
+          assert citation["release_tag"] == "v0.2.0rc2"
+          assert citation["provider_called"] is False
+          assert citation["comparative_claim_permitted"] is False
+          supply_chain = json.loads(Path("/tmp/wheel-supply-chain.json").read_text(encoding="utf-8"))
+          assert supply_chain["component_count"] == 2
+          assert supply_chain["runtime_dependency_count"] == 0
+          assert supply_chain["provider_called"] is False
+          assert supply_chain["comparative_claim_permitted"] is False
+          assert supply_chain["exhaustive_security_scan_claimed"] is False
           PY
           /tmp/arena-wheel/bin/python -m pip check
 

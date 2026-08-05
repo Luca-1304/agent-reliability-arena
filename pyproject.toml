@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-reliability-arena"
-version = "0.1.0"
+version = "0.2.0rc2"
 description = "Same model, same tools, same evidence rules—different orchestration."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -26,6 +26,13 @@ dependencies = []
 arena-run = "agent_reliability_arena.cli:run_main"
 arena-replay = "agent_reliability_arena.cli:replay_main"
 arena-export-web = "agent_reliability_arena.cli:export_web_main"
+arena-preflight-pilot = "agent_reliability_arena.cli:preflight_pilot_main"
+arena-export-live-evidence = "agent_reliability_arena.cli_disclosure:export_main"
+arena-verify-live-export = "agent_reliability_arena.cli_disclosure:verify_main"
+arena-verify-showcase = "agent_reliability_arena.cli_showcase:verify_main"
+arena-verify-launch-package = "agent_reliability_arena.cli_launch:verify_main"
+arena-verify-citation-package = "agent_reliability_arena.cli_citation:verify_main"
+arena-verify-supply-chain = "agent_reliability_arena.cli_supply_chain:verify_main"
 
 [project.urls]
 Repository = "https://github.com/Luca-1304/agent-reliability-arena"

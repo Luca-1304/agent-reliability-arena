@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "git": {
+    "deploymentEnabled": false
+  },
+  "buildCommand": null,
+  "installCommand": "",
+  "outputDirectory": "web/cinematic-plus",
+  "cleanUrls": false,
+  "trailingSlash": false
+}

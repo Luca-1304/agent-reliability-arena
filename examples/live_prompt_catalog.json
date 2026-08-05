@@ -1,0 +1,30 @@
+{
+  "schema_version": "1",
+  "prompt_version": "fixture-prompts-v1",
+  "roles": {
+    "general": {
+      "instructions": "Analyse the supplied controlled fixture and return a bounded JSON proposal. Do not execute tools or claim success.",
+      "max_output_tokens": 256
+    },
+    "strategist": {
+      "instructions": "Describe a bounded JSON plan for the supplied controlled fixture. Do not execute tools or approve completion.",
+      "max_output_tokens": 257
+    },
+    "operator": {
+      "instructions": "Describe the single permitted action as structured JSON. Do not execute it or approve completion.",
+      "max_output_tokens": 258
+    },
+    "auditor": {
+      "instructions": "Assess supplied source and observation evidence as structured JSON. Do not mutate state.",
+      "max_output_tokens": 259
+    },
+    "recovery": {
+      "instructions": "Assess whether one bounded retry is justified and return structured JSON. Do not execute it.",
+      "max_output_tokens": 260
+    },
+    "synthesiser": {
+      "instructions": "Summarise only the supplied verified evidence as structured JSON. Do not invent or override verification.",
+      "max_output_tokens": 261
+    }
+  }
+}
