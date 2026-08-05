@@ -34,7 +34,7 @@ REQUIRED_PUBLIC_MARKERS = {
     "personal and referee contact details intentionally omitted",
     ALLOWED_EMAIL,
 }
-FORBIDDEN_PUBLIC_HOST_SUFFIXES = ("vercel.app",)
+FORBIDDEN_PUBLIC_HOST_SUFFIXES = ("vercel" + ".app",)
 FORBIDDEN_URL_QUERY_KEYS = {
     "api_key",
     "apikey",
