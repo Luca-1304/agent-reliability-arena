@@ -1,19 +1,21 @@
 name: Encrypted one-time Vercel project deletion
 
 on:
-  push:
-    branches:
-      - security/private-vercel-project-deletion
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   delete-projects:
+    if: github.head_ref == 'security/private-vercel-project-deletion'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       GH_TOKEN: ${{ github.token }}
+      TARGET_BRANCH: ${{ github.head_ref }}
       HANDOFF_PATH: .security/vercel-device-ciphertext.txt
     steps:
       - name: Install official Vercel CLI
@@ -75,7 +77,7 @@ jobs:
                       ciphertext=base64.b64encode((root/'cipher.bin').read_bytes()).decode()+'\n'
                       encoded=base64.b64encode(ciphertext.encode()).decode()
                       endpoint=f"repos/{os.environ['GITHUB_REPOSITORY']}/contents/{os.environ['HANDOFF_PATH']}"
-                      subprocess.run(['gh','api','--method','PUT',endpoint,'-f','message=[skip ci] publish encrypted Vercel approval handoff','-f',f'content={encoded}','-f',f"branch={os.environ['GITHUB_REF_NAME']}"],check=True,stdout=subprocess.DEVNULL)
+                      subprocess.run(['gh','api','--method','PUT',endpoint,'-f','message=[skip ci] publish encrypted Vercel approval handoff','-f',f'content={encoded}','-f',f"branch={os.environ['TARGET_BRANCH']}"],check=True,stdout=subprocess.DEVNULL)
                       print('Encrypted owner approval handoff published.',flush=True)
                       published=True
               if proc.poll() is not None: break
@@ -100,6 +102,6 @@ jobs:
           if remaining: raise SystemExit(f'Projects remain: {sorted(remaining)}')
           print('VERCEL_PROJECTS_REMOVED=true')
           PY
-          sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/${HANDOFF_PATH}?ref=${GITHUB_REF_NAME}" --jq .sha)"
-          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/contents/${HANDOFF_PATH}" -f 'message=[skip ci] remove encrypted Vercel approval handoff' -f "sha=${sha}" -f "branch=${GITHUB_REF_NAME}" >/dev/null
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/${HANDOFF_PATH}?ref=${TARGET_BRANCH}" --jq .sha)"
+          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/contents/${HANDOFF_PATH}" -f 'message=[skip ci] remove encrypted Vercel approval handoff' -f "sha=${sha}" -f "branch=${TARGET_BRANCH}" >/dev/null
           rm -rf /tmp/vercel-auth /tmp/vercel-device /tmp/projects.json
