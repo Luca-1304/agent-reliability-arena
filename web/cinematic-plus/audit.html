@@ -35,7 +35,7 @@
       <h1>AI Agent Reliability Audit</h1>
       <p class="lead">For teams using AI agents or tool-calling workflows that need stronger evidence before an action is treated as complete.</p>
       <div class="actions">
-        <a class="button button-primary" href="mailto:Lucapanay13@gmail.com?subject=AI%20Agent%20Reliability%20Audit%20enquiry">Request a fit review</a>
+        <a class="button button-primary" href="#intake">Start the local intake</a>
         <a class="button" href="#deliverables">View deliverables</a>
       </div>
     </div>
@@ -98,17 +98,56 @@
 </section>
 
 <section id="intake" class="next-section">
-  <div class="shell next-editorial">
-    <div>
-      <p class="eyebrow">Fit review</p>
-      <h2>Send five facts, not sensitive data.</h2>
-      <p>Describe the workflow's purpose, the systems it changes, what currently counts as done, one known failure or uncertainty, and whether representative or redacted evidence is available.</p>
-      <p class="boundary">Do not send passwords, API keys, private customer data or unrestricted production credentials during initial contact.</p>
+  <div class="shell">
+    <div class="section-intro section-intro-split">
+      <div>
+        <p class="eyebrow">Private-by-design fit review</p>
+        <h2>Describe one workflow without uploading anything.</h2>
+      </div>
+      <p>This page stores nothing and sends nothing to a server. It only builds text locally for you to review, copy or open in your own email client.</p>
     </div>
-    <div class="actions">
-      <a class="button button-primary" href="mailto:Lucapanay13@gmail.com?subject=AI%20Agent%20Reliability%20Audit%20enquiry&body=Workflow%20purpose%3A%0ASystems%20changed%3A%0AWhat%20currently%20counts%20as%20done%3A%0AKnown%20failure%20or%20uncertainty%3A%0ARedacted%20evidence%20available%3A">Start an enquiry</a>
-      <a class="button" href="evidence.html">Inspect supporting evidence</a>
-    </div>
+    <form data-intake-form>
+      <div class="proof-map">
+        <div class="proof-item">
+          <div class="proof-item-heading"><span class="status-label status-released">Required</span><span>01</span></div>
+          <label for="intake-purpose"><strong>Workflow purpose</strong></label>
+          <p>What outcome should this agent or automation produce?</p>
+          <textarea id="intake-purpose" name="purpose" rows="4" cols="30" maxlength="1000" autocomplete="off" required></textarea>
+        </div>
+        <div class="proof-item">
+          <div class="proof-item-heading"><span class="status-label status-released">Required</span><span>02</span></div>
+          <label for="intake-systems"><strong>Tools or systems changed</strong></label>
+          <p>Name the external systems or records the workflow reads or changes.</p>
+          <textarea id="intake-systems" name="systems" rows="4" cols="30" maxlength="1000" autocomplete="off" required></textarea>
+        </div>
+        <div class="proof-item">
+          <div class="proof-item-heading"><span class="status-label status-released">Required</span><span>03</span></div>
+          <label for="intake-done"><strong>What currently counts as done</strong></label>
+          <p>Explain the present completion signal or acceptance rule.</p>
+          <textarea id="intake-done" name="done" rows="4" cols="30" maxlength="1000" autocomplete="off" required></textarea>
+        </div>
+        <div class="proof-item">
+          <div class="proof-item-heading"><span class="status-label status-released">Required</span><span>04</span></div>
+          <label for="intake-uncertainty"><strong>Known failure or uncertainty</strong></label>
+          <p>Give one concrete false-success, partial-completion or recovery concern.</p>
+          <textarea id="intake-uncertainty" name="uncertainty" rows="4" cols="30" maxlength="1000" autocomplete="off" required></textarea>
+        </div>
+        <div class="proof-item">
+          <div class="proof-item-heading"><span class="status-label status-released">Required</span><span>05</span></div>
+          <label for="intake-evidence"><strong>Representative or redacted evidence</strong></label>
+          <p>State what traces, screenshots, fixtures or logs could be shared safely.</p>
+          <textarea id="intake-evidence" name="evidence" rows="4" cols="30" maxlength="1000" autocomplete="off" required></textarea>
+        </div>
+      </div>
+      <p class="boundary">Do not enter passwords, API keys, private customer data, health data, payment details or unrestricted production credentials.</p>
+      <label><input type="checkbox" name="privacy-confirm" value="confirmed" required> I confirm this intake contains no credentials or unnecessary sensitive data.</label>
+      <div class="actions">
+        <button class="button button-primary" type="submit">Open email draft</button>
+        <button class="button" type="button" data-copy-intake>Copy enquiry</button>
+        <a class="button" href="evidence.html">Inspect supporting evidence</a>
+      </div>
+      <p class="boundary" role="status" aria-live="polite" data-intake-status>Nothing is transmitted by this page. Review the generated text before sending or pasting it anywhere.</p>
+    </form>
   </div>
 </section>
 </main>
