@@ -1,0 +1,105 @@
+name: Encrypted one-time Vercel project deletion
+
+on:
+  push:
+    branches:
+      - security/private-vercel-project-deletion
+
+permissions:
+  contents: write
+
+jobs:
+  delete-projects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HANDOFF_PATH: .security/vercel-device-ciphertext.txt
+    steps:
+      - name: Install official Vercel CLI
+        run: npm install --global vercel@58.0.0
+
+      - name: Authenticate, delete, verify and clean up
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/vercel-auth /tmp/vercel-device
+          cat > /tmp/vercel-device/public.pem <<'KEY'
+          -----BEGIN PUBLIC KEY-----
+          MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEApkr4GI2BbpZPenb6RVY/
+          2mThBQMzP1gEb5JgGuZL1U4wtVCoiAiHFIsJJECq5A95FHR/0CyKOizV7ir5o/s6
+          5utKkBge46Hnd3pW6ywGQqKZG6vn1Yv531uLJVxM6Nttjjw50ueJfT/8u91fEq1y
+          PcsxiDYJQfaDBANbkynRWEFT/nryyKbsJRI0aAsOZWX+CZFJYsqHzpOIsVpi4wbY
+          S5xQM+TAg3zAKIj0NjJFxClU3zZw5XGX1GYzGME7BIYXd/qLjpVO0WfQObjN0+GK
+          9UODkxnibLtZNIkC3PTDdvGudBec6Ge0RKEE3UrUGd0v8R/FctFuYqbFQvPd3U1b
+          I0J6Y7IrhGrnrkV/IMYcqUNcahkFrtJbY/PRE8ruxD3YSoPCWGy5ljjpq1wXT68q
+          LmxgMx+UTrop0FtTMTD+9Cq1Wo47ADRFkS42W69kVfASgRSpyLhpuXnJmVucIw97
+          F0Nr+zJZmbcZ1BE8u5wWjrvPudWGvY78MrcFyX3X1O7r7wpEuCzr0Iy0TMWFE8fg
+          agpOJy6DOIvFtvFNRQwmvoCO2tGyt5xFtRQ3cyg3/4zGrcEMMClJ9yYVPaW+5BS+
+          0wzJGF5HzTlkMABQIc5LMQ4tROur7anZfqY0NxXI6PLikEETfYluwe19ilU+Kso7
+          PNx/NEJX0G3ayp7NJWpRfCkCAwEAAQ==
+          -----END PUBLIC KEY-----
+          KEY
+
+          cat > /tmp/vercel-device/login.py <<'PY'
+          import base64, json, os, pty, re, select, subprocess, time
+          from pathlib import Path
+          root = Path('/tmp/vercel-device')
+          env = os.environ.copy()
+          for key in ('CI','GITHUB_ACTIONS','RUNNER_TRACKING_ID'):
+              env.pop(key, None)
+          env['VERCEL_TELEMETRY_DISABLED']='1'
+          env['BROWSER']='/bin/true'
+          master, slave = pty.openpty()
+          proc = subprocess.Popen(['vercel','login','--no-color','--global-config','/tmp/vercel-auth'], stdin=subprocess.PIPE, stdout=slave, stderr=slave, close_fds=True, env=env)
+          os.close(slave)
+          captured=bytearray(); published=False; deadline=time.time()+900
+          ansi=re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+          while time.time()<deadline:
+              ready,_,_=select.select([master],[],[],1.0)
+              if ready:
+                  try: chunk=os.read(master,4096)
+                  except OSError: break
+                  if not chunk: break
+                  captured.extend(chunk)
+              text=ansi.sub('',captured.decode('utf-8',errors='ignore'))
+              if not published:
+                  urls=[u.rstrip('.,);]') for u in re.findall(r'https://[^\s<>\"\']+',text)]
+                  url=next((u for u in urls if 'vercel.com' in u and any(w in u.lower() for w in ('oauth','device','authorize','login')) and 'telemetry' not in u.lower()),None)
+                  codes=re.findall(r'\b[A-Z0-9]{4,}-[A-Z0-9]{4,}\b',text)
+                  code=codes[-1] if codes else None
+                  if url:
+                      payload=json.dumps({'url':url,'code':code},separators=(',',':')).encode()
+                      (root/'payload.bin').write_bytes(payload)
+                      subprocess.run(['openssl','pkeyutl','-encrypt','-pubin','-inkey',str(root/'public.pem'),'-in',str(root/'payload.bin'),'-out',str(root/'cipher.bin'),'-pkeyopt','rsa_padding_mode:oaep','-pkeyopt','rsa_oaep_md:sha256'],check=True)
+                      ciphertext=base64.b64encode((root/'cipher.bin').read_bytes()).decode()+'\n'
+                      encoded=base64.b64encode(ciphertext.encode()).decode()
+                      endpoint=f"repos/{os.environ['GITHUB_REPOSITORY']}/contents/{os.environ['HANDOFF_PATH']}"
+                      subprocess.run(['gh','api','--method','PUT',endpoint,'-f','message=[skip ci] publish encrypted Vercel approval handoff','-f',f'content={encoded}','-f',f"branch={os.environ['GITHUB_REF_NAME']}"],check=True,stdout=subprocess.DEVNULL)
+                      print('Encrypted owner approval handoff published.',flush=True)
+                      published=True
+              if proc.poll() is not None: break
+          if not published:
+              proc.terminate(); raise SystemExit('Vercel device approval URL was not produced')
+          rc=proc.wait(timeout=max(1,int(deadline-time.time())))
+          if rc!=0: raise SystemExit('Vercel device authentication was not approved')
+          print('Vercel device authentication approved.',flush=True)
+          PY
+
+          python /tmp/vercel-device/login.py
+          vercel project rm agent-reliability-arena --yes --scope luca-1304s-projects --global-config /tmp/vercel-auth --no-color
+          vercel project rm agent-reliability-arena-ytop --yes --scope luca-1304s-projects --global-config /tmp/vercel-auth --no-color
+          vercel project ls --json --scope luca-1304s-projects --global-config /tmp/vercel-auth --no-color >/tmp/projects.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/projects.json').read_text())
+          projects=data if isinstance(data,list) else data.get('projects',[])
+          names={p.get('name') for p in projects if isinstance(p,dict)}
+          remaining={'agent-reliability-arena','agent-reliability-arena-ytop'} & names
+          if remaining: raise SystemExit(f'Projects remain: {sorted(remaining)}')
+          print('VERCEL_PROJECTS_REMOVED=true')
+          PY
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/${HANDOFF_PATH}?ref=${GITHUB_REF_NAME}" --jq .sha)"
+          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/contents/${HANDOFF_PATH}" -f 'message=[skip ci] remove encrypted Vercel approval handoff' -f "sha=${sha}" -f "branch=${GITHUB_REF_NAME}" >/dev/null
+          rm -rf /tmp/vercel-auth /tmp/vercel-device /tmp/projects.json
