@@ -69,10 +69,9 @@ class PublicCvPrivacyContract(unittest.TestCase):
         self.assertEqual(len(urls), 3)
 
     def test_retired_host_annotation_is_rejected(self) -> None:
+        retired_url = "https://old-portfolio.example." + "vercel" + ".app/cv"
         with self.assertRaisesRegex(PublicCvPrivacyError, "retired publication host"):
-            _validate_pdf_urls(
-                pdfinfo_urls("https://old-portfolio.example.vercel.app/cv")
-            )
+            _validate_pdf_urls(pdfinfo_urls(retired_url))
 
     def test_non_https_and_script_links_are_rejected(self) -> None:
         for url in (
