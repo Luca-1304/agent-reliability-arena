@@ -1,0 +1,26 @@
+name: Repository history boundary
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify clean writable ancestry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out complete repository history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Fetch every writable origin branch
+        run: git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Verify clean history boundary and all writable branches
+        run: python scripts/verify_history_boundary.py --verify-remote-branches
