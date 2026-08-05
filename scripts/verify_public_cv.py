@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import re
 import shutil
 import subprocess
 from pathlib import Path
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PDF = ROOT / "web" / "cinematic-plus" / "Luca_Panayiotou_CV.pdf"
@@ -32,6 +34,16 @@ REQUIRED_PUBLIC_MARKERS = {
     "personal and referee contact details intentionally omitted",
     ALLOWED_EMAIL,
 }
+FORBIDDEN_PUBLIC_HOST_SUFFIXES = ("vercel.app",)
+FORBIDDEN_URL_QUERY_KEYS = {
+    "api_key",
+    "apikey",
+    "access_token",
+    "auth_token",
+    "token",
+    "secret",
+    "key",
+}
 
 
 class PublicCvPrivacyError(ValueError):
@@ -49,6 +61,71 @@ def _run(command: list[str]) -> str:
     return completed.stdout
 
 
+def _extract_pdf_urls(output: str) -> tuple[str, ...]:
+    urls: list[str] = []
+    for line in output.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("Page  Type"):
+            continue
+        fields = stripped.split(maxsplit=2)
+        if len(fields) != 3:
+            raise PublicCvPrivacyError(f"Unrecognised pdfinfo URL row: {stripped}")
+        urls.append(fields[2].strip())
+    return tuple(urls)
+
+
+def _host_is_private(host: str) -> bool:
+    folded = host.casefold()
+    if folded in {"localhost", "localhost.localdomain"} or folded.endswith(".local"):
+        return True
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return not address.is_global
+
+
+def _validate_pdf_urls(output: str) -> tuple[str, ...]:
+    urls = _extract_pdf_urls(output)
+    for raw_url in urls:
+        parsed = urlsplit(raw_url)
+        scheme = parsed.scheme.casefold()
+        if scheme == "mailto":
+            address = unquote(parsed.path).casefold()
+            if address != ALLOWED_EMAIL.casefold() or parsed.query or parsed.fragment:
+                raise PublicCvPrivacyError(
+                    "PDF mail link is outside the reviewed public email allow-list."
+                )
+            continue
+        if scheme != "https":
+            raise PublicCvPrivacyError(
+                f"PDF contains a non-HTTPS external link: {scheme or '(missing scheme)'}."
+            )
+        if parsed.username or parsed.password:
+            raise PublicCvPrivacyError("PDF URL must not contain embedded credentials.")
+        host = (parsed.hostname or "").casefold().rstrip(".")
+        if not host:
+            raise PublicCvPrivacyError("PDF HTTPS URL is missing a host.")
+        if parsed.port not in (None, 443):
+            raise PublicCvPrivacyError("PDF URL uses a non-standard public HTTPS port.")
+        if _host_is_private(host):
+            raise PublicCvPrivacyError("PDF URL points to a local or non-public host.")
+        if any(
+            host == suffix or host.endswith(f".{suffix}")
+            for suffix in FORBIDDEN_PUBLIC_HOST_SUFFIXES
+        ):
+            raise PublicCvPrivacyError("PDF contains a link to a retired publication host.")
+        query_keys = {
+            key.casefold()
+            for key, _ in parse_qsl(parsed.query, keep_blank_values=True)
+        }
+        if query_keys & FORBIDDEN_URL_QUERY_KEYS:
+            raise PublicCvPrivacyError(
+                "PDF URL contains a credential-like query parameter."
+            )
+    return urls
+
+
 def verify(pdf_path: Path = DEFAULT_PDF) -> dict[str, object]:
     pdf = Path(pdf_path)
     if not pdf.is_file() or pdf.is_symlink():
@@ -58,8 +135,17 @@ def verify(pdf_path: Path = DEFAULT_PDF) -> dict[str, object]:
 
     text = _run(["pdftotext", "-layout", str(pdf), "-"])
     metadata = _run(["pdfinfo", str(pdf)])
+    custom_metadata = _run(["pdfinfo", "-custom", str(pdf)])
+    xmp_metadata = _run(["pdfinfo", "-meta", str(pdf)])
+    url_objects = _run(["pdfinfo", "-url", str(pdf)])
+    javascript = _run(["pdfinfo", "-js", str(pdf)])
     attachments = _run(["pdfdetach", "-list", str(pdf)]).strip()
-    combined = f"{text}\n{metadata}"
+    urls = _validate_pdf_urls(url_objects)
+    if javascript.strip():
+        raise PublicCvPrivacyError("Public CV must not contain embedded JavaScript.")
+    combined = "\n".join(
+        (text, metadata, custom_metadata, xmp_metadata, url_objects, javascript)
+    )
 
     for label, pattern in FORBIDDEN_PATTERNS.items():
         if pattern.search(combined):
@@ -76,27 +162,35 @@ def verify(pdf_path: Path = DEFAULT_PDF) -> dict[str, object]:
             raise PublicCvPrivacyError(f"Required public marker is missing: {marker}")
 
     if attachments != "0 embedded files":
-        raise PublicCvPrivacyError(f"Public CV must not contain embedded files: {attachments}")
+        raise PublicCvPrivacyError(
+            f"Public CV must not contain embedded files: {attachments}"
+        )
 
     pages_match = re.search(r"^Pages:\s+(\d+)$", metadata, re.MULTILINE)
     if pages_match is None:
         raise PublicCvPrivacyError("Public CV metadata does not expose a page count.")
 
     return {
-        "schema_version": "public-cv-privacy-verification-v1",
+        "schema_version": "public-cv-privacy-verification-v2",
         "pdf": pdf.name,
         "pages": int(pages_match.group(1)),
         "allowed_emails": sorted(emails),
         "embedded_files": 0,
+        "url_objects_checked": len(urls),
+        "javascript_actions": 0,
+        "custom_and_xmp_metadata_checked": True,
         "forbidden_patterns_found": 0,
         "private_contact_details_permitted": False,
         "referee_contact_details_permitted": False,
         "credential_identifiers_permitted": False,
+        "retired_host_links_permitted": False,
     }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Verify the sanitised public CV privacy boundary.")
+    parser = argparse.ArgumentParser(
+        description="Verify the sanitised public CV privacy boundary."
+    )
     parser.add_argument("--pdf", type=Path, default=DEFAULT_PDF)
     args = parser.parse_args()
     print(json.dumps(verify(args.pdf), indent=2, sort_keys=True))
