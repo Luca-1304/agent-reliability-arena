@@ -1,9 +1,12 @@
-name: Fifteen consecutive verification passes
+name: Auditable fifteen-pass reliability gate
 
 on:
   pull_request:
     paths:
       - ".github/workflows/fifteen-pass-verification.yml"
+      - "scripts/ci/reliability_gate.py"
+      - "requirements/ci-tools.txt"
+      - "tests/test_reliability_gate.py"
       - "src/**"
       - "tests/**"
       - "scripts/**"
@@ -14,6 +17,7 @@ on:
       - "web/**"
       - "docs/**"
       - "citation/**"
+      - "requirements/**"
       - "pyproject.toml"
       - "README.md"
       - "CHANGELOG.md"
@@ -22,6 +26,9 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/fifteen-pass-verification.yml"
+      - "scripts/ci/reliability_gate.py"
+      - "requirements/ci-tools.txt"
+      - "tests/test_reliability_gate.py"
       - "src/**"
       - "tests/**"
       - "scripts/**"
@@ -32,6 +39,7 @@ on:
       - "web/**"
       - "docs/**"
       - "citation/**"
+      - "requirements/**"
       - "pyproject.toml"
       - "README.md"
       - "CHANGELOG.md"
@@ -45,6 +53,10 @@ env:
   TZ: UTC
   LC_ALL: C.UTF-8
   LANG: C.UTF-8
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  SOURCE_DATE_EPOCH: "315532800"
 
 concurrency:
   group: fifteen-pass-${{ github.event.pull_request.number || github.ref }}
@@ -52,185 +64,90 @@ concurrency:
 
 jobs:
   verify:
-    name: Reliability Arena 15/15 — Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    name: Reliability Gate v2 — Python ${{ matrix.python-version }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.13"]
+
     steps:
-      - uses: actions/checkout@v7
+      - name: Check out exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 1
 
-      - name: Prepare diagnostic evidence directory
-        shell: bash
-        run: |
-          set -euo pipefail
-          diagnostics_dir="${RUNNER_TEMP}/fifteen-pass-diagnostics"
-          rm -rf "$diagnostics_dir"
-          mkdir -p "$diagnostics_dir"
-          {
-            printf 'workflow=%s\n' "$GITHUB_WORKFLOW"
-            printf 'run_id=%s\n' "$GITHUB_RUN_ID"
-            printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT"
-            printf 'repository=%s\n' "$GITHUB_REPOSITORY"
-            printf 'event=%s\n' "$GITHUB_EVENT_NAME"
-            printf 'sha=%s\n' "$GITHUB_SHA"
-            printf 'ref=%s\n' "$GITHUB_REF"
-            printf 'runner_os=%s\n' "$RUNNER_OS"
-            printf 'runner_arch=%s\n' "$RUNNER_ARCH"
-            printf 'timezone=%s\n' "$TZ"
-            printf 'locale=%s\n' "$LC_ALL"
-          } > "$diagnostics_dir/environment.txt"
-
-      - uses: actions/setup-python@v7
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+          cache-dependency-path: requirements/ci-tools.txt
 
-      - name: Record interpreter fingerprint
+      - name: Prepare bootstrap evidence
         shell: bash
         run: |
           set -euo pipefail
-          diagnostics_dir="${RUNNER_TEMP}/fifteen-pass-diagnostics"
+          diagnostics_dir="$RUNNER_TEMP/fifteen-pass-diagnostics"
+          rm -rf "$diagnostics_dir"
+          mkdir -p "$diagnostics_dir"
           {
-            printf 'matrix_python=%s\n' '${{ matrix.python-version }}'
+            printf 'schema=reliability-gate-v2-bootstrap\n'
+            printf 'python_label=%s\n' '${{ matrix.python-version }}'
+            printf 'sha=%s\n' "$GITHUB_SHA"
+            printf 'event=%s\n' "$GITHUB_EVENT_NAME"
+            printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+            printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT"
             python --version
             python -m pip --version
-            git --version
-            uname -a
-            locale
-          } >> "$diagnostics_dir/environment.txt"
+          } > "$diagnostics_dir/bootstrap-environment.txt"
 
-      - name: Install editable package and build tools
+      - name: Install hash-locked CI toolchain
         shell: bash
         run: |
           set -euo pipefail
-          diagnostics_dir="${RUNNER_TEMP}/fifteen-pass-diagnostics"
-          {
-            python -m pip install --upgrade pip setuptools wheel
-            python -m pip install --editable .
-          } 2>&1 | tee "$diagnostics_dir/install.log"
+          python -m pip install --disable-pip-version-check --no-input --require-hashes -r requirements/ci-tools.txt 2>&1 | tee "$RUNNER_TEMP/fifteen-pass-diagnostics/bootstrap-tools.log"
 
-      - name: Run fifteen consecutive complete cycles
+      - name: Install editable package without isolated dependency resolution
         shell: bash
         run: |
           set -euo pipefail
-          diagnostics_dir="${RUNNER_TEMP}/fifteen-pass-diagnostics"
+          python -m pip install --disable-pip-version-check --no-input --no-build-isolation --editable . 2>&1 | tee "$RUNNER_TEMP/fifteen-pass-diagnostics/bootstrap-editable.log"
 
-          run_pass() (
-            set -euo pipefail
-            pass_number="$1"
-            export PYTHONHASHSEED="$((pass_number - 1))"
-            run_root="${RUNNER_TEMP}/arena-${{ matrix.python-version }}-${pass_number}"
-            wheel_env="${RUNNER_TEMP}/arena-wheel-${{ matrix.python-version }}-${pass_number}"
-            failure_file="$diagnostics_dir/failure.txt"
+      - name: Run repository-owned reliability gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/ci/reliability_gate.py \
+            --passes 15 \
+            --python-label '${{ matrix.python-version }}' \
+            --workspace "$GITHUB_WORKSPACE" \
+            --work-root "$RUNNER_TEMP/reliability-work" \
+            --diagnostics-dir "$RUNNER_TEMP/fifteen-pass-diagnostics"
 
-            record_failure() {
-              status="$1"
-              failed_command="$2"
-              {
-                printf 'pass=%s\n' "$pass_number"
-                printf 'python=%s\n' '${{ matrix.python-version }}'
-                printf 'hash_seed=%s\n' "$PYTHONHASHSEED"
-                printf 'exit_code=%s\n' "$status"
-                printf 'command=%q\n' "$failed_command"
-                printf 'run_root=%s\n' "$run_root"
-                printf 'wheel_env=%s\n' "$wheel_env"
-              } > "$failure_file"
-              echo "::endgroup::"
-              exit "$status"
-            }
-            trap 'record_failure "$?" "$BASH_COMMAND"' ERR
-
+      - name: Publish reliability evidence summary
+        if: always()
+        shell: bash
+        run: |
+          diagnostics_dir="$RUNNER_TEMP/fifteen-pass-diagnostics"
+          if [[ -f "$diagnostics_dir/summary.md" ]]; then
+            cat "$diagnostics_dir/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          else
             {
-              printf 'pass=%s\n' "$pass_number"
-              printf 'python=%s\n' '${{ matrix.python-version }}'
-              printf 'hash_seed=%s\n' "$PYTHONHASHSEED"
-              printf 'timezone=%s\n' "$TZ"
-              printf 'locale=%s\n' "$LC_ALL"
-              python --version
-              python -m pip --version
-            } > "$diagnostics_dir/pass-${pass_number}-environment.txt"
-
-            echo "::group::RELIABILITY ARENA PASS ${pass_number}/15 — Python ${{ matrix.python-version }} — PYTHONHASHSEED=${PYTHONHASHSEED}"
-            rm -rf dist build "$run_root" "$wheel_env"
-            python -m compileall -q src tests scripts
-            python -m unittest discover -s tests -p "test_*.py" -v
-            python scripts/verify_release.py
-            python scripts/verify_disclosure_release.py
-            python scripts/verify_repeated_release.py
-            python scripts/verify_showcase_release.py
-            python scripts/verify_launch_package.py
-            python scripts/verify_citation_package.py
-            python scripts/verify_supply_chain.py
-            arena-run --config examples/fixture_experiment.json --output "$run_root/editable"
-            arena-replay --input "$run_root/editable" > "$run_root/editable-replay.json"
-            arena-export-web --input "$run_root/editable" --output "$run_root/editable-public.json"
-            arena-verify-showcase --root . > "$run_root/editable-showcase.json"
-            arena-verify-launch-package --root . > "$run_root/editable-launch.json"
-            arena-verify-citation-package --root . > "$run_root/editable-citation.json"
-            arena-verify-supply-chain --root . > "$run_root/editable-supply-chain.json"
-            python -m pip wheel . --no-deps --no-build-isolation --wheel-dir dist
-            python -m venv "$wheel_env"
-            "$wheel_env/bin/python" -m pip install --disable-pip-version-check --no-deps dist/*.whl
-            PATH="$wheel_env/bin:$PATH" "$wheel_env/bin/python" -m unittest discover -s tests -p "test_*.py" -v
-            "$wheel_env/bin/python" scripts/verify_release.py
-            "$wheel_env/bin/python" scripts/verify_disclosure_release.py
-            "$wheel_env/bin/python" scripts/verify_repeated_release.py
-            "$wheel_env/bin/python" scripts/verify_showcase_release.py
-            "$wheel_env/bin/python" scripts/verify_launch_package.py
-            "$wheel_env/bin/python" scripts/verify_citation_package.py
-            "$wheel_env/bin/python" scripts/verify_supply_chain.py
-            "$wheel_env/bin/arena-run" --config examples/fixture_experiment.json --output "$run_root/wheel"
-            "$wheel_env/bin/arena-replay" --input "$run_root/wheel" > "$run_root/wheel-replay.json"
-            "$wheel_env/bin/arena-export-web" --input "$run_root/wheel" --output "$run_root/wheel-public.json"
-            "$wheel_env/bin/python" -m pip check
-            python -m pip check
-            rm -rf "$run_root" "$wheel_env" dist build
-            printf 'pass=%s status=passed hash_seed=%s\n' "$pass_number" "$PYTHONHASHSEED" >> "$diagnostics_dir/summary.txt"
-            echo "::endgroup::"
-          )
-
-          for pass_number in $(seq 1 15); do
-            pass_log="$diagnostics_dir/pass-${pass_number}.log"
-            set +e
-            run_pass "$pass_number" 2>&1 | tee "$pass_log"
-            status=${PIPESTATUS[0]}
-            set -e
-            if (( status != 0 )); then
-              echo "::error title=Fifteen-pass verification failed::Python ${{ matrix.python-version }}, pass ${pass_number}/15. See the uploaded diagnostics artifact."
-              exit "$status"
-            fi
-          done
-
-          echo "RELIABILITY ARENA RESULT — Python ${{ matrix.python-version }}: 15/15 PASSED"
-
-      - name: Publish diagnostic summary
-        if: always()
-        shell: bash
-        run: |
-          diagnostics_dir="${RUNNER_TEMP}/fifteen-pass-diagnostics"
-          {
-            echo "## Fifteen-pass verification — Python ${{ matrix.python-version }}"
-            echo
-            echo '```text'
-            cat "$diagnostics_dir/environment.txt" 2>/dev/null || true
-            cat "$diagnostics_dir/summary.txt" 2>/dev/null || true
-            if [[ -f "$diagnostics_dir/failure.txt" ]]; then
+              echo "## Reliability Gate v2 — Python ${{ matrix.python-version }}"
               echo
-              cat "$diagnostics_dir/failure.txt"
-            fi
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+              echo "The gate did not reach summary generation. Bootstrap evidence is retained in the uploaded artifact."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
-      - name: Upload fifteen-pass diagnostics
+      - name: Upload complete reliability evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: fifteen-pass-diagnostics-${{ matrix.python-version }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/fifteen-pass-diagnostics
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
+          compression-level: 9
