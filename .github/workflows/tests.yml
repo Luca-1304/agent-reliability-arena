@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7
@@ -106,7 +108,7 @@ jobs:
           assert launch["submitted_external_actions"] == 0
           assert launch["provider_called"] is False
           assert launch["comparative_claim_permitted"] is False
-          citation = json.loads(Path("/tmp/wheel-citation-package.json").read_text(encoding="utf-8"))
+          citation = json.loads(Path("/tmp/wheel-citation.json").read_text(encoding="utf-8")) if Path("/tmp/wheel-citation.json").exists() else json.loads(Path("/tmp/wheel-citation-package.json").read_text(encoding="utf-8"))
           assert citation["files_verified"] == 4
           assert citation["release_tag"] == "v0.2.0rc2"
           assert citation["provider_called"] is False
