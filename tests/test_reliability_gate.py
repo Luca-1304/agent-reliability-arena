@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -29,6 +30,27 @@ class ReliabilityGatePrimitiveTests(unittest.TestCase):
         gate = load_gate()
         self.assertIsNotNone(gate, f"missing reliability gate runner: {GATE_PATH}")
         return gate  # type: ignore[return-value]
+
+    def make_context(self, gate: ModuleType, root: Path):
+        workspace = root / "workspace"
+        diagnostics = root / "diagnostics"
+        pass_dir = diagnostics / "passes" / "01"
+        workspace.mkdir(parents=True)
+        pass_dir.mkdir(parents=True)
+        environment = gate.build_pass_environment(
+            {"PATH": os.environ.get("PATH", "")},
+            pass_number=1,
+            pass_root=root / "work" / "pass-01",
+        )
+        return gate.CommandContext(
+            workspace=workspace,
+            diagnostics_dir=diagnostics,
+            pass_dir=pass_dir,
+            environment=environment,
+            events_path=diagnostics / "events.jsonl",
+            python_label="test",
+            pass_number=1,
+        )
 
     def test_canonical_json_digest_ignores_formatting_but_detects_semantic_drift(self) -> None:
         gate = self.require_gate()
@@ -70,6 +92,20 @@ class ReliabilityGatePrimitiveTests(unittest.TestCase):
             second = gate.tree_manifest(root)
             self.assertNotEqual(first["nested/z.json"]["sha256"], second["nested/z.json"]["sha256"])
 
+    def test_tree_manifest_rejects_symbolic_links(self) -> None:
+        gate = self.require_gate()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "target.txt"
+            link = root / "link.txt"
+            target.write_text("evidence\n", encoding="utf-8")
+            try:
+                link.symlink_to(target)
+            except (NotImplementedError, OSError) as exc:
+                self.skipTest(f"symbolic links unavailable: {exc}")
+            with self.assertRaisesRegex(gate.GateFailure, "symbolic links"):
+                gate.tree_manifest(root)
+
     def test_manifest_comparison_reports_missing_unexpected_and_changed_paths(self) -> None:
         gate = self.require_gate()
         expected = {
@@ -92,12 +128,17 @@ class ReliabilityGatePrimitiveTests(unittest.TestCase):
         self.assertIn("unexpected.json", message)
         self.assertIn("changed.json", message)
 
-    def test_pass_environment_is_deterministic_and_isolated(self) -> None:
+    def test_pass_environment_is_deterministic_isolated_and_secret_free(self) -> None:
         gate = self.require_gate()
         with tempfile.TemporaryDirectory() as directory:
             pass_root = Path(directory) / "pass-04"
             environment = gate.build_pass_environment(
-                {"PATH": os.environ.get("PATH", "")},
+                {
+                    "PATH": os.environ.get("PATH", ""),
+                    "OPENAI_API_KEY": "must-not-survive",
+                    "GITHUB_TOKEN": "must-not-survive",
+                    "SAFE_VALUE": "preserved",
+                },
                 pass_number=4,
                 pass_root=pass_root,
             )
@@ -110,6 +151,9 @@ class ReliabilityGatePrimitiveTests(unittest.TestCase):
             self.assertEqual(environment["PYTHONUNBUFFERED"], "1")
             self.assertEqual(environment["PYTHONDONTWRITEBYTECODE"], "1")
             self.assertEqual(environment["PIP_DISABLE_PIP_VERSION_CHECK"], "1")
+            self.assertEqual(environment["SAFE_VALUE"], "preserved")
+            self.assertNotIn("OPENAI_API_KEY", environment)
+            self.assertNotIn("GITHUB_TOKEN", environment)
             self.assertEqual(Path(environment["HOME"]), pass_root / "home")
             self.assertEqual(Path(environment["TMPDIR"]), pass_root / "tmp")
             self.assertEqual(Path(environment["XDG_CACHE_HOME"]), pass_root / "cache")
@@ -157,6 +201,78 @@ class ReliabilityGatePrimitiveTests(unittest.TestCase):
             path = Path(directory) / "nested" / "evidence.json"
             gate.write_json(path, {"z": 1, "a": 2})
             self.assertEqual(path.read_text(encoding="utf-8"), '{\n  "a": 2,\n  "z": 1\n}\n')
+
+    def test_command_runner_records_events_log_and_validated_json(self) -> None:
+        gate = self.require_gate()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            context = self.make_context(gate, root)
+            output = context.pass_dir / "outputs" / "command.json"
+            result = gate.run_command(
+                gate.CommandSpec(
+                    name="json-success",
+                    phase="unit-contract",
+                    category="editable-cli",
+                    argv=[
+                        sys.executable,
+                        "-c",
+                        "import json; print(json.dumps({'verified': True}, sort_keys=True))",
+                    ],
+                    stdout_json_path=output,
+                ),
+                context,
+            )
+
+            self.assertEqual(result.exit_code, 0)
+            self.assertEqual(json.loads(output.read_text(encoding="utf-8")), {"verified": True})
+            self.assertIn("json-success", result.log_path.read_text(encoding="utf-8"))
+            events = [
+                json.loads(line)
+                for line in context.events_path.read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual([event["event"] for event in events], ["command-started", "command-finished"])
+            self.assertEqual(events[-1]["status"], "passed")
+
+    def test_command_runner_preserves_exact_nonzero_failure_evidence(self) -> None:
+        gate = self.require_gate()
+        with tempfile.TemporaryDirectory() as directory:
+            context = self.make_context(gate, Path(directory))
+            with self.assertRaises(gate.GateFailure) as raised:
+                gate.run_command(
+                    gate.CommandSpec(
+                        name="known-failure",
+                        phase="wheel-test-contract",
+                        category="wheel-tests",
+                        argv=[sys.executable, "-c", "import sys; sys.stderr.write('broken\\n'); sys.exit(7)"],
+                    ),
+                    context,
+                )
+
+            record = raised.exception.record
+            self.assertIsNotNone(record)
+            self.assertEqual(record.exit_code, 7)
+            self.assertEqual(record.category, "wheel-tests")
+            self.assertEqual(record.pass_number, 1)
+            self.assertEqual(record.hash_seed, 0)
+            self.assertIn("broken", (context.diagnostics_dir / record.log_path).read_text(encoding="utf-8"))
+
+    def test_command_runner_rejects_malformed_json_after_zero_exit(self) -> None:
+        gate = self.require_gate()
+        with tempfile.TemporaryDirectory() as directory:
+            context = self.make_context(gate, Path(directory))
+            with self.assertRaisesRegex(gate.GateFailure, "malformed JSON") as raised:
+                gate.run_command(
+                    gate.CommandSpec(
+                        name="invalid-json",
+                        phase="editable-cli-contract",
+                        category="editable-cli",
+                        argv=[sys.executable, "-c", "print('not-json')"],
+                        stdout_json_path=context.pass_dir / "outputs" / "invalid.json",
+                    ),
+                    context,
+                )
+            self.assertEqual(raised.exception.record.exit_code, 0)
+            self.assertEqual(raised.exception.record.category, "editable-cli")
 
 
 if __name__ == "__main__":
