@@ -79,7 +79,7 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
         self.assertNotIn("pull-requests: write", self.workflow)
         self.assertNotIn("id-token: write", self.workflow)
 
-    def test_ci_toolchain_is_exact_and_hash_locked(self) -> None:
+    def test_ci_toolchain_is_exact_hash_locked_and_dependency_complete(self) -> None:
         self.assertIn(
             "python -m pip install --disable-pip-version-check --no-input --require-hashes -r requirements/ci-tools.txt",
             self.workflow,
@@ -94,7 +94,9 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
             for line in CI_TOOLS.read_text(encoding="utf-8").splitlines()
             if line.strip() and not line.lstrip().startswith("#")
         ]
-        self.assertEqual(len(entries), 3)
+        self.assertEqual(len(entries), 4)
+        names = {entry.split("==", 1)[0].lower() for entry in entries}
+        self.assertEqual(names, {"packaging", "pip", "setuptools", "wheel"})
         for entry in entries:
             self.assertRegex(entry, r"^[A-Za-z0-9_.-]+==[^\s]+\s+--hash=sha256:[0-9a-f]{64}$")
 
