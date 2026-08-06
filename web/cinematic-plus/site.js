@@ -26,6 +26,7 @@ const copyIntakeButton = document.querySelector('[data-copy-intake]');
 const intakeStatus = document.querySelector('[data-intake-status]');
 const intakeRecipient = 'Lucapanay13@gmail.com';
 const intakeSubject = 'AI Agent Reliability Audit enquiry';
+const maxMailtoLength = 1900;
 const intakeQuestions = [
   ['purpose', 'Workflow purpose'],
   ['systems', 'Tools or systems changed'],
@@ -56,6 +57,12 @@ intakeForm?.addEventListener('submit', (event) => {
   if (!intakeIsValid()) return;
   const body = intakeText();
   const href = `mailto:${intakeRecipient}?subject=${encodeURIComponent(intakeSubject)}&body=${encodeURIComponent(body)}`;
+  if (href.length > maxMailtoLength) {
+    if (intakeStatus) {
+      intakeStatus.textContent = 'This enquiry is too long for a reliable email draft. Use “Copy enquiry” instead.';
+    }
+    return;
+  }
   if (intakeStatus) {
     intakeStatus.textContent = 'Opening an email draft. Review the contents before sending.';
   }
