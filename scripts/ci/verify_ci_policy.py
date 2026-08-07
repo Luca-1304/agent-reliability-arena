@@ -18,7 +18,16 @@ except ModuleNotFoundError:  # Direct execution from scripts/ci.
 _SHA_ACTION_RE = re.compile(r"^[^@\s]+@[0-9a-fA-F]{40}$")
 _DOCKER_DIGEST_RE = re.compile(r"^docker://[^@\s]+@sha256:[0-9a-fA-F]{64}$")
 _PERMISSION_RANK = {"none": 0, "read": 1, "write": 2}
-_DEFAULT_WORKFLOWS = {"deep": Path(".github/workflows/fifteen-pass-verification.yml")}
+_MERGE_ROLES = {"fast", "deep", "specialist"}
+_SUPPORTED_ROLES = _MERGE_ROLES | {"scheduled"}
+_SCHEDULED_CRON = "17 4 * * 2"
+_SPECIALIST_JOBS = {
+    "reproducible-build",
+    "explicit-determinism",
+    "clean-room",
+    "concurrency-isolation",
+    "diagnostic-security",
+}
 
 
 @dataclass(frozen=True, order=True)
@@ -165,16 +174,53 @@ def _common_violations(contract: WorkflowContract, policy: ReliabilityPolicy) ->
     return violations
 
 
-def _deep_violations(contract: WorkflowContract, policy: ReliabilityPolicy) -> list[PolicyViolation]:
+def _job_timeout_violations(
+    contract: WorkflowContract,
+    policy: ReliabilityPolicy,
+) -> list[PolicyViolation]:
+    violations: list[PolicyViolation] = []
+    deep_gate = policy.raw.get("deep_gate")
+    maximum_timeout = deep_gate.get("job_timeout_minutes") if isinstance(deep_gate, Mapping) else None
+    for job_id, job in sorted(contract.jobs.items()):
+        timeout = job.timeout_minutes
+        if not isinstance(maximum_timeout, int) or isinstance(maximum_timeout, bool):
+            violations.append(
+                PolicyViolation("job-timeout", f"jobs.{job_id}.timeout-minutes", "policy timeout is invalid")
+            )
+            continue
+        if timeout is None or timeout < 1 or timeout > maximum_timeout:
+            violations.append(
+                PolicyViolation(
+                    "job-timeout",
+                    f"jobs.{job_id}.timeout-minutes",
+                    f"job timeout {timeout!r} must be between 1 and policy maximum {maximum_timeout}",
+                )
+            )
+    return violations
+
+
+def _merge_role_violations(
+    contract: WorkflowContract,
+    policy: ReliabilityPolicy,
+    *,
+    role: str,
+) -> list[PolicyViolation]:
     violations: list[PolicyViolation] = []
     required_triggers = {"pull_request", "push", "workflow_dispatch"}
-    missing_triggers = sorted(required_triggers - set(contract.triggers))
-    for trigger in missing_triggers:
+    for trigger in sorted(required_triggers - set(contract.triggers)):
         violations.append(
             PolicyViolation(
                 "missing-trigger",
                 f"on.{trigger}",
-                f"deep workflow must declare {trigger}",
+                f"{role} workflow must declare {trigger}",
+            )
+        )
+    if "schedule" in contract.triggers:
+        violations.append(
+            PolicyViolation(
+                "merge-workflow-scheduled",
+                "on.schedule",
+                f"{role} workflow must not declare a schedule trigger",
             )
         )
 
@@ -197,29 +243,72 @@ def _deep_violations(contract: WorkflowContract, policy: ReliabilityPolicy) -> l
             PolicyViolation(
                 "missing-main-branch",
                 "on.push.branches",
-                "deep workflow push trigger must include main",
+                f"{role} workflow push trigger must include main",
             )
         )
 
-    deep_gate = policy.raw.get("deep_gate")
-    maximum_timeout = deep_gate.get("job_timeout_minutes") if isinstance(deep_gate, Mapping) else None
-    for job_id, job in sorted(contract.jobs.items()):
-        timeout = job.timeout_minutes
-        if not isinstance(maximum_timeout, int) or isinstance(maximum_timeout, bool):
-            violations.append(
-                PolicyViolation("job-timeout", f"jobs.{job_id}.timeout-minutes", "policy timeout is invalid")
-            )
-            continue
-        if timeout is None or timeout < 1 or timeout > maximum_timeout:
+    violations.extend(_job_timeout_violations(contract, policy))
+    if not contract.jobs:
+        violations.append(
+            PolicyViolation("jobs-missing", "jobs", f"{role} workflow must contain at least one job")
+        )
+    if role == "specialist":
+        for job_id in sorted(_SPECIALIST_JOBS - set(contract.jobs)):
             violations.append(
                 PolicyViolation(
-                    "job-timeout",
-                    f"jobs.{job_id}.timeout-minutes",
-                    f"job timeout {timeout!r} must be between 1 and policy maximum {maximum_timeout}",
+                    "specialist-job-missing",
+                    f"jobs.{job_id}",
+                    f"specialist workflow must contain independent job {job_id!r}",
                 )
             )
+    return violations
+
+
+def _scheduled_violations(
+    contract: WorkflowContract,
+    policy: ReliabilityPolicy,
+) -> list[PolicyViolation]:
+    violations: list[PolicyViolation] = []
+    for trigger in sorted({"schedule", "workflow_dispatch"} - set(contract.triggers)):
+        violations.append(
+            PolicyViolation(
+                "missing-trigger",
+                f"on.{trigger}",
+                f"scheduled workflow must declare {trigger}",
+            )
+        )
+    for forbidden in ("pull_request", "push"):
+        if forbidden in contract.triggers:
+            violations.append(
+                PolicyViolation(
+                    "scheduled-merge-trigger",
+                    f"on.{forbidden}",
+                    "scheduled ecosystem workflow must remain advisory and outside merge triggers",
+                )
+            )
+    schedule = contract.triggers.get("schedule")
+    if schedule is not None and schedule.crons != (_SCHEDULED_CRON,):
+        violations.append(
+            PolicyViolation(
+                "scheduled-cron",
+                "on.schedule",
+                f"scheduled ecosystem workflow must use exactly {_SCHEDULED_CRON!r}",
+            )
+        )
+    scheduled = policy.raw.get("scheduled")
+    if not isinstance(scheduled, Mapping) or scheduled.get("blocking_by_default") is not False:
+        violations.append(
+            PolicyViolation(
+                "scheduled-blocking-policy",
+                "scheduled.blocking_by_default",
+                "scheduled ecosystem checks must remain non-blocking by default",
+            )
+        )
+    violations.extend(_job_timeout_violations(contract, policy))
     if not contract.jobs:
-        violations.append(PolicyViolation("jobs-missing", "jobs", "deep workflow must contain at least one job"))
+        violations.append(
+            PolicyViolation("jobs-missing", "jobs", "scheduled workflow must contain at least one job")
+        )
     return violations
 
 
@@ -232,11 +321,13 @@ def verify_workflow_against_policy(
     """Return stable, machine-readable structural policy violations."""
 
     violations = _common_violations(contract, policy)
-    if role == "deep":
-        violations.extend(_deep_violations(contract, policy))
+    if role in _MERGE_ROLES:
+        violations.extend(_merge_role_violations(contract, policy, role=role))
+    elif role == "scheduled":
+        violations.extend(_scheduled_violations(contract, policy))
     else:
         violations.append(
-            PolicyViolation("unsupported-workflow-role", "role", f"workflow role {role!r} is not supported yet")
+            PolicyViolation("unsupported-workflow-role", "role", f"workflow role {role!r} is not supported")
         )
     return sorted(set(violations))
 
@@ -250,11 +341,24 @@ def _parse_workflow_argument(value: str) -> tuple[str, Path]:
     return role, Path(raw_path)
 
 
-def _targets_from_args(values: Sequence[tuple[str, Path]] | None) -> dict[str, Path]:
+def _targets_from_args(
+    values: Sequence[tuple[str, Path]] | None,
+    *,
+    policy: ReliabilityPolicy,
+) -> dict[str, Path]:
     if not values:
-        return dict(_DEFAULT_WORKFLOWS)
-    targets: dict[str, Path] = {}
+        targets: dict[str, Path] = {}
+        workflow_root = Path(".github/workflows")
+        for role, files in sorted(policy.workflow_roles.items()):
+            for filename in files:
+                if role in targets:
+                    raise ValueError(f"multiple workflow files for role are not supported yet: {role}")
+                targets[role] = workflow_root / filename
+        return targets
+    targets = {}
     for role, path in values:
+        if role not in _SUPPORTED_ROLES:
+            raise ValueError(f"unsupported workflow role: {role}")
         if role in targets:
             raise ValueError(f"duplicate workflow role: {role}")
         targets[role] = path
@@ -268,7 +372,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         "--workflow",
         action="append",
         type=_parse_workflow_argument,
-        help="workflow target in ROLE=PATH form; defaults to the current deep gate",
+        help="workflow target in ROLE=PATH form; defaults to every workflow declared by policy",
     )
     return parser.parse_args(argv)
 
@@ -278,7 +382,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     violations: list[PolicyViolation] = []
     try:
         policy = load_policy(args.policy)
-        targets = _targets_from_args(args.workflow)
+        targets = _targets_from_args(args.workflow, policy=policy)
         for role, path in sorted(targets.items()):
             try:
                 contract = read_workflow_contract(path)
@@ -294,7 +398,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             violations.extend(verify_workflow_against_policy(contract, policy, role=role))
     except Exception as exc:
         violations.append(
-            PolicyViolation("policy-load", "policy", f"{type(exc).__name__}: policy could not be loaded")
+            PolicyViolation("policy-load", "policy", f"{type(exc).__name__}: policy or workflow mapping could not be loaded")
         )
 
     violations = sorted(set(violations))
