@@ -56,6 +56,64 @@ class WorkflowContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "tab"):
                 read_workflow_contract(path)
 
+    def test_parser_rejects_inline_job_permissions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workflow.yml"
+            path.write_text(
+                "on:\n"
+                "  pull_request:\n"
+                "permissions:\n"
+                "  contents: read\n"
+                "jobs:\n"
+                "  verify:\n"
+                "    runs-on: ubuntu-24.04\n"
+                "    timeout-minutes: 1\n"
+                "    permissions: write-all\n"
+                "    steps:\n"
+                "      - run: echo safe\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "inline job permissions"):
+                read_workflow_contract(path)
+
+    def test_parser_rejects_inline_job_steps(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workflow.yml"
+            path.write_text(
+                "on:\n"
+                "  pull_request:\n"
+                "permissions:\n"
+                "  contents: read\n"
+                "jobs:\n"
+                "  verify:\n"
+                "    runs-on: ubuntu-24.04\n"
+                "    timeout-minutes: 1\n"
+                "    steps: [{uses: actions/checkout@v7}]\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "inline job steps"):
+                read_workflow_contract(path)
+
+    def test_parser_rejects_inline_step_with_values(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workflow.yml"
+            path.write_text(
+                "on:\n"
+                "  pull_request:\n"
+                "permissions:\n"
+                "  contents: read\n"
+                "jobs:\n"
+                "  verify:\n"
+                "    runs-on: ubuntu-24.04\n"
+                "    timeout-minutes: 1\n"
+                "    steps:\n"
+                "      - uses: actions/checkout@0123456789012345678901234567890123456789\n"
+                "        with: {persist-credentials: true}\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "inline step with-values"):
+                read_workflow_contract(path)
+
 
 if __name__ == "__main__":
     unittest.main()
