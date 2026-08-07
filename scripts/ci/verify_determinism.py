@@ -30,7 +30,15 @@ def canonical_json_bytes(data: bytes) -> bytes:
         payload = json.loads(data.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise DeterminismError(f"input is not valid UTF-8 JSON: {exc}") from exc
+    return _json_bytes(payload)
+
+
+def _json_bytes(payload: object) -> bytes:
     return (json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+
+
+def _encode_pointer_token(token: str) -> str:
+    return token.replace("~", "~0").replace("/", "~1")
 
 
 def _decode_pointer_token(token: str) -> str:
@@ -92,24 +100,37 @@ def _remove_pointer(payload: object, pointer: str) -> None:
     raise DeterminismError(f"ignored pointer does not exist: {pointer}")
 
 
-def _json_bytes(payload: object) -> bytes:
-    return (json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
-
-
 def _diff(left: bytes, right: bytes, *, left_name: str = "left", right_name: str = "right") -> str:
     left_lines = left.decode("utf-8", "replace").splitlines(keepends=True)
     right_lines = right.decode("utf-8", "replace").splitlines(keepends=True)
-    return "".join(
-        difflib.unified_diff(left_lines, right_lines, fromfile=left_name, tofile=right_name)
-    )
+    return "".join(difflib.unified_diff(left_lines, right_lines, fromfile=left_name, tofile=right_name))
 
 
-def compare_json_values(
-    left: object,
-    right: object,
-    *,
-    ignored_pointers: Sequence[str],
-) -> ComparisonResult:
+def _difference_pointers(left: object, right: object, *, pointer: str = "") -> list[str]:
+    if type(left) is not type(right):
+        return [pointer or "/"]
+    if isinstance(left, dict):
+        pointers: list[str] = []
+        for key in sorted(set(left) | set(right), key=str):
+            child = f"{pointer}/{_encode_pointer_token(str(key))}"
+            if key not in left or key not in right:
+                pointers.append(child)
+            else:
+                pointers.extend(_difference_pointers(left[key], right[key], pointer=child))
+        return pointers
+    if isinstance(left, list):
+        pointers = []
+        for index in range(max(len(left), len(right))):
+            child = f"{pointer}/{index}"
+            if index >= len(left) or index >= len(right):
+                pointers.append(child)
+            else:
+                pointers.extend(_difference_pointers(left[index], right[index], pointer=child))
+        return pointers
+    return [] if left == right else [pointer or "/"]
+
+
+def compare_json_values(left: object, right: object, *, ignored_pointers: Sequence[str]) -> ComparisonResult:
     normalized_left = copy.deepcopy(left)
     normalized_right = copy.deepcopy(right)
     for pointer in ignored_pointers:
@@ -117,11 +138,15 @@ def compare_json_values(
         _remove_pointer(normalized_right, pointer)
     left_bytes = _json_bytes(normalized_left)
     right_bytes = _json_bytes(normalized_right)
+    if left_bytes == right_bytes:
+        return ComparisonResult(True, _sha256(left_bytes), _sha256(right_bytes), "")
+    pointers = _difference_pointers(normalized_left, normalized_right)
+    pointer_summary = "changed_json_pointers:\n" + "".join(f"- {pointer}\n" for pointer in pointers)
     return ComparisonResult(
-        equal=left_bytes == right_bytes,
-        left_digest=_sha256(left_bytes),
-        right_digest=_sha256(right_bytes),
-        diff="" if left_bytes == right_bytes else _diff(left_bytes, right_bytes),
+        False,
+        _sha256(left_bytes),
+        _sha256(right_bytes),
+        pointer_summary + _diff(left_bytes, right_bytes),
     )
 
 
@@ -152,33 +177,23 @@ def compare_outputs(left: Path, right: Path, rule: Mapping[str, object]) -> Comp
         raise DeterminismError(f"unsupported determinism class: {determinism_class!r}")
     left_bytes = left.read_bytes()
     right_bytes = right.read_bytes()
-
     if determinism_class == "byte":
         equal = left_bytes == right_bytes
-        return ComparisonResult(
-            equal=equal,
-            left_digest=_sha256(left_bytes),
-            right_digest=_sha256(right_bytes),
-            diff="" if equal else "byte content differs",
-        )
-
+        return ComparisonResult(equal, _sha256(left_bytes), _sha256(right_bytes), "" if equal else "byte content differs")
     if data_format != "json":
         raise DeterminismError(
-            f"{determinism_class} comparison does not support format {data_format!r}; "
-            "use the format-specific specialist"
+            f"{determinism_class} comparison does not support format {data_format!r}; use the format-specific specialist"
         )
     try:
         left_payload = json.loads(left_bytes.decode("utf-8"))
         right_payload = json.loads(right_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise DeterminismError(f"semantic JSON input is invalid: {exc}") from exc
-
     if determinism_class == "semantic":
         ignored = rule.get("ignore_json_pointers", [])
         if not isinstance(ignored, list) or any(not isinstance(value, str) for value in ignored):
             raise DeterminismError("ignore_json_pointers must be an array of strings")
         return compare_json_values(left_payload, right_payload, ignored_pointers=tuple(ignored))
-
     invariants = rule.get("invariants")
     if not isinstance(invariants, list) or not invariants:
         raise DeterminismError("bounded determinism requires explicit invariants")
