@@ -16,6 +16,7 @@
     "deterministic_outputs",
     "diagnostics",
     "trigger_surfaces",
+    "performance",
     "scheduled"
   ],
   "properties": {
@@ -216,6 +217,15 @@
         {"contains": {"const": ".github/workflows/**"}},
         {"contains": {"const": "schemas/**"}}
       ]
+    },
+    "performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "minimum_samples_before_threshold"],
+      "properties": {
+        "mode": {"const": "observational"},
+        "minimum_samples_before_threshold": {"type": "integer", "minimum": 10}
+      }
     },
     "scheduled": {
       "type": "object",
