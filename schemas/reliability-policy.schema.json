@@ -12,6 +12,7 @@
     "install_modes",
     "cache_modes",
     "determinism_classes",
+    "deterministic_outputs",
     "diagnostics",
     "trigger_surfaces",
     "scheduled"
@@ -96,6 +97,33 @@
       "maxItems": 3,
       "uniqueItems": true
     },
+    "deterministic_outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixture_run", "fixture_replay", "public_export", "wheel_contents"],
+      "properties": {
+        "fixture_run": {"$ref": "#/$defs/jsonSemanticRule"},
+        "fixture_replay": {"$ref": "#/$defs/jsonSemanticRule"},
+        "public_export": {"$ref": "#/$defs/jsonSemanticRule"},
+        "wheel_contents": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["class", "format", "ignore_archive_metadata"],
+          "properties": {
+            "class": {"const": "semantic"},
+            "format": {"const": "zip-tree"},
+            "ignore_archive_metadata": {
+              "type": "array",
+              "prefixItems": [{"const": "timestamp"}],
+              "items": false,
+              "minItems": 1,
+              "maxItems": 1,
+              "uniqueItems": true
+            }
+          }
+        }
+      }
+    },
     "diagnostics": {
       "type": "object",
       "additionalProperties": false,
@@ -156,6 +184,22 @@
           "items": false,
           "minItems": 3,
           "maxItems": 3,
+          "uniqueItems": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "jsonSemanticRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "format", "ignore_json_pointers"],
+      "properties": {
+        "class": {"const": "semantic"},
+        "format": {"const": "json"},
+        "ignore_json_pointers": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^/"},
           "uniqueItems": true
         }
       }

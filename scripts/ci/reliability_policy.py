@@ -55,6 +55,12 @@ _REQUIRED_TRIGGER_SURFACES = {
     "ROADMAP.md",
     ".github/workflows/**",
 }
+_DETERMINISTIC_OUTPUT_KEYS = {
+    "fixture_run",
+    "fixture_replay",
+    "public_export",
+    "wheel_contents",
+}
 _TOP_LEVEL_KEYS = {
     "schema_version",
     "supported_python",
@@ -63,6 +69,7 @@ _TOP_LEVEL_KEYS = {
     "install_modes",
     "cache_modes",
     "determinism_classes",
+    "deterministic_outputs",
     "diagnostics",
     "trigger_surfaces",
     "scheduled",
@@ -85,6 +92,8 @@ _DIAGNOSTIC_KEYS = {
     "failure_categories",
 }
 _SCHEDULED_KEYS = {"blocking_by_default", "dimensions"}
+_JSON_DETERMINISM_RULE_KEYS = {"class", "format", "ignore_json_pointers"}
+_ZIP_DETERMINISM_RULE_KEYS = {"class", "format", "ignore_archive_metadata"}
 
 
 @dataclass(frozen=True)
@@ -156,6 +165,40 @@ def _reject_unknown(mapping: Mapping[str, object], allowed: set[str], *, field: 
     missing = sorted(allowed - set(mapping))
     if missing:
         raise PolicyError(f"missing {field} keys: {missing}")
+
+
+def _validate_deterministic_outputs(value: object) -> None:
+    outputs = _require_mapping(value, field="deterministic_outputs")
+    _reject_unknown(outputs, _DETERMINISTIC_OUTPUT_KEYS, field="deterministic_outputs")
+    for name in ("fixture_run", "fixture_replay", "public_export"):
+        rule = _require_mapping(outputs[name], field=f"deterministic_outputs.{name}")
+        _reject_unknown(rule, _JSON_DETERMINISM_RULE_KEYS, field=f"deterministic_outputs.{name}")
+        if _require_string(rule["class"], field=f"deterministic_outputs.{name}.class") != "semantic":
+            raise PolicyError(f"deterministic_outputs.{name}.class must be semantic")
+        if _require_string(rule["format"], field=f"deterministic_outputs.{name}.format") != "json":
+            raise PolicyError(f"deterministic_outputs.{name}.format must be json")
+        pointers = _string_tuple(
+            rule["ignore_json_pointers"], field=f"deterministic_outputs.{name}.ignore_json_pointers"
+        )
+        for pointer in pointers:
+            if not pointer.startswith("/"):
+                raise PolicyError(
+                    f"deterministic_outputs.{name}.ignore_json_pointers must contain JSON pointers"
+                )
+    wheel = _require_mapping(outputs["wheel_contents"], field="deterministic_outputs.wheel_contents")
+    _reject_unknown(wheel, _ZIP_DETERMINISM_RULE_KEYS, field="deterministic_outputs.wheel_contents")
+    if _require_string(wheel["class"], field="deterministic_outputs.wheel_contents.class") != "semantic":
+        raise PolicyError("deterministic_outputs.wheel_contents.class must be semantic")
+    if _require_string(wheel["format"], field="deterministic_outputs.wheel_contents.format") != "zip-tree":
+        raise PolicyError("deterministic_outputs.wheel_contents.format must be zip-tree")
+    ignored = _string_tuple(
+        wheel["ignore_archive_metadata"],
+        field="deterministic_outputs.wheel_contents.ignore_archive_metadata",
+    )
+    if ignored != ("timestamp",):
+        raise PolicyError(
+            "deterministic_outputs.wheel_contents.ignore_archive_metadata must be exactly ('timestamp',)"
+        )
 
 
 def validate_policy_payload(payload: Mapping[str, object]) -> None:
@@ -236,6 +279,7 @@ def validate_policy_payload(payload: Mapping[str, object]) -> None:
     determinism_classes = _string_tuple(policy["determinism_classes"], field="determinism_classes")
     if determinism_classes != _DETERMINISM_CLASSES:
         raise PolicyError(f"determinism_classes must be exactly {_DETERMINISM_CLASSES}")
+    _validate_deterministic_outputs(policy["deterministic_outputs"])
 
     diagnostics = _require_mapping(policy["diagnostics"], field="diagnostics")
     _reject_unknown(diagnostics, _DIAGNOSTIC_KEYS, field="diagnostics")
