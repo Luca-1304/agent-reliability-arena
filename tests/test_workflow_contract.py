@@ -94,6 +94,25 @@ class WorkflowContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "inline job steps"):
                 read_workflow_contract(path)
 
+    def test_parser_rejects_aliased_step_nodes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workflow.yml"
+            path.write_text(
+                "on:\n"
+                "  pull_request:\n"
+                "permissions:\n"
+                "  contents: read\n"
+                "jobs:\n"
+                "  verify:\n"
+                "    runs-on: ubuntu-24.04\n"
+                "    timeout-minutes: 1\n"
+                "    steps:\n"
+                "      - *shared-step\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "aliased, anchored, or flow-style steps"):
+                read_workflow_contract(path)
+
     def test_parser_rejects_inline_step_with_values(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "workflow.yml"
