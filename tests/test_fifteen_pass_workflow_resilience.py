@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import unittest
 from pathlib import Path
@@ -8,18 +9,29 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "fifteen-pass-verification.yml"
 CI_TOOLS = ROOT / "requirements" / "ci-tools.txt"
+POLICY = ROOT / "reliability-policy.json"
 
 
 class FifteenPassWorkflowResilienceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.policy = json.loads(POLICY.read_text(encoding="utf-8"))
 
     def test_reliability_surfaces_trigger_the_stress_gate(self) -> None:
         required_paths = {
             '      - ".github/workflows/fifteen-pass-verification.yml"',
+            '      - "reliability-policy.json"',
+            '      - "schemas/reliability-policy.schema.json"',
+            '      - "schemas/reliability-evidence.schema.json"',
             '      - "scripts/ci/reliability_gate.py"',
+            '      - "scripts/ci/reliability_policy.py"',
+            '      - "scripts/ci/reliability_evidence.py"',
+            '      - "scripts/ci/run_deep_reliability.py"',
             '      - "requirements/ci-tools.txt"',
             '      - "tests/test_reliability_gate.py"',
+            '      - "tests/test_reliability_policy.py"',
+            '      - "tests/test_reliability_evidence.py"',
+            '      - "tests/test_deep_gate_policy_adapter.py"',
             '      - "src/**"',
             '      - "tests/**"',
             '      - "scripts/**"',
@@ -31,6 +43,7 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
             '      - "docs/**"',
             '      - "citation/**"',
             '      - "requirements/**"',
+            '      - "schemas/**"',
             '      - "pyproject.toml"',
             '      - "README.md"',
             '      - "CHANGELOG.md"',
@@ -43,11 +56,13 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
         self.assertIn("branches: [main]", self.workflow)
         self.assertIn("workflow_dispatch:", self.workflow)
 
-    def test_workflow_is_a_thin_adapter_to_the_repository_runner(self) -> None:
+    def test_workflow_is_a_thin_adapter_to_policy_governed_runner(self) -> None:
         required_contract = {
-            "python scripts/ci/reliability_gate.py",
-            "--passes 15",
+            "python scripts/ci/run_deep_reliability.py",
+            "--policy reliability-policy.json",
             "--python-label",
+            "--source-sha",
+            "--tested-sha",
             "--workspace",
             "--work-root",
             "--diagnostics-dir",
@@ -55,8 +70,23 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
         }
         missing = sorted(item for item in required_contract if item not in self.workflow)
         self.assertEqual(missing, [], f"Workflow adapter lacks: {missing}")
+        self.assertIn("github.event.pull_request.head.sha", self.workflow)
+        self.assertIn("$GITHUB_SHA", self.workflow)
+        self.assertNotIn("--passes 15", self.workflow)
         self.assertNotIn("for pass_number in $(seq 1 15)", self.workflow)
         self.assertNotIn("run_pass()", self.workflow)
+
+    def test_policy_owns_passes_timeouts_and_retention(self) -> None:
+        deep = self.policy["deep_gate"]
+        diagnostics = self.policy["diagnostics"]
+        self.assertEqual(deep["minimum_passes"], 15)
+        self.assertEqual(deep["python"], ["3.10", "3.13"])
+        self.assertEqual(deep["job_timeout_minutes"], 180)
+        self.assertEqual(diagnostics["retention_days"], 14)
+        self.assertIn("timeout-minutes: 180", self.workflow)
+        self.assertIn("retention-days: 14", self.workflow)
+        self.assertNotIn("timeout-minutes: 360", self.workflow)
+        self.assertNotIn("retention-days: 30", self.workflow)
 
     def test_external_actions_are_pinned_to_immutable_full_length_shas(self) -> None:
         expected = {
@@ -78,6 +108,8 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
         self.assertNotIn("contents: write", self.workflow)
         self.assertNotIn("pull-requests: write", self.workflow)
         self.assertNotIn("id-token: write", self.workflow)
+        self.assertEqual(self.policy["permissions"]["maximum"], {"contents": "read"})
+        self.assertFalse(self.policy["permissions"]["persist_credentials"])
 
     def test_ci_toolchain_is_exact_hash_locked_and_dependency_complete(self) -> None:
         self.assertIn(
@@ -106,7 +138,7 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
         self.assertIn("$GITHUB_STEP_SUMMARY", self.workflow)
         self.assertIn("fifteen-pass-diagnostics-", self.workflow)
         self.assertIn("if-no-files-found: error", self.workflow)
-        self.assertIn("retention-days: 30", self.workflow)
+        self.assertIn("manifest.json", self.policy["diagnostics"]["required_files"])
         self.assertIn("${{ github.run_attempt }}", self.workflow)
 
     def test_environment_and_concurrency_are_controlled(self) -> None:
@@ -119,11 +151,13 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
             "PIP_DISABLE_PIP_VERSION_CHECK: \"1\"",
             "SOURCE_DATE_EPOCH: \"315532800\"",
             "cancel-in-progress: true",
-            "timeout-minutes: 360",
+            "timeout-minutes: 180",
             "fail-fast: false",
         }
         missing = sorted(item for item in required_contract if item not in self.workflow)
         self.assertEqual(missing, [], f"Workflow environment lacks: {missing}")
+        self.assertEqual(self.policy["deep_gate"]["timezone"], "UTC")
+        self.assertEqual(self.policy["deep_gate"]["locale"], "C.UTF-8")
 
 
 if __name__ == "__main__":
