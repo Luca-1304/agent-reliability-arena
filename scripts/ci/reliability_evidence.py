@@ -88,6 +88,11 @@ def dependency_fingerprint(rows: Sequence[str]) -> dict[str, object]:
     }
 
 
+def _validate_sha(value: str, *, field: str) -> None:
+    if not _SHA_RE.fullmatch(value):
+        raise ValueError(f"{field} must be a lower-case 40-character hexadecimal SHA")
+
+
 @dataclass(frozen=True)
 class FailureRecord:
     category: str
@@ -134,6 +139,7 @@ class FailureRecord:
 class EvidenceManifest:
     repository: str
     commit_sha: str
+    tested_commit_sha: str
     workflow: str
     run_id: str
     run_attempt: str
@@ -159,8 +165,8 @@ class EvidenceManifest:
     def __post_init__(self) -> None:
         if self.schema_version != SCHEMA_VERSION:
             raise ValueError(f"unsupported evidence schema version: {self.schema_version}")
-        if not _SHA_RE.fullmatch(self.commit_sha):
-            raise ValueError("commit_sha must be a lower-case 40-character hexadecimal SHA")
+        _validate_sha(self.commit_sha, field="commit_sha")
+        _validate_sha(self.tested_commit_sha, field="tested_commit_sha")
         if self.hash_seed is not None and self.hash_seed < 0:
             raise ValueError("hash_seed must be non-negative when present")
         if self.final_status not in _FINAL_STATUSES:
@@ -171,6 +177,7 @@ class EvidenceManifest:
         return cls(
             repository="Luca-1304/agent-reliability-arena",
             commit_sha=commit_sha,
+            tested_commit_sha=commit_sha,
             workflow="test",
             run_id="test-run",
             run_attempt="1",
@@ -217,6 +224,7 @@ class EvidenceManifest:
             "runner_arch": self.runner_arch,
             "runner_os": self.runner_os,
             "schema_version": self.schema_version,
+            "tested_commit_sha": self.tested_commit_sha,
             "timings": dict(self.timings),
             "timezone": self.timezone,
             "toolchain": dict(self.toolchain),
