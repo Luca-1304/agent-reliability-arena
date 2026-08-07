@@ -47,6 +47,19 @@ class DiagnosticScannerTests(unittest.TestCase):
         rendered = "\n".join(item.rendered for item in report.findings)
         self.assertNotIn("not-real", rendered)
 
+    def test_private_host_name_is_redacted_from_report(self) -> None:
+        private_host = "private-build.internal.example"
+        report = scan_text(
+            "events.jsonl",
+            f"callback=https://{private_host}/run",
+            workspace=Path("/repo"),
+            private_url_hosts=[private_host],
+        )
+        rendered = "\n".join(item.rendered for item in report.findings)
+        self.assertTrue(any(item.kind == "private-url-host" for item in report.findings))
+        self.assertNotIn(private_host, rendered)
+        self.assertIn("host=<redacted>", rendered)
+
     def test_json_secret_key_is_detected_without_value(self) -> None:
         payload = json.dumps({"command": "run", "auth_token": "example-value-not-real"})
         report = scan_text("manifest.json", payload, workspace=Path("/repo"))
@@ -108,6 +121,25 @@ class DiagnosticScannerTests(unittest.TestCase):
                 policy=load_policy(Path("reliability-policy.json")),
             )
             self.assertTrue(any(item.kind == "workspace-path-binary" for item in report.findings))
+
+    def test_oversized_text_is_blocked_by_configured_ceiling(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = root / "evidence"
+            evidence.mkdir()
+            (evidence / "large.log").write_text("safe-line\n" * 20, encoding="utf-8")
+            payload = json.loads(Path("reliability-policy.json").read_text(encoding="utf-8"))
+            payload["diagnostics"]["scanner"]["max_text_file_bytes"] = 32
+            policy_path = root / "policy.json"
+            policy_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            report = scan_tree(
+                evidence,
+                workspace=root / "workspace",
+                policy=load_policy(policy_path),
+            )
+
+            self.assertTrue(any(item.kind == "oversized-text-file" for item in report.findings))
 
 
 if __name__ == "__main__":
