@@ -11,11 +11,13 @@ on:
       - "scripts/ci/reliability_policy.py"
       - "scripts/ci/reliability_evidence.py"
       - "scripts/ci/run_deep_reliability.py"
+      - "scripts/ci/scan_diagnostics.py"
       - "requirements/ci-tools.txt"
       - "tests/test_reliability_gate.py"
       - "tests/test_reliability_policy.py"
       - "tests/test_reliability_evidence.py"
       - "tests/test_deep_gate_policy_adapter.py"
+      - "tests/test_diagnostic_scanner.py"
       - "src/**"
       - "tests/**"
       - "scripts/**"
@@ -43,11 +45,13 @@ on:
       - "scripts/ci/reliability_policy.py"
       - "scripts/ci/reliability_evidence.py"
       - "scripts/ci/run_deep_reliability.py"
+      - "scripts/ci/scan_diagnostics.py"
       - "requirements/ci-tools.txt"
       - "tests/test_reliability_gate.py"
       - "tests/test_reliability_policy.py"
       - "tests/test_reliability_evidence.py"
       - "tests/test_deep_gate_policy_adapter.py"
+      - "tests/test_diagnostic_scanner.py"
       - "src/**"
       - "tests/**"
       - "scripts/**"
@@ -151,8 +155,27 @@ jobs:
             --work-root "$RUNNER_TEMP/reliability-work" \
             --diagnostics-dir "$RUNNER_TEMP/fifteen-pass-diagnostics"
 
-      - name: Publish reliability evidence summary
+      - name: Scan diagnostic evidence before publication
+        id: diagnostic_scan
         if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          report="$RUNNER_TEMP/diagnostic-scan-report.json"
+          python scripts/ci/scan_diagnostics.py \
+            --root "$RUNNER_TEMP/fifteen-pass-diagnostics" \
+            --workspace "$GITHUB_WORKSPACE" \
+            --policy reliability-policy.json \
+            --output "$report"
+          status=$?
+          if [[ ! -f "$report" ]]; then
+            printf '%s\n' '{"finding_count":1,"findings":[{"context":"scanner did not produce a report","kind":"scanner-error","line":0,"source":"scanner"}],"scanned_files":0,"schema_version":"diagnostic-scan-v1","skipped_binary_files":0,"status":"blocked"}' > "$report"
+          fi
+          exit "$status"
+
+      - name: Publish reliability evidence summary
+        if: always() && steps.diagnostic_scan.outcome == 'success'
         shell: bash
         run: |
           diagnostics_dir="$RUNNER_TEMP/fifteen-pass-diagnostics"
@@ -162,12 +185,22 @@ jobs:
             {
               echo "## Policy Deep Gate — Python ${{ matrix.python-version }}"
               echo
-              echo "The gate did not reach summary generation. Bootstrap evidence is retained in the uploaded artifact."
+              echo "The gate did not reach summary generation. Scanned bootstrap evidence is retained in the uploaded artifact."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Upload complete reliability evidence
-        if: always()
+      - name: Publish blocked-diagnostics summary
+        if: always() && steps.diagnostic_scan.outcome == 'failure'
+        shell: bash
+        run: |
+          {
+            echo "## Policy Deep Gate — Python ${{ matrix.python-version }}"
+            echo
+            echo "Diagnostic publication was blocked by the privacy/security scanner. Only the redacted scanner report is eligible for upload."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload scanned reliability evidence
+        if: always() && steps.diagnostic_scan.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: fifteen-pass-diagnostics-${{ matrix.python-version }}-${{ github.run_attempt }}
@@ -175,3 +208,18 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           compression-level: 9
+
+      - name: Upload redacted scanner report only
+        if: always() && steps.diagnostic_scan.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: fifteen-pass-diagnostics-blocked-${{ matrix.python-version }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/diagnostic-scan-report.json
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
+
+      - name: Enforce privacy-safe diagnostic publication
+        if: always() && steps.diagnostic_scan.outcome == 'failure'
+        shell: bash
+        run: exit 1
