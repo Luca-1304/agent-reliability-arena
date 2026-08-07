@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import codecs
 import json
 import re
 from dataclasses import dataclass, field
@@ -34,6 +35,7 @@ _ASSIGNMENT_RE = re.compile(
     r"(?P<key>[A-Za-z_][A-Za-z0-9_.-]*)\s*(?:=|:)\s*(?P<value>[^\s,;]+)",
     re.IGNORECASE,
 )
+_SCAN_CHUNK_BYTES = 64 * 1024
 
 
 @dataclass(frozen=True)
@@ -148,7 +150,7 @@ def _json_secret_findings(
                             source=source,
                             line=1,
                             kind="secret-like-json-key",
-                            context=f"key={key_text}; path={child_path}; value=<redacted>",
+                            context=f"key={key_text}; path_depth={child_path.count('/')}; value=<redacted>",
                         )
                     )
                 visit(child, child_path)
@@ -209,7 +211,7 @@ def scan_text(
                         source=source,
                         line=line_number,
                         kind="private-url-host",
-                        context=f"scheme={parsed.scheme.lower()}; host={host}; url=<redacted>",
+                        context=f"scheme={parsed.scheme.lower()}; host=<redacted>; url=<redacted>",
                     )
                 )
             if parsed.username is not None or parsed.password is not None:
@@ -218,7 +220,7 @@ def scan_text(
                         source=source,
                         line=line_number,
                         kind="credentialed-url",
-                        context=f"scheme={parsed.scheme.lower()}; host={host or '<unknown>'}; url=<redacted>",
+                        context=f"scheme={parsed.scheme.lower()}; host=<redacted>; url=<redacted>",
                     )
                 )
 
@@ -271,6 +273,41 @@ def _scanner_policy(policy: ReliabilityPolicy) -> tuple[tuple[str, ...], tuple[s
     return tuple(private_hosts), tuple(secret_fragments), max_bytes
 
 
+def _inspect_stream(path: Path, workspace_bytes: tuple[bytes, ...]) -> tuple[bool, bool, int]:
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="strict")
+    binary = False
+    workspace_found = False
+    total_bytes = 0
+    max_marker = max((len(marker) for marker in workspace_bytes), default=1)
+    tail = b""
+    try:
+        with path.open("rb") as handle:
+            while True:
+                chunk = handle.read(_SCAN_CHUNK_BYTES)
+                if not chunk:
+                    break
+                total_bytes += len(chunk)
+                combined = tail + chunk
+                if not workspace_found and any(marker in combined for marker in workspace_bytes):
+                    workspace_found = True
+                if b"\x00" in chunk:
+                    binary = True
+                if not binary:
+                    try:
+                        decoder.decode(chunk, final=False)
+                    except UnicodeDecodeError:
+                        binary = True
+                tail = combined[-(max_marker - 1) :] if max_marker > 1 else b""
+            if not binary:
+                try:
+                    decoder.decode(b"", final=True)
+                except UnicodeDecodeError:
+                    binary = True
+    except OSError as exc:
+        raise RuntimeError("evidence file could not be streamed") from exc
+    return binary, workspace_found, total_bytes
+
+
 def scan_tree(root: Path, *, workspace: Path, policy: ReliabilityPolicy) -> ScanReport:
     report = ScanReport()
     private_hosts, secret_fragments, max_text_file_bytes = _scanner_policy(policy)
@@ -300,23 +337,16 @@ def scan_tree(root: Path, *, workspace: Path, policy: ReliabilityPolicy) -> Scan
             continue
         report.scanned_files += 1
         try:
-            data = path.read_bytes()
-        except OSError:
+            binary, workspace_found, total_bytes = _inspect_stream(path, workspace_bytes)
+        except RuntimeError:
             report.findings.append(
                 ScanFinding(source=relative, line=0, kind="unreadable-file", context="file could not be read")
             )
             continue
 
-        binary = b"\x00" in data
-        try:
-            text = data.decode("utf-8") if not binary else None
-        except UnicodeDecodeError:
-            text = None
-            binary = True
-
         if binary:
             report.skipped_binary_files += 1
-            if any(marker in data for marker in workspace_bytes):
+            if workspace_found:
                 report.findings.append(
                     ScanFinding(
                         source=relative,
@@ -327,7 +357,16 @@ def scan_tree(root: Path, *, workspace: Path, policy: ReliabilityPolicy) -> Scan
                 )
             continue
 
-        if len(data) > max_text_file_bytes:
+        if total_bytes > max_text_file_bytes:
+            if workspace_found:
+                report.findings.append(
+                    ScanFinding(
+                        source=relative,
+                        line=0,
+                        kind="workspace-path-large-text",
+                        context="absolute workspace path detected in oversized text; value=<redacted>",
+                    )
+                )
             report.findings.append(
                 ScanFinding(
                     source=relative,
@@ -338,9 +377,16 @@ def scan_tree(root: Path, *, workspace: Path, policy: ReliabilityPolicy) -> Scan
             )
             continue
 
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            report.findings.append(
+                ScanFinding(source=relative, line=0, kind="unreadable-file", context="file could not be read as UTF-8")
+            )
+            continue
         child = scan_text(
             relative,
-            text or "",
+            text,
             workspace=workspace,
             private_url_hosts=private_hosts,
             secret_name_fragments=secret_fragments,
