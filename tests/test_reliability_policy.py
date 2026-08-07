@@ -25,6 +25,11 @@ class ReliabilityPolicyTests(unittest.TestCase):
         self.assertEqual(policy.cache_modes, ("warm", "cold"))
         self.assertIn(".github/workflows/**", policy.trigger_surfaces)
         self.assertIn("reliability-policy.json", policy.trigger_surfaces)
+        scanner = policy.raw["diagnostics"]["scanner"]
+        self.assertTrue(scanner["forbid_absolute_workspace_paths"])
+        self.assertEqual(scanner["max_text_file_bytes"], 5_000_000)
+        self.assertTrue({"localhost", "127.0.0.1", "0.0.0.0"}.issubset(scanner["forbid_private_url_hosts"]))
+        self.assertTrue({"api_key", "token", "password", "secret"}.issubset(scanner["secret_name_fragments"]))
 
     def test_unknown_top_level_key_fails_closed(self) -> None:
         payload = json.loads(POLICY.read_text(encoding="utf-8"))
@@ -78,6 +83,33 @@ class ReliabilityPolicyTests(unittest.TestCase):
             path = Path(directory) / "policy.json"
             path.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaisesRegex(PolicyError, "retention_days"):
+                load_policy(path)
+
+    def test_diagnostic_workspace_scanning_cannot_be_disabled(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["diagnostics"]["scanner"]["forbid_absolute_workspace_paths"] = False
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "forbid_absolute_workspace_paths"):
+                load_policy(path)
+
+    def test_required_secret_fragment_cannot_be_removed(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["diagnostics"]["scanner"]["secret_name_fragments"].remove("token")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "secret_name_fragments"):
+                load_policy(path)
+
+    def test_scanner_size_ceiling_cannot_be_raised(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["diagnostics"]["scanner"]["max_text_file_bytes"] = 5_000_001
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "max_text_file_bytes"):
                 load_policy(path)
 
 

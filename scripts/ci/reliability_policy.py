@@ -30,6 +30,9 @@ _FAILURE_CATEGORIES = (
     "UNKNOWN",
 )
 _REQUIRED_DIAGNOSTIC_FILES = ("manifest.json", "summary.json", "summary.md", "events.jsonl")
+_REQUIRED_SCANNER_PRIVATE_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0"}
+_REQUIRED_SCANNER_SECRET_FRAGMENTS = {"api_key", "token", "password", "secret"}
+_MAX_SCANNER_TEXT_FILE_BYTES = 5_000_000
 _REQUIRED_SCHEDULED_DIMENSIONS = (
     "latest-compatible-build-tools",
     "cold-cache",
@@ -90,6 +93,13 @@ _DIAGNOSTIC_KEYS = {
     "retention_days",
     "required_files",
     "failure_categories",
+    "scanner",
+}
+_SCANNER_KEYS = {
+    "forbid_absolute_workspace_paths",
+    "forbid_private_url_hosts",
+    "secret_name_fragments",
+    "max_text_file_bytes",
 }
 _SCHEDULED_KEYS = {"blocking_by_default", "dimensions"}
 _JSON_DETERMINISM_RULE_KEYS = {"class", "format", "ignore_json_pointers"}
@@ -201,6 +211,47 @@ def _validate_deterministic_outputs(value: object) -> None:
         )
 
 
+def _validate_diagnostic_scanner(value: object) -> None:
+    scanner = _require_mapping(value, field="diagnostics.scanner")
+    _reject_unknown(scanner, _SCANNER_KEYS, field="diagnostics.scanner")
+    if not _require_bool(
+        scanner["forbid_absolute_workspace_paths"],
+        field="diagnostics.scanner.forbid_absolute_workspace_paths",
+    ):
+        raise PolicyError("diagnostics.scanner.forbid_absolute_workspace_paths must be true")
+
+    private_hosts = _string_tuple(
+        scanner["forbid_private_url_hosts"],
+        field="diagnostics.scanner.forbid_private_url_hosts",
+    )
+    missing_hosts = sorted(_REQUIRED_SCANNER_PRIVATE_HOSTS - {value.lower() for value in private_hosts})
+    if missing_hosts:
+        raise PolicyError(
+            f"diagnostics.scanner.forbid_private_url_hosts missing required entries: {missing_hosts}"
+        )
+
+    secret_fragments = _string_tuple(
+        scanner["secret_name_fragments"],
+        field="diagnostics.scanner.secret_name_fragments",
+    )
+    missing_fragments = sorted(
+        _REQUIRED_SCANNER_SECRET_FRAGMENTS - {value.lower() for value in secret_fragments}
+    )
+    if missing_fragments:
+        raise PolicyError(
+            f"diagnostics.scanner.secret_name_fragments missing required entries: {missing_fragments}"
+        )
+
+    max_text_file_bytes = _require_positive_int(
+        scanner["max_text_file_bytes"],
+        field="diagnostics.scanner.max_text_file_bytes",
+    )
+    if max_text_file_bytes > _MAX_SCANNER_TEXT_FILE_BYTES:
+        raise PolicyError(
+            f"diagnostics.scanner.max_text_file_bytes must not exceed {_MAX_SCANNER_TEXT_FILE_BYTES}"
+        )
+
+
 def validate_policy_payload(payload: Mapping[str, object]) -> None:
     policy = _require_mapping(payload, field="policy")
     _reject_unknown(policy, _TOP_LEVEL_KEYS, field="policy")
@@ -296,6 +347,7 @@ def validate_policy_payload(payload: Mapping[str, object]) -> None:
     )
     if failure_categories != _FAILURE_CATEGORIES:
         raise PolicyError(f"diagnostics.failure_categories must be exactly {_FAILURE_CATEGORIES}")
+    _validate_diagnostic_scanner(diagnostics["scanner"])
 
     trigger_surfaces = _string_tuple(policy["trigger_surfaces"], field="trigger_surfaces")
     missing_surfaces = sorted(_REQUIRED_TRIGGER_SURFACES - set(trigger_surfaces))

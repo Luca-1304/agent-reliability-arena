@@ -101,7 +101,22 @@
       "CONCURRENCY",
       "POLICY",
       "UNKNOWN"
-    ]
+    ],
+    "scanner": {
+      "forbid_absolute_workspace_paths": true,
+      "forbid_private_url_hosts": [
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0"
+      ],
+      "secret_name_fragments": [
+        "api_key",
+        "token",
+        "password",
+        "secret"
+      ],
+      "max_text_file_bytes": 5000000
+    }
   },
   "trigger_surfaces": [
     "src/**",
