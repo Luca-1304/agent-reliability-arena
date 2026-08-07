@@ -127,7 +127,7 @@
     "diagnostics": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema_version", "retention_days", "required_files", "failure_categories"],
+      "required": ["schema_version", "retention_days", "required_files", "failure_categories", "scanner"],
       "properties": {
         "schema_version": {"const": "reliability-evidence-v1"},
         "retention_days": {"type": "integer", "minimum": 1, "maximum": 30},
@@ -154,6 +154,43 @@
           "minItems": 12,
           "maxItems": 12,
           "uniqueItems": true
+        },
+        "scanner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "forbid_absolute_workspace_paths",
+            "forbid_private_url_hosts",
+            "secret_name_fragments",
+            "max_text_file_bytes"
+          ],
+          "properties": {
+            "forbid_absolute_workspace_paths": {"const": true},
+            "forbid_private_url_hosts": {
+              "type": "array",
+              "items": {"type": "string", "minLength": 1},
+              "minItems": 3,
+              "uniqueItems": true,
+              "allOf": [
+                {"contains": {"const": "localhost"}},
+                {"contains": {"const": "127.0.0.1"}},
+                {"contains": {"const": "0.0.0.0"}}
+              ]
+            },
+            "secret_name_fragments": {
+              "type": "array",
+              "items": {"type": "string", "minLength": 1},
+              "minItems": 4,
+              "uniqueItems": true,
+              "allOf": [
+                {"contains": {"const": "api_key"}},
+                {"contains": {"const": "token"}},
+                {"contains": {"const": "password"}},
+                {"contains": {"const": "secret"}}
+              ]
+            },
+            "max_text_file_bytes": {"type": "integer", "minimum": 1, "maximum": 5000000}
+          }
         }
       }
     },
