@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -11,6 +12,10 @@ from .live_requests import PromptCatalog
 from .pilot_policy import PilotPolicy, build_pilot_preflight
 from .public_export import write_public_export
 from .replay import replay_experiment
+
+
+RELIABILITY_STABLE_OUTPUT_ENV = "ARENA_RELIABILITY_STABLE_OUTPUT"
+RELIABILITY_OUTPUT_MARKER = "<reliability-output>"
 
 
 def _load_config(path: Path) -> ExperimentConfig:
@@ -25,8 +30,17 @@ def _load_pilot_policy(path: Path) -> PilotPolicy:
     return PilotPolicy.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
 
+def _stable_reliability_payload(payload: object) -> object:
+    if os.environ.get(RELIABILITY_STABLE_OUTPUT_ENV) != "1" or not isinstance(payload, dict):
+        return payload
+    normalized = dict(payload)
+    if isinstance(normalized.get("output"), str):
+        normalized["output"] = RELIABILITY_OUTPUT_MARKER
+    return normalized
+
+
 def _print(payload: object) -> None:
-    print(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False))
+    print(json.dumps(_stable_reliability_payload(payload), indent=2, sort_keys=True, ensure_ascii=False))
 
 
 def _guard(function) -> int:
