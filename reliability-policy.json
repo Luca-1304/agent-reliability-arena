@@ -41,6 +41,20 @@
     },
     "persist_credentials": false
   },
+  "workflow_roles": {
+    "fast": [
+      "reliability-fast.yml"
+    ],
+    "deep": [
+      "fifteen-pass-verification.yml"
+    ],
+    "specialist": [
+      "reliability-specialists.yml"
+    ],
+    "scheduled": [
+      "reliability-ecosystem.yml"
+    ]
+  },
   "install_modes": [
     "editable",
     "wheel",
