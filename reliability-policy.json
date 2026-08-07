@@ -1,0 +1,110 @@
+{
+  "schema_version": "reliability-policy-v1",
+  "supported_python": [
+    "3.10",
+    "3.11",
+    "3.12",
+    "3.13"
+  ],
+  "deep_gate": {
+    "python": [
+      "3.10",
+      "3.13"
+    ],
+    "minimum_passes": 15,
+    "timezone": "UTC",
+    "locale": "C.UTF-8",
+    "hash_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "command_timeout_seconds": 900,
+    "pass_timeout_seconds": 1800,
+    "job_timeout_minutes": 180
+  },
+  "permissions": {
+    "maximum": {
+      "contents": "read"
+    },
+    "persist_credentials": false
+  },
+  "install_modes": [
+    "editable",
+    "wheel",
+    "clean-room-wheel"
+  ],
+  "cache_modes": [
+    "warm",
+    "cold"
+  ],
+  "determinism_classes": [
+    "byte",
+    "semantic",
+    "bounded"
+  ],
+  "diagnostics": {
+    "schema_version": "reliability-evidence-v1",
+    "retention_days": 14,
+    "required_files": [
+      "manifest.json",
+      "summary.json",
+      "summary.md",
+      "events.jsonl"
+    ],
+    "failure_categories": [
+      "TEST",
+      "BUILD",
+      "PACKAGE",
+      "REPLAY",
+      "DETERMINISM",
+      "SECURITY",
+      "DEPENDENCY",
+      "ENVIRONMENT",
+      "TIMEOUT",
+      "CONCURRENCY",
+      "POLICY",
+      "UNKNOWN"
+    ]
+  },
+  "trigger_surfaces": [
+    "src/**",
+    "tests/**",
+    "scripts/**",
+    "examples/**",
+    "security/**",
+    "release/**",
+    "reference_runs/**",
+    "web/**",
+    "docs/**",
+    "citation/**",
+    "requirements/**",
+    "schemas/**",
+    "reliability-policy.json",
+    "pyproject.toml",
+    "README.md",
+    "CHANGELOG.md",
+    "ROADMAP.md",
+    ".github/workflows/**"
+  ],
+  "scheduled": {
+    "blocking_by_default": false,
+    "dimensions": [
+      "latest-compatible-build-tools",
+      "cold-cache",
+      "dependency-resolution"
+    ]
+  }
+}

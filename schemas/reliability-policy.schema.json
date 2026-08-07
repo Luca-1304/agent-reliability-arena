@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luca-1304/agent-reliability-arena/schemas/reliability-policy.schema.json",
+  "title": "Agent Reliability Arena reliability policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "supported_python",
+    "deep_gate",
+    "permissions",
+    "install_modes",
+    "cache_modes",
+    "determinism_classes",
+    "diagnostics",
+    "trigger_surfaces",
+    "scheduled"
+  ],
+  "properties": {
+    "schema_version": {"const": "reliability-policy-v1"},
+    "supported_python": {
+      "type": "array",
+      "prefixItems": [
+        {"const": "3.10"}, {"const": "3.11"}, {"const": "3.12"}, {"const": "3.13"}
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true
+    },
+    "deep_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python", "minimum_passes", "timezone", "locale", "hash_seeds",
+        "command_timeout_seconds", "pass_timeout_seconds", "job_timeout_minutes"
+      ],
+      "properties": {
+        "python": {
+          "type": "array",
+          "prefixItems": [{"const": "3.10"}, {"const": "3.13"}],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true
+        },
+        "minimum_passes": {"type": "integer", "minimum": 15},
+        "timezone": {"const": "UTC"},
+        "locale": {"const": "C.UTF-8"},
+        "hash_seeds": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0},
+          "minItems": 15,
+          "uniqueItems": true
+        },
+        "command_timeout_seconds": {"type": "integer", "minimum": 1},
+        "pass_timeout_seconds": {"type": "integer", "minimum": 1},
+        "job_timeout_minutes": {"type": "integer", "minimum": 1, "maximum": 180}
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maximum", "persist_credentials"],
+      "properties": {
+        "maximum": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contents"],
+          "properties": {"contents": {"const": "read"}}
+        },
+        "persist_credentials": {"const": false}
+      }
+    },
+    "install_modes": {
+      "type": "array",
+      "prefixItems": [{"const": "editable"}, {"const": "wheel"}, {"const": "clean-room-wheel"}],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "cache_modes": {
+      "type": "array",
+      "prefixItems": [{"const": "warm"}, {"const": "cold"}],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "determinism_classes": {
+      "type": "array",
+      "prefixItems": [{"const": "byte"}, {"const": "semantic"}, {"const": "bounded"}],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "retention_days", "required_files", "failure_categories"],
+      "properties": {
+        "schema_version": {"const": "reliability-evidence-v1"},
+        "retention_days": {"type": "integer", "minimum": 1, "maximum": 30},
+        "required_files": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "manifest.json"}, {"const": "summary.json"},
+            {"const": "summary.md"}, {"const": "events.jsonl"}
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true
+        },
+        "failure_categories": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "TEST"}, {"const": "BUILD"}, {"const": "PACKAGE"},
+            {"const": "REPLAY"}, {"const": "DETERMINISM"}, {"const": "SECURITY"},
+            {"const": "DEPENDENCY"}, {"const": "ENVIRONMENT"}, {"const": "TIMEOUT"},
+            {"const": "CONCURRENCY"}, {"const": "POLICY"}, {"const": "UNKNOWN"}
+          ],
+          "items": false,
+          "minItems": 12,
+          "maxItems": 12,
+          "uniqueItems": true
+        }
+      }
+    },
+    "trigger_surfaces": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 19,
+      "uniqueItems": true,
+      "allOf": [
+        {"contains": {"const": "reliability-policy.json"}},
+        {"contains": {"const": ".github/workflows/**"}},
+        {"contains": {"const": "schemas/**"}}
+      ]
+    },
+    "scheduled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blocking_by_default", "dimensions"],
+      "properties": {
+        "blocking_by_default": {"const": false},
+        "dimensions": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "latest-compatible-build-tools"},
+            {"const": "cold-cache"},
+            {"const": "dependency-resolution"}
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}
