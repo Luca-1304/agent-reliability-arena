@@ -82,6 +82,24 @@ Tracking: [#13 — Prepare Agent Reliability Arena v0.2 release candidate](https
 - disclosure-safe public/private evidence boundary;
 - complete Python 3.10–3.13 source, release, wheel and clean-wheel verification.
 
+### Reliability assurance architecture
+
+Status: **implemented; exact-head rollout evidence required before treating the current branch as merged**
+
+The repository reliability system is intentionally layered rather than one oversized repeated job:
+
+- **Fast** — rapid merge feedback across Python 3.10–3.13, including source tests, policy/privacy checks and wheel smoke verification;
+- **Deep** — the repeated/adversarial 15-pass assurance engine on Python 3.10 and 3.13;
+- **Specialist** — independent reproducible-build, explicit-determinism, clean-room, concurrency-isolation and diagnostic-security jobs;
+- **Scheduled** — a weekly/manual ecosystem-drift advisory using latest compatible build tools, cold cache and dependency resolution without PR or push triggers;
+- **Policy + evidence** — the governing layer that constrains permissions, trigger surfaces, artifact retention, diagnostic privacy, workflow roles and evidence interpretation.
+
+Fast, Deep and Specialist are required reliability roles. Scheduled remains advisory by default. Each role emits a machine record and a non-authoritative human summary; missing, duplicate, failed or unknown required records cannot be interpreted as a pass. Diagnostic artifacts are scanned before publication.
+
+Performance telemetry is **observational only**. Median/worst timing can be reported, but no performance threshold becomes merge-blocking from this architecture alone. A `slower-than-recent-median` observation requires at least ten explicit prior samples and still does not change the required-gate decision.
+
+These controls verify repository, packaging, deterministic fixture, isolation and evidence behavior. They do **not** prove provider deletion, production deployment health, Git-to-Vercel provenance, absence of every possible flake, or real-provider/model performance.
+
 ## Current empirical boundary
 
 ### Stage 7 — Minimal private provider pilot
