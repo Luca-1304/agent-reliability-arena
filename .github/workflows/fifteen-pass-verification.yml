@@ -255,3 +255,114 @@ jobs:
         if: always() && (steps.diagnostic_redaction.outcome == 'failure' || steps.diagnostic_scan.outcome == 'failure')
         shell: bash
         run: exit 1
+
+  summary:
+    name: Deep — Role evidence summary
+    needs: verify
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+
+      - name: Create authoritative Deep role record
+        env:
+          GATE_RESULT: ${{ needs.verify.result }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/deep-role-evidence"
+          rm -rf "$evidence"
+          mkdir -p "$evidence"
+          python - "$evidence/manifest.json" <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          mapping = {"success": "passed", "failure": "failed", "cancelled": "blocked", "skipped": "unknown"}
+          raw = os.environ.get("GATE_RESULT", "unknown").lower()
+          payload = {
+              "schema_version": "layered-reliability-role-v1",
+              "role": "deep",
+              "required": True,
+              "status": mapping.get(raw, "unknown"),
+              "source_sha": os.environ.get("SOURCE_SHA", ""),
+              "workflow": os.environ.get("GITHUB_WORKFLOW", ""),
+              "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+              "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+              "variants": ["3.10", "3.13"],
+              "passes_per_variant": 15,
+          }
+          Path(sys.argv[1]).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Generate Deep human summary
+        id: summarize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/deep-role-evidence"
+          python scripts/ci/summarize_reliability.py \
+            --manifest "$evidence/manifest.json" \
+            --required-role deep \
+            --minimum-prior-samples 10 \
+            --output-json "$evidence/summary.json" \
+            --output-md "$evidence/summary.md"
+
+      - name: Scan Deep role evidence
+        id: scan
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          python scripts/ci/scan_diagnostics.py \
+            --root "$RUNNER_TEMP/deep-role-evidence" \
+            --workspace "$GITHUB_WORKSPACE" \
+            --policy reliability-policy.json \
+            --output "$RUNNER_TEMP/deep-role-scan.json"
+
+      - name: Publish Deep role summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$RUNNER_TEMP/deep-role-evidence/summary.md" ]]; then
+            cat "$RUNNER_TEMP/deep-role-evidence/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload scanned Deep role evidence
+        if: always() && steps.scan.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: reliability-deep-role-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/deep-role-evidence
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
+
+      - name: Upload blocked Deep scanner report
+        if: always() && steps.scan.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: reliability-deep-role-blocked-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/deep-role-scan.json
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
+
+      - name: Enforce Deep role result and evidence boundary
+        if: always() && (steps.summarize.outcome == 'failure' || steps.scan.outcome == 'failure')
+        shell: bash
+        run: exit 1

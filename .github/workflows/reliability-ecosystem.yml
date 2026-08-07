@@ -1,0 +1,245 @@
+name: Reliability Ecosystem Advisory
+
+on:
+  schedule:
+    - cron: "17 4 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TZ: UTC
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  ARENA_RELIABILITY_STABLE_OUTPUT: "1"
+
+concurrency:
+  group: reliability-ecosystem-advisory
+  cancel-in-progress: true
+
+jobs:
+  ecosystem-drift:
+    name: Scheduled — Ecosystem drift advisory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up supported Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+
+      - name: Verify layered CI structure against policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/ci/verify_ci_policy.py --policy reliability-policy.json
+
+      - name: Exercise latest compatible build tools with cold cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          venv="$RUNNER_TEMP/ecosystem-venv"
+          work="$RUNNER_TEMP/ecosystem-work"
+          evidence="$RUNNER_TEMP/ecosystem-evidence"
+          rm -rf "$venv" "$work" "$evidence"
+          mkdir -p "$work" "$evidence"
+          python -m venv "$venv"
+          "$venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir --upgrade pip setuptools wheel
+          "$venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir "$GITHUB_WORKSPACE"
+          "$venv/bin/python" -m pip check
+          cd "$work"
+          "$venv/bin/arena-run" --config "$GITHUB_WORKSPACE/examples/fixture_experiment.json" --output "$work/fixture-output" > "$work/fixture-run.json"
+          "$venv/bin/python" - "$evidence/report.json" <<'PY'
+          import importlib.metadata
+          import json
+          import platform
+          import sys
+          from pathlib import Path
+
+          output = Path(sys.argv[1])
+          payload = {
+              "schema_version": "ecosystem-advisory-v1",
+              "status": "passed",
+              "blocking": False,
+              "dimensions": [
+                  "latest-compatible-build-tools",
+                  "cold-cache",
+                  "dependency-resolution",
+              ],
+              "python": platform.python_version(),
+              "tools": {
+                  name: importlib.metadata.version(name)
+                  for name in ("pip", "setuptools", "wheel")
+              },
+              "package": importlib.metadata.version("agent-reliability-arena"),
+              "checks": {
+                  "pip_check": "passed",
+                  "fixture_smoke": "passed",
+                  "provider_execution": False,
+              },
+          }
+          output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Scan advisory evidence before publication
+        id: scan
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          python scripts/ci/scan_diagnostics.py \
+            --root "$RUNNER_TEMP/ecosystem-evidence" \
+            --workspace "$GITHUB_WORKSPACE" \
+            --policy reliability-policy.json \
+            --output "$RUNNER_TEMP/ecosystem-scan.json"
+
+      - name: Upload scanned ecosystem advisory
+        if: always() && steps.scan.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: reliability-ecosystem-advisory-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ecosystem-evidence
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
+
+      - name: Upload blocked scanner report
+        if: always() && steps.scan.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: reliability-ecosystem-advisory-blocked-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ecosystem-scan.json
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
+
+      - name: Enforce evidence privacy boundary
+        if: always() && steps.scan.outcome == 'failure'
+        shell: bash
+        run: exit 1
+
+  summary:
+    name: Scheduled — Advisory evidence summary
+    needs: ecosystem-drift
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+
+      - name: Create authoritative Scheduled role record
+        env:
+          GATE_RESULT: ${{ needs.ecosystem-drift.result }}
+          SOURCE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/scheduled-role-evidence"
+          rm -rf "$evidence"
+          mkdir -p "$evidence"
+          python - "$evidence/manifest.json" <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          mapping = {"success": "passed", "failure": "failed", "cancelled": "blocked", "skipped": "unknown"}
+          raw = os.environ.get("GATE_RESULT", "unknown").lower()
+          payload = {
+              "schema_version": "layered-reliability-role-v1",
+              "role": "scheduled",
+              "required": False,
+              "status": mapping.get(raw, "unknown"),
+              "source_sha": os.environ.get("SOURCE_SHA", ""),
+              "workflow": os.environ.get("GITHUB_WORKFLOW", ""),
+              "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+              "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+              "blocking": False,
+              "dimensions": [
+                  "latest-compatible-build-tools",
+                  "cold-cache",
+                  "dependency-resolution",
+              ],
+          }
+          Path(sys.argv[1]).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Generate Scheduled advisory summary
+        id: summarize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/scheduled-role-evidence"
+          python scripts/ci/summarize_reliability.py \
+            --manifest "$evidence/manifest.json" \
+            --advisory-role scheduled \
+            --minimum-prior-samples 10 \
+            --output-json "$evidence/summary.json" \
+            --output-md "$evidence/summary.md"
+
+      - name: Scan Scheduled role evidence
+        id: scan
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          python scripts/ci/scan_diagnostics.py \
+            --root "$RUNNER_TEMP/scheduled-role-evidence" \
+            --workspace "$GITHUB_WORKSPACE" \
+            --policy reliability-policy.json \
+            --output "$RUNNER_TEMP/scheduled-role-scan.json"
+
+      - name: Publish Scheduled advisory summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$RUNNER_TEMP/scheduled-role-evidence/summary.md" ]]; then
+            cat "$RUNNER_TEMP/scheduled-role-evidence/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload scanned Scheduled role evidence
+        if: always() && steps.scan.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: reliability-scheduled-role-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/scheduled-role-evidence
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
+
+      - name: Upload blocked Scheduled scanner report
+        if: always() && steps.scan.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: reliability-scheduled-role-blocked-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/scheduled-role-scan.json
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
+
+      - name: Enforce Scheduled evidence integrity only
+        if: always() && (steps.summarize.outcome == 'failure' || steps.scan.outcome == 'failure')
+        shell: bash
+        run: exit 1

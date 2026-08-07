@@ -41,6 +41,20 @@
     },
     "persist_credentials": false
   },
+  "workflow_roles": {
+    "fast": [
+      "reliability-fast.yml"
+    ],
+    "deep": [
+      "fifteen-pass-verification.yml"
+    ],
+    "specialist": [
+      "reliability-specialists.yml"
+    ],
+    "scheduled": [
+      "reliability-ecosystem.yml"
+    ]
+  },
   "install_modes": [
     "editable",
     "wheel",
@@ -138,6 +152,10 @@
     "ROADMAP.md",
     ".github/workflows/**"
   ],
+  "performance": {
+    "mode": "observational",
+    "minimum_samples_before_threshold": 10
+  },
   "scheduled": {
     "blocking_by_default": false,
     "dimensions": [

@@ -10,6 +10,12 @@ from scripts.ci.reliability_policy import PolicyError, load_policy
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = ROOT / "reliability-policy.json"
+EXPECTED_WORKFLOW_ROLES = {
+    "fast": ("reliability-fast.yml",),
+    "deep": ("fifteen-pass-verification.yml",),
+    "specialist": ("reliability-specialists.yml",),
+    "scheduled": ("reliability-ecosystem.yml",),
+}
 
 
 class ReliabilityPolicyTests(unittest.TestCase):
@@ -21,10 +27,13 @@ class ReliabilityPolicyTests(unittest.TestCase):
         self.assertGreaterEqual(policy.stress_passes, 15)
         self.assertEqual(policy.max_permissions, {"contents": "read"})
         self.assertFalse(policy.persist_credentials)
+        self.assertEqual(policy.workflow_roles, EXPECTED_WORKFLOW_ROLES)
         self.assertEqual(policy.determinism_classes, ("byte", "semantic", "bounded"))
         self.assertEqual(policy.cache_modes, ("warm", "cold"))
         self.assertIn(".github/workflows/**", policy.trigger_surfaces)
         self.assertIn("reliability-policy.json", policy.trigger_surfaces)
+        self.assertEqual(policy.performance_mode, "observational")
+        self.assertEqual(policy.performance_min_samples, 10)
         scanner = policy.raw["diagnostics"]["scanner"]
         self.assertTrue(scanner["forbid_absolute_workspace_paths"])
         self.assertEqual(scanner["max_text_file_bytes"], 5_000_000)
@@ -65,6 +74,42 @@ class ReliabilityPolicyTests(unittest.TestCase):
             path = Path(directory) / "policy.json"
             path.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaisesRegex(PolicyError, "persist_credentials"):
+                load_policy(path)
+
+    def test_workflow_role_reassignment_is_rejected(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["workflow_roles"]["fast"] = ["fifteen-pass-verification.yml"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "workflow_roles.fast"):
+                load_policy(path)
+
+    def test_unknown_workflow_role_is_rejected(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["workflow_roles"]["shadow"] = ["shadow.yml"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "unknown workflow_roles keys"):
+                load_policy(path)
+
+    def test_performance_mode_cannot_be_promoted_to_hard_threshold(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["performance"]["mode"] = "blocking"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "performance.mode"):
+                load_policy(path)
+
+    def test_performance_sample_floor_cannot_be_reduced_below_ten(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["performance"]["minimum_samples_before_threshold"] = 9
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "minimum_samples_before_threshold"):
                 load_policy(path)
 
     def test_duplicate_hash_seed_is_rejected(self) -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import copy
 import difflib
 import hashlib
@@ -7,6 +8,11 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
+
+try:
+    from scripts.ci.reliability_policy import ReliabilityPolicy, load_policy
+except ModuleNotFoundError:  # Direct execution from scripts/ci.
+    from reliability_policy import ReliabilityPolicy, load_policy  # type: ignore[no-redef]
 
 
 class DeterminismError(ValueError):
@@ -19,6 +25,14 @@ class ComparisonResult:
     left_digest: str
     right_digest: str
     diff: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "equal": self.equal,
+            "left_digest": self.left_digest,
+            "right_digest": self.right_digest,
+            "diff": self.diff,
+        }
 
 
 def _sha256(data: bytes) -> str:
@@ -202,3 +216,65 @@ def compare_outputs(left: Path, right: Path, rule: Mapping[str, object]) -> Comp
     left_subset = {pointer: _resolve_json_pointer(left_payload, pointer) for pointer in invariants}
     right_subset = {pointer: _resolve_json_pointer(right_payload, pointer) for pointer in invariants}
     return compare_json_values(left_subset, right_subset, ignored_pointers=())
+
+
+def determinism_rule(policy: ReliabilityPolicy, output_key: str) -> Mapping[str, object]:
+    outputs = policy.raw.get("deterministic_outputs")
+    if not isinstance(outputs, Mapping):
+        raise DeterminismError("policy deterministic_outputs must be an object")
+    rule = outputs.get(output_key)
+    if not isinstance(rule, Mapping):
+        raise DeterminismError(f"unknown deterministic output key: {output_key!r}")
+    return rule
+
+
+def verify_pair(
+    *,
+    policy: ReliabilityPolicy,
+    output_key: str,
+    left: Path,
+    right: Path,
+) -> dict[str, object]:
+    result = compare_outputs(left, right, determinism_rule(policy, output_key))
+    return {
+        "schema_version": "determinism-specialist-v1",
+        "status": "passed" if result.equal else "failed",
+        "output_key": output_key,
+        "comparison": result.to_dict(),
+    }
+
+
+def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Compare two outputs under a policy determinism rule.")
+    parser.add_argument("--policy", type=Path, required=True)
+    parser.add_argument("--output-key", required=True)
+    parser.add_argument("--left", type=Path, required=True)
+    parser.add_argument("--right", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = _parse_args(argv)
+    try:
+        policy = load_policy(args.policy)
+        report = verify_pair(
+            policy=policy,
+            output_key=args.output_key,
+            left=args.left,
+            right=args.right,
+        )
+    except Exception as exc:
+        report = {
+            "schema_version": "determinism-specialist-v1",
+            "status": "failed",
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"status": report.get("status"), "output_key": report.get("output_key")}, sort_keys=True))
+    return 0 if report.get("status") == "passed" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

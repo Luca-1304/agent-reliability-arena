@@ -9,12 +9,14 @@
     "supported_python",
     "deep_gate",
     "permissions",
+    "workflow_roles",
     "install_modes",
     "cache_modes",
     "determinism_classes",
     "deterministic_outputs",
     "diagnostics",
     "trigger_surfaces",
+    "performance",
     "scheduled"
   ],
   "properties": {
@@ -71,6 +73,17 @@
           "properties": {"contents": {"const": "read"}}
         },
         "persist_credentials": {"const": false}
+      }
+    },
+    "workflow_roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fast", "deep", "specialist", "scheduled"],
+      "properties": {
+        "fast": {"$ref": "#/$defs/fastWorkflowRole"},
+        "deep": {"$ref": "#/$defs/deepWorkflowRole"},
+        "specialist": {"$ref": "#/$defs/specialistWorkflowRole"},
+        "scheduled": {"$ref": "#/$defs/scheduledWorkflowRole"}
       }
     },
     "install_modes": {
@@ -205,6 +218,15 @@
         {"contains": {"const": "schemas/**"}}
       ]
     },
+    "performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "minimum_samples_before_threshold"],
+      "properties": {
+        "mode": {"const": "observational"},
+        "minimum_samples_before_threshold": {"type": "integer", "minimum": 10}
+      }
+    },
     "scheduled": {
       "type": "object",
       "additionalProperties": false,
@@ -227,6 +249,38 @@
     }
   },
   "$defs": {
+    "fastWorkflowRole": {
+      "type": "array",
+      "prefixItems": [{"const": "reliability-fast.yml"}],
+      "items": false,
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true
+    },
+    "deepWorkflowRole": {
+      "type": "array",
+      "prefixItems": [{"const": "fifteen-pass-verification.yml"}],
+      "items": false,
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true
+    },
+    "specialistWorkflowRole": {
+      "type": "array",
+      "prefixItems": [{"const": "reliability-specialists.yml"}],
+      "items": false,
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true
+    },
+    "scheduledWorkflowRole": {
+      "type": "array",
+      "prefixItems": [{"const": "reliability-ecosystem.yml"}],
+      "items": false,
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true
+    },
     "jsonSemanticRule": {
       "type": "object",
       "additionalProperties": false,

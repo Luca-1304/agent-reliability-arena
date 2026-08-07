@@ -33,6 +33,13 @@ _REQUIRED_DIAGNOSTIC_FILES = ("manifest.json", "summary.json", "summary.md", "ev
 _REQUIRED_SCANNER_PRIVATE_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0"}
 _REQUIRED_SCANNER_SECRET_FRAGMENTS = {"api_key", "token", "password", "secret"}
 _MAX_SCANNER_TEXT_FILE_BYTES = 5_000_000
+_REQUIRED_WORKFLOW_ROLES = {
+    "fast": ("reliability-fast.yml",),
+    "deep": ("fifteen-pass-verification.yml",),
+    "specialist": ("reliability-specialists.yml",),
+    "scheduled": ("reliability-ecosystem.yml",),
+}
+_MINIMUM_PERFORMANCE_SAMPLES = 10
 _REQUIRED_SCHEDULED_DIMENSIONS = (
     "latest-compatible-build-tools",
     "cold-cache",
@@ -69,12 +76,14 @@ _TOP_LEVEL_KEYS = {
     "supported_python",
     "deep_gate",
     "permissions",
+    "workflow_roles",
     "install_modes",
     "cache_modes",
     "determinism_classes",
     "deterministic_outputs",
     "diagnostics",
     "trigger_surfaces",
+    "performance",
     "scheduled",
 }
 _DEEP_GATE_KEYS = {
@@ -101,6 +110,7 @@ _SCANNER_KEYS = {
     "secret_name_fragments",
     "max_text_file_bytes",
 }
+_PERFORMANCE_KEYS = {"mode", "minimum_samples_before_threshold"}
 _SCHEDULED_KEYS = {"blocking_by_default", "dimensions"}
 _JSON_DETERMINISM_RULE_KEYS = {"class", "format", "ignore_json_pointers"}
 _ZIP_DETERMINISM_RULE_KEYS = {"class", "format", "ignore_archive_metadata"}
@@ -114,9 +124,12 @@ class ReliabilityPolicy:
     stress_passes: int
     max_permissions: dict[str, str]
     persist_credentials: bool
+    workflow_roles: dict[str, tuple[str, ...]]
     determinism_classes: tuple[str, ...]
     cache_modes: tuple[str, ...]
     trigger_surfaces: tuple[str, ...]
+    performance_mode: str
+    performance_min_samples: int
     raw: dict[str, object]
 
 
@@ -175,6 +188,22 @@ def _reject_unknown(mapping: Mapping[str, object], allowed: set[str], *, field: 
     missing = sorted(allowed - set(mapping))
     if missing:
         raise PolicyError(f"missing {field} keys: {missing}")
+
+
+def _validate_workflow_roles(value: object) -> dict[str, tuple[str, ...]]:
+    workflow_roles = _require_mapping(value, field="workflow_roles")
+    _reject_unknown(workflow_roles, set(_REQUIRED_WORKFLOW_ROLES), field="workflow_roles")
+    normalized: dict[str, tuple[str, ...]] = {}
+    claimed_files: list[str] = []
+    for role, expected in _REQUIRED_WORKFLOW_ROLES.items():
+        files = _string_tuple(workflow_roles[role], field=f"workflow_roles.{role}")
+        if files != expected:
+            raise PolicyError(f"workflow_roles.{role} must be exactly {expected}")
+        normalized[role] = files
+        claimed_files.extend(files)
+    if len(set(claimed_files)) != len(claimed_files):
+        raise PolicyError("workflow_roles must not assign one workflow file to multiple roles")
+    return normalized
 
 
 def _validate_deterministic_outputs(value: object) -> None:
@@ -252,6 +281,23 @@ def _validate_diagnostic_scanner(value: object) -> None:
         )
 
 
+def _validate_performance(value: object) -> tuple[str, int]:
+    performance = _require_mapping(value, field="performance")
+    _reject_unknown(performance, _PERFORMANCE_KEYS, field="performance")
+    mode = _require_string(performance["mode"], field="performance.mode")
+    if mode != "observational":
+        raise PolicyError("performance.mode must remain observational until an evidence-backed threshold policy exists")
+    minimum_samples = _require_positive_int(
+        performance["minimum_samples_before_threshold"],
+        field="performance.minimum_samples_before_threshold",
+    )
+    if minimum_samples < _MINIMUM_PERFORMANCE_SAMPLES:
+        raise PolicyError(
+            f"performance.minimum_samples_before_threshold must be at least {_MINIMUM_PERFORMANCE_SAMPLES}"
+        )
+    return mode, minimum_samples
+
+
 def validate_policy_payload(payload: Mapping[str, object]) -> None:
     policy = _require_mapping(payload, field="policy")
     _reject_unknown(policy, _TOP_LEVEL_KEYS, field="policy")
@@ -319,6 +365,8 @@ def validate_policy_payload(payload: Mapping[str, object]) -> None:
     if _require_bool(permissions["persist_credentials"], field="permissions.persist_credentials"):
         raise PolicyError("permissions.persist_credentials must be false")
 
+    _validate_workflow_roles(policy["workflow_roles"])
+
     install_modes = _string_tuple(policy["install_modes"], field="install_modes")
     if install_modes != _INSTALL_MODES:
         raise PolicyError(f"install_modes must be exactly {_INSTALL_MODES}")
@@ -354,6 +402,8 @@ def validate_policy_payload(payload: Mapping[str, object]) -> None:
     if missing_surfaces:
         raise PolicyError(f"trigger_surfaces missing required entries: {missing_surfaces}")
 
+    _validate_performance(policy["performance"])
+
     scheduled = _require_mapping(policy["scheduled"], field="scheduled")
     _reject_unknown(scheduled, _SCHEDULED_KEYS, field="scheduled")
     if _require_bool(scheduled["blocking_by_default"], field="scheduled.blocking_by_default"):
@@ -375,6 +425,8 @@ def load_policy(path: Path) -> ReliabilityPolicy:
     validate_policy_payload(payload)
     deep_gate = _require_mapping(payload["deep_gate"], field="deep_gate")
     permissions = _require_mapping(payload["permissions"], field="permissions")
+    workflow_roles = _validate_workflow_roles(payload["workflow_roles"])
+    performance_mode, performance_min_samples = _validate_performance(payload["performance"])
     return ReliabilityPolicy(
         schema_version=str(payload["schema_version"]),
         supported_python=tuple(str(value) for value in _require_list(payload["supported_python"], field="supported_python")),
@@ -382,8 +434,11 @@ def load_policy(path: Path) -> ReliabilityPolicy:
         stress_passes=int(deep_gate["minimum_passes"]),
         max_permissions={str(key): str(value) for key, value in _require_mapping(permissions["maximum"], field="permissions.maximum").items()},
         persist_credentials=bool(permissions["persist_credentials"]),
+        workflow_roles=workflow_roles,
         determinism_classes=tuple(str(value) for value in _require_list(payload["determinism_classes"], field="determinism_classes")),
         cache_modes=tuple(str(value) for value in _require_list(payload["cache_modes"], field="cache_modes")),
         trigger_surfaces=tuple(str(value) for value in _require_list(payload["trigger_surfaces"], field="trigger_surfaces")),
+        performance_mode=performance_mode,
+        performance_min_samples=performance_min_samples,
         raw=dict(payload),
     )
