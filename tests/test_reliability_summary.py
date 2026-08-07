@@ -65,6 +65,34 @@ class ReliabilitySummaryTests(unittest.TestCase):
         self.assertEqual(result.decision, "blocked")
         self.assertIn("fast", result.duplicate_roles)
 
+    def test_role_scoped_required_summary_does_not_claim_other_roles(self) -> None:
+        result = summarize(
+            [{"role": "fast", "required": True, "status": "passed"}],
+            required_roles=("fast",),
+            advisory_roles=(),
+        )
+        self.assertEqual(result.decision, "verified")
+        self.assertEqual(result.required_roles, ("fast",))
+        self.assertEqual(result.missing_required_roles, ())
+
+    def test_advisory_only_scope_never_becomes_merge_verified(self) -> None:
+        result = summarize(
+            [{"role": "scheduled", "required": False, "status": "passed"}],
+            required_roles=(),
+            advisory_roles=("scheduled",),
+        )
+        self.assertEqual(result.decision, "advisory-clear")
+        self.assertEqual(result.required_roles, ())
+
+    def test_required_flag_cannot_contradict_requested_scope(self) -> None:
+        result = summarize(
+            [{"role": "deep", "required": False, "status": "passed"}],
+            required_roles=("deep",),
+            advisory_roles=(),
+        )
+        self.assertEqual(result.decision, "blocked")
+        self.assertTrue(result.input_errors)
+
     def test_observational_timing_statistics_report_median_and_worst(self) -> None:
         result = summarize(
             [
