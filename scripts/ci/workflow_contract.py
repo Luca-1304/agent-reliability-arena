@@ -310,12 +310,17 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
             continue
 
         if indent == 6 and content.startswith("- "):
+            step_body = content[2:].strip()
+            if step_body.startswith(("*", "&", "{", "[")):
+                raise ValueError(
+                    f"aliased, anchored, or flow-style steps are not supported at line {line_number}"
+                )
             current_step = {"name": None, "step_id": None, "uses": "", "if_condition": None, "with_values": {}}
             cast_steps = job["steps"]
             assert isinstance(cast_steps, list)
             cast_steps.append(current_step)
             in_step_with = False
-            mapping = _split_mapping(content[2:].strip())
+            mapping = _split_mapping(step_body)
             if mapping is not None:
                 key, raw_value = mapping
                 scalar = _parse_scalar(raw_value)
