@@ -255,6 +255,23 @@ The Arena vendors Agent Completion Verifier v0.6.0 at commit `f65fb3450e3c1d7db1
 
 A public installed live-provider or repeated-experiment command is deliberately absent. `scripts/run_private_pilot.py` is a local-only, explicitly approved path documented in the [Private pilot runbook](docs/PRIVATE_PILOT_RUNBOOK.md). The repeated runner is currently a reviewed Python interface and provider-free release fixture, not an unattended command.
 
+## Layered reliability assurance
+
+Repository reliability is split into four roles governed by `reliability-policy.json` rather than treated as one repeated CI job:
+
+| Role | Purpose | Merge interpretation |
+|---|---|---|
+| **Fast** | Rapid source, policy/privacy, wheel and installed-command feedback across Python 3.10–3.13. | Required |
+| **Deep** | Repeated/adversarial 15-pass assurance on Python 3.10 and 3.13 with controlled hash-seed variation and evidence bundles. | Required |
+| **Specialist** | Independent reproducible-build, determinism, clean-room, concurrency-isolation and diagnostic-security verification. | Required |
+| **Scheduled** | Weekly/manual ecosystem drift with latest compatible build tools, cold cache and dependency resolution. | Advisory by default |
+
+**Policy + evidence is the governing system.** Workflow structure is parsed and checked against the policy; checkout credentials do not persist; external actions are immutable-SHA pinned; diagnostic artifacts are scanned before publication; Fast, Deep and Specialist each emit a machine role record plus a non-authoritative human summary. Missing, duplicate, unknown or failed required role evidence cannot be interpreted as verified.
+
+Performance telemetry is intentionally **observational**. Summaries can report median and worst command/pass durations. No timing number is a merge threshold in the current policy, and a `slower-than-recent-median` observation is permitted only when at least ten explicit prior samples are supplied.
+
+These checks are provider-free repository assurance. They do **not** prove that a provider-side resource was deleted, that a production/Vercel deployment is healthy, that Git-to-Vercel provenance is established, that all possible flakes are absent, or that any real model/provider has the performance suggested by the deterministic fixture.
+
 ## Release verification
 
 The release gate covers:
