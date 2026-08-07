@@ -138,8 +138,8 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
     """Parse only the GitHub Actions fields that the reliability policy enforces.
 
     This is intentionally not a general YAML parser. It preserves GitHub's literal
-    ``on`` key and raw ``${{ ... }}`` expressions while failing on ambiguous
-    structural indentation that matters to the enforced contract.
+    ``on`` key and raw ``${{ ... }}`` expressions while failing on ambiguous or
+    unsupported structural forms that could hide a policy-relevant override.
     """
 
     text = path.read_text(encoding="utf-8")
@@ -166,7 +166,13 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
             if mapping is None:
                 section = None
                 continue
-            key, _ = mapping
+            key, raw_value = mapping
+            if key == "permissions" and raw_value:
+                raise ValueError(
+                    f"inline top-level permissions are not supported at line {line_number}"
+                )
+            if key == "jobs" and raw_value:
+                raise ValueError(f"inline jobs are not supported at line {line_number}")
             section = key if key in {"on", "permissions", "concurrency", "jobs"} else None
             current_trigger = None
             current_trigger_list = None
@@ -238,7 +244,9 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
             mapping = _split_mapping(content)
             if mapping is None:
                 continue
-            current_job, _ = mapping
+            current_job, raw_value = mapping
+            if raw_value:
+                raise ValueError(f"inline job definitions are not supported at line {line_number}")
             job_builders.setdefault(
                 current_job,
                 {
@@ -266,9 +274,15 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
             current_step = None
             in_step_with = False
             if key == "steps":
+                if raw_value:
+                    raise ValueError(f"inline job steps are not supported at line {line_number}")
                 job_subsection = "steps"
                 continue
             if key == "permissions":
+                if raw_value:
+                    raise ValueError(
+                        f"inline job permissions are not supported at line {line_number}"
+                    )
                 job_subsection = "permissions"
                 continue
             job_subsection = None
@@ -324,6 +338,8 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                 continue
             key, raw_value = mapping
             if key == "with":
+                if raw_value:
+                    raise ValueError(f"inline step with-values are not supported at line {line_number}")
                 in_step_with = True
                 continue
             in_step_with = False
