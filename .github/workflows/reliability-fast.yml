@@ -1,0 +1,155 @@
+name: Reliability Fast Gate
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "scripts/**"
+      - "examples/**"
+      - "security/**"
+      - "release/**"
+      - "reference_runs/**"
+      - "web/**"
+      - "docs/**"
+      - "citation/**"
+      - "requirements/**"
+      - "schemas/**"
+      - "reliability-policy.json"
+      - "pyproject.toml"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "ROADMAP.md"
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "scripts/**"
+      - "examples/**"
+      - "security/**"
+      - "release/**"
+      - "reference_runs/**"
+      - "web/**"
+      - "docs/**"
+      - "citation/**"
+      - "requirements/**"
+      - "schemas/**"
+      - "reliability-policy.json"
+      - "pyproject.toml"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "ROADMAP.md"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TZ: UTC
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  SOURCE_DATE_EPOCH: "315532800"
+  ARENA_RELIABILITY_STABLE_OUTPUT: "1"
+
+concurrency:
+  group: reliability-fast-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-and-wheel:
+    name: Fast — Python ${{ matrix.python-version }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Check out exact tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements/ci-tools.txt
+
+      - name: Install hash-locked CI toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input --require-hashes -r requirements/ci-tools.txt
+
+      - name: Verify layered CI structure against policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/ci/verify_ci_policy.py --policy reliability-policy.json
+
+      - name: Install editable package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input --no-build-isolation --editable .
+
+      - name: Run source test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -v
+
+      - name: Run privacy and CI-policy static checks explicitly
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest \
+            tests.test_diagnostic_scanner \
+            tests.test_diagnostic_evidence_redaction \
+            tests.test_ci_policy \
+            tests.test_reliability_policy \
+            -v
+
+      - name: Build wheel without isolated dependency resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          dist="$RUNNER_TEMP/fast-dist"
+          rm -rf "$dist"
+          mkdir -p "$dist"
+          python -m pip wheel --disable-pip-version-check --no-input --no-deps --no-build-isolation --wheel-dir "$dist" .
+          test "$(find "$dist" -maxdepth 1 -name '*.whl' -type f | wc -l)" -eq 1
+
+      - name: Test wheel from outside the source workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          dist="$RUNNER_TEMP/fast-dist"
+          venv="$RUNNER_TEMP/fast-wheel-venv"
+          rm -rf "$venv"
+          python -m venv "$venv"
+          "$venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-deps "$dist"/*.whl
+          cd "$RUNNER_TEMP"
+          "$venv/bin/python" - <<'PY'
+          from pathlib import Path
+          import agent_reliability_arena
+
+          module_path = Path(agent_reliability_arena.__file__).resolve()
+          workspace = Path(__import__("os").environ["GITHUB_WORKSPACE"]).resolve()
+          if module_path == workspace or workspace in module_path.parents:
+              raise SystemExit(f"wheel import resolved into workspace: {module_path}")
+          print(module_path)
+          PY
+          "$venv/bin/arena-run" --help >/dev/null
+          "$venv/bin/arena-replay" --help >/dev/null
+          "$venv/bin/arena-export-web" --help >/dev/null
