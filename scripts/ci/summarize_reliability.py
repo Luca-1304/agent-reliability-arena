@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Mapping, Sequence
 
 
-_REQUIRED_ROLES = ("fast", "deep", "specialist")
-_ADVISORY_ROLES = ("scheduled",)
-_ALLOWED_ROLES = frozenset(_REQUIRED_ROLES + _ADVISORY_ROLES)
+_DEFAULT_REQUIRED_ROLES = ("fast", "deep", "specialist")
+_DEFAULT_ADVISORY_ROLES = ("scheduled",)
+_KNOWN_ROLES = frozenset(_DEFAULT_REQUIRED_ROLES + _DEFAULT_ADVISORY_ROLES)
 _FINAL_STATUSES = frozenset({"passed", "failed", "blocked", "unknown", "pending"})
 _MINIMUM_PRIOR_SAMPLES = 10
 
@@ -18,6 +18,8 @@ _MINIMUM_PRIOR_SAMPLES = 10
 @dataclass(frozen=True)
 class ReliabilitySummary:
     decision: str
+    required_roles: tuple[str, ...]
+    advisory_scope: tuple[str, ...]
     blocking_roles: tuple[str, ...]
     advisory_roles: tuple[str, ...]
     missing_required_roles: tuple[str, ...]
@@ -31,6 +33,8 @@ class ReliabilitySummary:
         return {
             "schema_version": "layered-reliability-summary-v1",
             "decision": self.decision,
+            "required_roles": list(self.required_roles),
+            "advisory_scope": list(self.advisory_scope),
             "blocking_roles": list(self.blocking_roles),
             "advisory_roles": list(self.advisory_roles),
             "missing_required_roles": list(self.missing_required_roles),
@@ -54,10 +58,13 @@ class ReliabilitySummary:
             "| --- | --- | --- |",
         ]
         by_role = {str(record.get("role")): record for record in self.records}
-        for role in _REQUIRED_ROLES + _ADVISORY_ROLES:
+        ordered_roles = self.required_roles + tuple(
+            role for role in self.advisory_scope if role not in self.required_roles
+        )
+        for role in ordered_roles:
             record = by_role.get(role)
             status = str(record.get("status")) if record else "missing"
-            required = "yes" if role in _REQUIRED_ROLES else "no"
+            required = "yes" if role in self.required_roles else "no"
             lines.append(f"| {role} | {required} | {status} |")
         lines.extend(["", "### Observational timing", ""])
         for key in (
@@ -68,6 +75,8 @@ class ReliabilitySummary:
             "median_pass_seconds",
             "max_pass_seconds",
             "total_seconds",
+            "prior_sample_count",
+            "recent_median_total_seconds",
         ):
             lines.append(f"- `{key}`: {self.timings.get(key)}")
         if self.observations:
@@ -141,21 +150,40 @@ def _prior_total_seconds(sample: Mapping[str, object]) -> float | None:
     return None
 
 
+def _validate_scope(
+    required_roles: Sequence[str],
+    advisory_roles: Sequence[str],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    required = tuple(dict.fromkeys(role.strip().lower() for role in required_roles if role.strip()))
+    advisory = tuple(dict.fromkeys(role.strip().lower() for role in advisory_roles if role.strip()))
+    overlap = set(required) & set(advisory)
+    if overlap:
+        raise ValueError(f"roles cannot be both required and advisory: {sorted(overlap)}")
+    unknown = (set(required) | set(advisory)) - _KNOWN_ROLES
+    if unknown:
+        raise ValueError(f"unsupported summary roles: {sorted(unknown)}")
+    return required, advisory
+
+
 def _normalize_records(
     records: Sequence[Mapping[str, object]],
+    *,
+    required_roles: tuple[str, ...],
+    advisory_roles: tuple[str, ...],
 ) -> tuple[list[dict[str, object]], list[str], set[str]]:
     normalized: list[dict[str, object]] = []
     errors: list[str] = []
     seen: set[str] = set()
     duplicates: set[str] = set()
+    allowed_roles = set(required_roles) | set(advisory_roles)
     for index, record in enumerate(records):
         role_raw = record.get("role")
         role = role_raw.strip().lower() if isinstance(role_raw, str) else ""
         if not role:
             errors.append(f"record[{index}] missing non-empty role")
             continue
-        if role not in _ALLOWED_ROLES:
-            errors.append(f"record[{index}] uses unsupported role {role!r}")
+        if role not in allowed_roles:
+            errors.append(f"record[{index}] role {role!r} is outside the requested summary scope")
             continue
         if role in seen:
             duplicates.add(role)
@@ -167,13 +195,13 @@ def _normalize_records(
             errors.append(f"record[{index}] role {role!r} has unsupported status {status!r}")
             status = "unknown"
 
-        expected_required = role in _REQUIRED_ROLES
+        expected_required = role in required_roles
         required_raw = record.get("required", expected_required)
         if not isinstance(required_raw, bool):
             errors.append(f"record[{index}] role {role!r} required must be boolean")
-        elif required_raw is not expected_required:
+        elif required_raw != expected_required:
             errors.append(
-                f"record[{index}] role {role!r} required={required_raw} contradicts role contract"
+                f"record[{index}] role {role!r} required={required_raw} contradicts requested scope"
             )
 
         row = dict(record)
@@ -190,30 +218,37 @@ def summarize(
     prior_samples: Sequence[Mapping[str, object]] = (),
     input_errors: Sequence[str] = (),
     minimum_prior_samples: int = _MINIMUM_PRIOR_SAMPLES,
+    required_roles: Sequence[str] = _DEFAULT_REQUIRED_ROLES,
+    advisory_roles: Sequence[str] = _DEFAULT_ADVISORY_ROLES,
 ) -> ReliabilitySummary:
     if minimum_prior_samples < _MINIMUM_PRIOR_SAMPLES:
         raise ValueError(
             f"minimum_prior_samples must be at least {_MINIMUM_PRIOR_SAMPLES} to avoid false thresholds"
         )
-    normalized, normalization_errors, duplicates = _normalize_records(records)
+    required_scope, advisory_scope = _validate_scope(required_roles, advisory_roles)
+    normalized, normalization_errors, duplicates = _normalize_records(
+        records,
+        required_roles=required_scope,
+        advisory_roles=advisory_scope,
+    )
     errors = tuple(input_errors) + tuple(normalization_errors)
     by_role: dict[str, dict[str, object]] = {}
     for record in normalized:
         role = str(record["role"])
         by_role.setdefault(role, record)
 
-    missing = tuple(sorted(role for role in _REQUIRED_ROLES if role not in by_role))
+    missing = tuple(sorted(role for role in required_scope if role not in by_role))
     blocking = tuple(
         sorted(
             role
-            for role in _REQUIRED_ROLES
+            for role in required_scope
             if role in by_role and str(by_role[role].get("status")) != "passed"
         )
     )
     advisory = tuple(
         sorted(
             role
-            for role in _ADVISORY_ROLES
+            for role in advisory_scope
             if role in by_role and str(by_role[role].get("status")) != "passed"
         )
     )
@@ -222,8 +257,10 @@ def summarize(
         decision = "blocked"
     elif advisory:
         decision = "verified-with-advisory"
-    else:
+    elif required_scope:
         decision = "verified"
+    else:
+        decision = "advisory-clear"
 
     timings = _timing_stats(normalized)
     observations: list[str] = []
@@ -249,6 +286,8 @@ def summarize(
 
     return ReliabilitySummary(
         decision=decision,
+        required_roles=required_scope,
+        advisory_scope=advisory_scope,
         blocking_roles=blocking,
         advisory_roles=advisory,
         missing_required_roles=missing,
@@ -277,6 +316,8 @@ def summarize_files(
     *,
     prior_paths: Sequence[Path] = (),
     minimum_prior_samples: int = _MINIMUM_PRIOR_SAMPLES,
+    required_roles: Sequence[str] = _DEFAULT_REQUIRED_ROLES,
+    advisory_roles: Sequence[str] = _DEFAULT_ADVISORY_ROLES,
 ) -> ReliabilitySummary:
     records: list[dict[str, object]] = []
     prior: list[dict[str, object]] = []
@@ -298,6 +339,8 @@ def summarize_files(
         prior_samples=prior,
         input_errors=errors,
         minimum_prior_samples=minimum_prior_samples,
+        required_roles=required_roles,
+        advisory_roles=advisory_roles,
     )
 
 
@@ -308,6 +351,8 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--manifest", action="append", type=Path, required=True)
     parser.add_argument("--prior-sample", action="append", type=Path, default=[])
     parser.add_argument("--minimum-prior-samples", type=int, default=_MINIMUM_PRIOR_SAMPLES)
+    parser.add_argument("--required-role", action="append", default=None)
+    parser.add_argument("--advisory-role", action="append", default=None)
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--output-md", type=Path, required=True)
     return parser.parse_args(argv)
@@ -315,10 +360,15 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
+    custom_scope = args.required_role is not None or args.advisory_role is not None
+    required_roles = tuple(args.required_role or ()) if custom_scope else _DEFAULT_REQUIRED_ROLES
+    advisory_roles = tuple(args.advisory_role or ()) if custom_scope else _DEFAULT_ADVISORY_ROLES
     result = summarize_files(
         args.manifest,
         prior_paths=args.prior_sample,
         minimum_prior_samples=args.minimum_prior_samples,
+        required_roles=required_roles,
+        advisory_roles=advisory_roles,
     )
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
     args.output_md.parent.mkdir(parents=True, exist_ok=True)
