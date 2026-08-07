@@ -17,51 +17,9 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
         self.workflow = WORKFLOW.read_text(encoding="utf-8")
         self.policy = json.loads(POLICY.read_text(encoding="utf-8"))
 
-    def test_reliability_surfaces_trigger_the_stress_gate(self) -> None:
-        required_paths = {
-            '      - ".github/workflows/fifteen-pass-verification.yml"',
-            '      - "reliability-policy.json"',
-            '      - "schemas/reliability-policy.schema.json"',
-            '      - "schemas/reliability-evidence.schema.json"',
-            '      - "scripts/ci/reliability_gate.py"',
-            '      - "scripts/ci/reliability_policy.py"',
-            '      - "scripts/ci/reliability_evidence.py"',
-            '      - "scripts/ci/run_deep_reliability.py"',
-            '      - "scripts/ci/redact_diagnostic_paths.py"',
-            '      - "scripts/ci/scan_diagnostics.py"',
-            '      - "requirements/ci-tools.txt"',
-            '      - "tests/test_reliability_gate.py"',
-            '      - "tests/test_reliability_policy.py"',
-            '      - "tests/test_reliability_evidence.py"',
-            '      - "tests/test_deep_gate_policy_adapter.py"',
-            '      - "tests/test_diagnostic_evidence_redaction.py"',
-            '      - "tests/test_diagnostic_scanner.py"',
-            '      - "src/**"',
-            '      - "tests/**"',
-            '      - "scripts/**"',
-            '      - "examples/**"',
-            '      - "security/**"',
-            '      - "release/**"',
-            '      - "reference_runs/**"',
-            '      - "web/**"',
-            '      - "docs/**"',
-            '      - "citation/**"',
-            '      - "requirements/**"',
-            '      - "schemas/**"',
-            '      - "pyproject.toml"',
-            '      - "README.md"',
-            '      - "CHANGELOG.md"',
-            '      - "ROADMAP.md"',
-        }
-        missing = sorted(path for path in required_paths if path not in self.workflow)
-        self.assertEqual(missing, [], f"Stress gate does not cover: {missing}")
-        self.assertIn("pull_request:", self.workflow)
-        self.assertIn("push:", self.workflow)
-        self.assertIn("branches: [main]", self.workflow)
-        self.assertIn("workflow_dispatch:", self.workflow)
-
     def test_workflow_is_a_thin_adapter_to_policy_governed_runner(self) -> None:
         required_contract = {
+            "python scripts/ci/verify_ci_policy.py",
             "python scripts/ci/run_deep_reliability.py",
             "--policy reliability-policy.json",
             "--python-label",
@@ -79,41 +37,6 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
         self.assertNotIn("--passes 15", self.workflow)
         self.assertNotIn("for pass_number in $(seq 1 15)", self.workflow)
         self.assertNotIn("run_pass()", self.workflow)
-
-    def test_policy_owns_passes_timeouts_and_retention(self) -> None:
-        deep = self.policy["deep_gate"]
-        diagnostics = self.policy["diagnostics"]
-        self.assertEqual(deep["minimum_passes"], 15)
-        self.assertEqual(deep["python"], ["3.10", "3.13"])
-        self.assertEqual(deep["job_timeout_minutes"], 180)
-        self.assertEqual(diagnostics["retention_days"], 14)
-        self.assertIn("timeout-minutes: 180", self.workflow)
-        self.assertIn("retention-days: 14", self.workflow)
-        self.assertNotIn("timeout-minutes: 360", self.workflow)
-        self.assertNotIn("retention-days: 30", self.workflow)
-
-    def test_external_actions_are_pinned_to_immutable_full_length_shas(self) -> None:
-        expected = {
-            "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
-            "actions/setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
-            "actions/upload-artifact": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
-        }
-        for action, sha in expected.items():
-            self.assertRegex(
-                self.workflow,
-                rf"uses:\s+{re.escape(action)}@{sha}\s+#\s+v[0-9]",
-                f"{action} must be pinned to the reviewed immutable release commit",
-            )
-        self.assertNotRegex(self.workflow, r"uses:\s+[^@\s]+@v\d")
-
-    def test_workflow_uses_least_privilege_and_non_persistent_checkout(self) -> None:
-        self.assertIn("permissions:\n  contents: read", self.workflow)
-        self.assertIn("persist-credentials: false", self.workflow)
-        self.assertNotIn("contents: write", self.workflow)
-        self.assertNotIn("pull-requests: write", self.workflow)
-        self.assertNotIn("id-token: write", self.workflow)
-        self.assertEqual(self.policy["permissions"]["maximum"], {"contents": "read"})
-        self.assertFalse(self.policy["permissions"]["persist_credentials"])
 
     def test_ci_toolchain_is_exact_hash_locked_and_dependency_complete(self) -> None:
         self.assertIn(
@@ -175,7 +98,6 @@ class FifteenPassWorkflowResilienceTests(unittest.TestCase):
             "PIP_DISABLE_PIP_VERSION_CHECK: \"1\"",
             "SOURCE_DATE_EPOCH: \"315532800\"",
             "cancel-in-progress: true",
-            "timeout-minutes: 180",
             "fail-fast: false",
         }
         missing = sorted(item for item in required_contract if item not in self.workflow)
