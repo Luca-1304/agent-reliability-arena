@@ -3,14 +3,15 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 from urllib.parse import urlsplit
 
-from scripts.ci.reliability_policy import ReliabilityPolicy, load_policy
+try:
+    from scripts.ci.reliability_policy import ReliabilityPolicy, load_policy
+except ModuleNotFoundError:  # Direct execution from scripts/ci.
+    from reliability_policy import ReliabilityPolicy, load_policy  # type: ignore[no-redef]
 
 
 _DEFAULT_PRIVATE_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0")
@@ -92,7 +93,9 @@ def _workspace_markers(workspace: Path) -> tuple[str, ...]:
     except OSError:
         resolved = raw
     markers.update({resolved, resolved.replace("\\", "/"), resolved.replace("/", "\\")})
-    return tuple(sorted((item for item in markers if item and item not in {".", "/"}), key=len, reverse=True))
+    return tuple(
+        sorted((item for item in markers if item and item not in {".", "/"}), key=len, reverse=True)
+    )
 
 
 def _json_secret_findings(
@@ -213,7 +216,7 @@ def scan_text(
     return report
 
 
-def _scanner_policy(policy: ReliabilityPolicy) -> tuple[bool, tuple[str, ...], tuple[str, ...], int]:
+def _scanner_policy(policy: ReliabilityPolicy) -> tuple[tuple[str, ...], tuple[str, ...], int]:
     diagnostics = policy.raw.get("diagnostics")
     if not isinstance(diagnostics, Mapping):
         raise ValueError("policy diagnostics must be an object")
@@ -234,12 +237,12 @@ def _scanner_policy(policy: ReliabilityPolicy) -> tuple[bool, tuple[str, ...], t
         raise ValueError("diagnostics.scanner.secret_name_fragments must be a non-empty string array")
     if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes < 1:
         raise ValueError("diagnostics.scanner.max_text_file_bytes must be positive")
-    return True, tuple(private_hosts), tuple(secret_fragments), max_bytes
+    return tuple(private_hosts), tuple(secret_fragments), max_bytes
 
 
 def scan_tree(root: Path, *, workspace: Path, policy: ReliabilityPolicy) -> ScanReport:
     report = ScanReport()
-    _, private_hosts, secret_fragments, max_text_file_bytes = _scanner_policy(policy)
+    private_hosts, secret_fragments, max_text_file_bytes = _scanner_policy(policy)
     root = root.resolve(strict=False)
     workspace_markers = _workspace_markers(workspace)
     workspace_bytes = tuple(marker.encode("utf-8", errors="strict") for marker in workspace_markers)
