@@ -105,6 +105,28 @@ class CiPolicyTests(unittest.TestCase):
             with self.subTest(job_id=job_id):
                 self.assertIn(f"  {job_id}:\n", text)
 
+    def test_each_role_publishes_a_scanned_scope_correct_summary(self) -> None:
+        expected = {
+            FAST_WORKFLOW: "--required-role fast",
+            DEEP_WORKFLOW: "--required-role deep",
+            SPECIALIST_WORKFLOW: "--required-role specialist",
+            SCHEDULED_WORKFLOW: "--advisory-role scheduled",
+        }
+        for path, scope_argument in expected.items():
+            with self.subTest(workflow=path.name):
+                text = path.read_text(encoding="utf-8")
+                self.assertIn("summarize_reliability.py", text)
+                self.assertIn(scope_argument, text)
+                self.assertIn("scan_diagnostics.py", text)
+                self.assertIn("summary.md", text)
+                self.assertIn("retention-days: 14", text)
+        scheduled_text = SCHEDULED_WORKFLOW.read_text(encoding="utf-8")
+        self.assertNotIn("--required-role scheduled", scheduled_text)
+
+    def test_performance_policy_is_observational_only(self) -> None:
+        self.assertEqual(self.policy.performance_mode, "observational")
+        self.assertGreaterEqual(self.policy.performance_min_samples, 10)
+
     def test_contents_write_is_rejected(self) -> None:
         violations = self._violations_after("contents: read", "contents: write")
         self.assertIn("permissions-exceed-policy", self._codes(violations))
