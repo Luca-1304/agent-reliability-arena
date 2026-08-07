@@ -3,11 +3,13 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from scripts.ci.verify_concurrency import (
     ConcurrencyIsolationError,
     assert_disjoint_artifact_trees,
     build_run_environment,
+    verify_concurrent_runs,
 )
 
 
@@ -21,6 +23,37 @@ class ConcurrencyIsolationTests(unittest.TestCase):
                 self.assertNotEqual(first[key], second[key])
             self.assertEqual(first["PYTHONHASHSEED"], "3")
             self.assertEqual(second["PYTHONHASHSEED"], "11")
+
+    def test_relative_config_is_resolved_before_child_working_directory_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            config = workspace / "fixture.json"
+            config.write_text("{}\n", encoding="utf-8")
+            seen_configs: list[Path] = []
+
+            def fake_run_one(*, executable: Path, config: Path, root: Path, hash_seed: int):
+                del executable
+                seen_configs.append(config)
+                root.mkdir(parents=True, exist_ok=True)
+                output = root / "artifacts"
+                output.mkdir()
+                (output / "result.json").write_text(str(hash_seed), encoding="utf-8")
+                return {"seed": hash_seed, "output": output, "payload": {"status": "ok"}}
+
+            relative_config = config.relative_to(root)
+            with mock.patch("scripts.ci.verify_concurrency._run_one", side_effect=fake_run_one):
+                with mock.patch("pathlib.Path.cwd", return_value=root):
+                    verify_concurrent_runs(
+                        executable=Path("arena-run"),
+                        config=relative_config,
+                        root=root / "runs",
+                    )
+
+            self.assertEqual(len(seen_configs), 2)
+            self.assertTrue(all(path.is_absolute() for path in seen_configs))
+            self.assertTrue(all(path == config.resolve() for path in seen_configs))
 
     def test_disjoint_trees_pass_when_no_cross_run_files_exist(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
