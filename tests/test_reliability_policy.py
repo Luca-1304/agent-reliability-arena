@@ -10,6 +10,12 @@ from scripts.ci.reliability_policy import PolicyError, load_policy
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = ROOT / "reliability-policy.json"
+EXPECTED_WORKFLOW_ROLES = {
+    "fast": ("reliability-fast.yml",),
+    "deep": ("fifteen-pass-verification.yml",),
+    "specialist": ("reliability-specialists.yml",),
+    "scheduled": ("reliability-ecosystem.yml",),
+}
 
 
 class ReliabilityPolicyTests(unittest.TestCase):
@@ -21,6 +27,7 @@ class ReliabilityPolicyTests(unittest.TestCase):
         self.assertGreaterEqual(policy.stress_passes, 15)
         self.assertEqual(policy.max_permissions, {"contents": "read"})
         self.assertFalse(policy.persist_credentials)
+        self.assertEqual(policy.workflow_roles, EXPECTED_WORKFLOW_ROLES)
         self.assertEqual(policy.determinism_classes, ("byte", "semantic", "bounded"))
         self.assertEqual(policy.cache_modes, ("warm", "cold"))
         self.assertIn(".github/workflows/**", policy.trigger_surfaces)
@@ -65,6 +72,24 @@ class ReliabilityPolicyTests(unittest.TestCase):
             path = Path(directory) / "policy.json"
             path.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaisesRegex(PolicyError, "persist_credentials"):
+                load_policy(path)
+
+    def test_workflow_role_reassignment_is_rejected(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["workflow_roles"]["fast"] = ["fifteen-pass-verification.yml"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "workflow_roles.fast"):
+                load_policy(path)
+
+    def test_unknown_workflow_role_is_rejected(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["workflow_roles"]["shadow"] = ["shadow.yml"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "unknown workflow_roles keys"):
                 load_policy(path)
 
     def test_duplicate_hash_seed_is_rejected(self) -> None:
