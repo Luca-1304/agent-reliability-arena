@@ -51,8 +51,9 @@ class ReliabilityEvidenceTests(unittest.TestCase):
                 message="failed",
             )
 
-    def test_manifest_is_machine_readable_versioned_and_sorted(self) -> None:
+    def test_manifest_is_machine_readable_versioned_sorted_and_provenanced(self) -> None:
         manifest = EvidenceManifest.minimum_for_test(commit_sha="a" * 40)
+        manifest.tested_commit_sha = "b" * 40
         manifest.commands.extend(
             [
                 {"sequence": 3, "name": "third"},
@@ -92,6 +93,7 @@ class ReliabilityEvidenceTests(unittest.TestCase):
         payload = manifest.to_dict()
         self.assertEqual(payload["schema_version"], "reliability-evidence-v1")
         self.assertEqual(payload["commit_sha"], "a" * 40)
+        self.assertEqual(payload["tested_commit_sha"], "b" * 40)
         self.assertEqual([row["sequence"] for row in payload["commands"]], [1, 3])
         self.assertEqual([row["sequence"] for row in payload["failures"]], [2, 9])
         self.assertIn("toolchain", payload)
@@ -99,9 +101,15 @@ class ReliabilityEvidenceTests(unittest.TestCase):
         self.assertIn("output_digests", payload)
         self.assertIn("timings", payload)
 
-    def test_invalid_commit_sha_is_rejected(self) -> None:
-        with self.assertRaisesRegex(ValueError, "40-character"):
+    def test_invalid_source_commit_sha_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "commit_sha.*40-character"):
             EvidenceManifest.minimum_for_test(commit_sha="not-a-sha")
+
+    def test_invalid_tested_commit_sha_is_rejected(self) -> None:
+        manifest = EvidenceManifest.minimum_for_test(commit_sha="a" * 40)
+        manifest.tested_commit_sha = "merge-ref"
+        with self.assertRaisesRegex(ValueError, "tested_commit_sha.*40-character"):
+            manifest.__post_init__()
 
     def test_atomic_json_never_leaves_partial_target(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
