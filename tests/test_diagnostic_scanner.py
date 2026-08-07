@@ -55,6 +55,27 @@ class DiagnosticScannerTests(unittest.TestCase):
         self.assertIn("auth_token", secret_findings[0].rendered)
         self.assertNotIn("example-value-not-real", secret_findings[0].rendered)
 
+    def test_camel_case_secret_key_is_detected(self) -> None:
+        payload = json.dumps({"accessToken": "example-value-not-real"})
+        report = scan_text("manifest.json", payload, workspace=Path("/repo"))
+        secret_findings = [item for item in report.findings if item.kind == "secret-like-json-key"]
+        self.assertEqual(len(secret_findings), 1)
+        self.assertIn("accessToken", secret_findings[0].rendered)
+
+    def test_token_metrics_are_not_misclassified_as_credentials(self) -> None:
+        payload = json.dumps(
+            {
+                "token_usage": 120,
+                "measured_total_tokens": 240,
+                "token_count": 3,
+                "auth_token": "example-value-not-real",
+            }
+        )
+        report = scan_text("metrics.json", payload, workspace=Path("/repo"))
+        secret_findings = [item for item in report.findings if item.kind == "secret-like-json-key"]
+        self.assertEqual(len(secret_findings), 1)
+        self.assertIn("auth_token", secret_findings[0].rendered)
+
     def test_tree_rejects_symlinks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
