@@ -57,6 +57,7 @@ env:
   PYTHONDONTWRITEBYTECODE: "1"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
   SOURCE_DATE_EPOCH: "315532800"
+  ARENA_RELIABILITY_STABLE_OUTPUT: "1"
 
 concurrency:
   group: fifteen-pass-${{ github.event.pull_request.number || github.ref }}
