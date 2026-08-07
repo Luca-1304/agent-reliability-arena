@@ -32,6 +32,8 @@ class ReliabilityPolicyTests(unittest.TestCase):
         self.assertEqual(policy.cache_modes, ("warm", "cold"))
         self.assertIn(".github/workflows/**", policy.trigger_surfaces)
         self.assertIn("reliability-policy.json", policy.trigger_surfaces)
+        self.assertEqual(policy.performance_mode, "observational")
+        self.assertEqual(policy.performance_min_samples, 10)
         scanner = policy.raw["diagnostics"]["scanner"]
         self.assertTrue(scanner["forbid_absolute_workspace_paths"])
         self.assertEqual(scanner["max_text_file_bytes"], 5_000_000)
@@ -90,6 +92,24 @@ class ReliabilityPolicyTests(unittest.TestCase):
             path = Path(directory) / "policy.json"
             path.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaisesRegex(PolicyError, "unknown workflow_roles keys"):
+                load_policy(path)
+
+    def test_performance_mode_cannot_be_promoted_to_hard_threshold(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["performance"]["mode"] = "blocking"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "performance.mode"):
+                load_policy(path)
+
+    def test_performance_sample_floor_cannot_be_reduced_below_ten(self) -> None:
+        payload = json.loads(POLICY.read_text(encoding="utf-8"))
+        payload["performance"]["minimum_samples_before_threshold"] = 9
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(PolicyError, "minimum_samples_before_threshold"):
                 load_policy(path)
 
     def test_duplicate_hash_seed_is_rejected(self) -> None:
