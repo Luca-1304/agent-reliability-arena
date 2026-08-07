@@ -16,6 +16,19 @@ except ModuleNotFoundError:  # Direct execution from scripts/ci.
 
 _DEFAULT_PRIVATE_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0")
 _DEFAULT_SECRET_FRAGMENTS = ("api_key", "token", "password", "secret")
+_TOKEN_METRIC_SUFFIXES = {
+    "usage",
+    "count",
+    "counts",
+    "total",
+    "totals",
+    "budget",
+    "budgets",
+    "limit",
+    "limits",
+    "estimate",
+    "estimates",
+}
 _URL_RE = re.compile(r"https?://[^\s<>'\"`]+", re.IGNORECASE)
 _ASSIGNMENT_RE = re.compile(
     r"(?P<key>[A-Za-z_][A-Za-z0-9_.-]*)\s*(?:=|:)\s*(?P<value>[^\s,;]+)",
@@ -70,17 +83,35 @@ class ScanReport:
 
 
 def _normalise_key(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+    camel_split = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", value)
+    return re.sub(r"[^a-z0-9]+", "_", camel_split.lower()).strip("_")
+
+
+def _contains_parts(parts: tuple[str, ...], fragment_parts: tuple[str, ...]) -> bool:
+    if not fragment_parts or len(fragment_parts) > len(parts):
+        return False
+    width = len(fragment_parts)
+    return any(parts[index : index + width] == fragment_parts for index in range(len(parts) - width + 1))
 
 
 def _is_secret_key(key: str, fragments: Iterable[str]) -> bool:
     normalized = _normalise_key(key)
-    compact = normalized.replace("_", "")
+    parts = tuple(part for part in normalized.split("_") if part)
     for fragment in fragments:
         normalized_fragment = _normalise_key(fragment)
-        if normalized_fragment in normalized:
-            return True
-        if normalized_fragment.replace("_", "") in compact:
+        fragment_parts = tuple(part for part in normalized_fragment.split("_") if part)
+        if not fragment_parts:
+            continue
+        if fragment_parts == ("token",):
+            for index, part in enumerate(parts):
+                if part != "token":
+                    continue
+                following = parts[index + 1] if index + 1 < len(parts) else None
+                if following in _TOKEN_METRIC_SUFFIXES:
+                    continue
+                return True
+            continue
+        if _contains_parts(parts, fragment_parts):
             return True
     return False
 
