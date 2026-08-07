@@ -148,6 +148,12 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check --no-input --no-build-isolation --editable . 2>&1 | tee "$RUNNER_TEMP/fifteen-pass-diagnostics/bootstrap-editable.log"
 
+      - name: Verify CI workflow structure against policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/ci/verify_ci_policy.py --policy reliability-policy.json
+
       - name: Run policy-governed deep reliability gate
         shell: bash
         run: |
