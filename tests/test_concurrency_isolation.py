@@ -33,6 +33,21 @@ class ConcurrencyIsolationTests(unittest.TestCase):
             (right / "artifacts" / "result.json").write_text("right", encoding="utf-8")
             assert_disjoint_artifact_trees(left, right)
 
+    def test_hardlinks_within_one_run_do_not_look_like_cross_run_leakage(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            left = root / "left"
+            right = root / "right"
+            left.mkdir()
+            right.mkdir()
+            original = left / "original.txt"
+            original.write_text("same-run", encoding="utf-8")
+            try:
+                (left / "alias.txt").hardlink_to(original)
+            except (OSError, NotImplementedError):
+                self.skipTest("hard links unavailable on this platform")
+            assert_disjoint_artifact_trees(left, right)
+
     def test_symlink_crossing_into_other_run_fails(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
