@@ -49,10 +49,15 @@ class CiPolicyTests(unittest.TestCase):
         self.assertIn("artifact-retention", self._codes(violations))
 
     def test_artifact_upload_without_always_is_rejected(self) -> None:
-        violations = self._violations_after(
-            "if: always() && steps.diagnostic_redaction.outcome == 'success' && steps.diagnostic_scan.outcome == 'success'",
-            "if: steps.diagnostic_redaction.outcome == 'success' && steps.diagnostic_scan.outcome == 'success'",
+        old = (
+            "      - name: Upload sanitised scanned reliability evidence\n"
+            "        if: always() && steps.diagnostic_redaction.outcome == 'success' && steps.diagnostic_scan.outcome == 'success'"
         )
+        new = (
+            "      - name: Upload sanitised scanned reliability evidence\n"
+            "        if: steps.diagnostic_redaction.outcome == 'success' && steps.diagnostic_scan.outcome == 'success'"
+        )
+        violations = self._violations_after(old, new)
         self.assertIn("artifact-missing-always", self._codes(violations))
 
     def test_job_timeout_above_policy_is_rejected(self) -> None:
