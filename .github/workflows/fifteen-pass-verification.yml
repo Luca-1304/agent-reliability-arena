@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/fifteen-pass-verification.yml"
+      - ".github/workflows/**"
       - "reliability-policy.json"
       - "schemas/reliability-policy.schema.json"
       - "schemas/reliability-evidence.schema.json"
@@ -40,6 +41,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/fifteen-pass-verification.yml"
+      - ".github/workflows/**"
       - "reliability-policy.json"
       - "schemas/reliability-policy.schema.json"
       - "schemas/reliability-evidence.schema.json"
