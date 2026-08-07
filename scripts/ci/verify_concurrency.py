@@ -122,6 +122,15 @@ def _run_one(*, executable: Path, config: Path, root: Path, hash_seed: int) -> d
 
 
 def verify_concurrent_runs(*, executable: Path, config: Path, root: Path) -> dict[str, object]:
+    invocation_cwd = Path.cwd()
+    config = config if config.is_absolute() else invocation_cwd / config
+    try:
+        config = config.resolve(strict=True)
+    except FileNotFoundError as exc:
+        raise ConcurrencyIsolationError(f"config file does not exist: {config}") from exc
+    if not config.is_file():
+        raise ConcurrencyIsolationError(f"config path is not a file: {config}")
+
     root = root.resolve()
     run_a = root / "run-a"
     run_b = root / "run-b"
