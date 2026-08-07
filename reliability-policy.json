@@ -55,6 +55,30 @@
     "semantic",
     "bounded"
   ],
+  "deterministic_outputs": {
+    "fixture_run": {
+      "class": "semantic",
+      "format": "json",
+      "ignore_json_pointers": []
+    },
+    "fixture_replay": {
+      "class": "semantic",
+      "format": "json",
+      "ignore_json_pointers": []
+    },
+    "public_export": {
+      "class": "semantic",
+      "format": "json",
+      "ignore_json_pointers": []
+    },
+    "wheel_contents": {
+      "class": "semantic",
+      "format": "zip-tree",
+      "ignore_archive_metadata": [
+        "timestamp"
+      ]
+    }
+  },
   "diagnostics": {
     "schema_version": "reliability-evidence-v1",
     "retention_days": 14,
