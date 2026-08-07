@@ -70,7 +70,7 @@ def assert_disjoint_artifact_trees(left: Path, right: Path) -> None:
     if left in right.parents or right in left.parents:
         raise ConcurrencyIsolationError("run roots are nested")
 
-    identities: dict[tuple[int, int], Path] = {}
+    identities: dict[tuple[int, int], tuple[Path, Path]] = {}
     for root, other in ((left, right), (right, left)):
         if not root.exists():
             continue
@@ -86,11 +86,14 @@ def assert_disjoint_artifact_trees(left: Path, right: Path) -> None:
             if identity is None:
                 continue
             existing = identities.get(identity)
-            if existing is not None and existing.resolve() != path.resolve():
+            if existing is None:
+                identities[identity] = (root, path)
+                continue
+            existing_root, existing_path = existing
+            if existing_root != root:
                 raise ConcurrencyIsolationError(
-                    f"shared file identity detected: {existing} and {path}"
+                    f"shared file identity detected: {existing_path} and {path}"
                 )
-            identities[identity] = path
 
 
 def _run_one(*, executable: Path, config: Path, root: Path, hash_seed: int) -> dict[str, object]:
