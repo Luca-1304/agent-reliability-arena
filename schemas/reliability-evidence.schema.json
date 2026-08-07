@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luca-1304/agent-reliability-arena/schemas/reliability-evidence.schema.json",
+  "title": "Agent Reliability Arena evidence manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "repository", "commit_sha", "workflow", "run_id", "run_attempt",
+    "event", "ref", "runner_os", "runner_arch", "python_version", "timezone", "locale",
+    "hash_seed", "install_mode", "cache_mode", "toolchain", "dependency_fingerprint",
+    "commands", "timings", "output_digests", "failures", "final_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "reliability-evidence-v1"},
+    "repository": {"type": "string", "minLength": 1},
+    "commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "workflow": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "run_attempt": {"type": "string", "minLength": 1},
+    "event": {"type": "string", "minLength": 1},
+    "ref": {"type": "string", "minLength": 1},
+    "runner_os": {"type": "string", "minLength": 1},
+    "runner_arch": {"type": "string", "minLength": 1},
+    "python_version": {"type": "string", "minLength": 1},
+    "timezone": {"type": "string", "minLength": 1},
+    "locale": {"type": "string", "minLength": 1},
+    "hash_seed": {"anyOf": [{"type": "integer", "minimum": 0}, {"type": "null"}]},
+    "install_mode": {"type": "string", "minLength": 1},
+    "cache_mode": {"type": "string", "minLength": 1},
+    "toolchain": {"type": "object", "additionalProperties": {"type": "string"}},
+    "dependency_fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rows": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sequence"],
+        "properties": {"sequence": {"type": "integer", "minimum": 1}},
+        "additionalProperties": true
+      }
+    },
+    "timings": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+    "output_digests": {"type": "object", "additionalProperties": true},
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category", "phase", "command_name", "argv", "sequence", "pass_number",
+          "hash_seed", "exit_code", "duration_seconds", "log_path", "message"
+        ],
+        "properties": {
+          "category": {
+            "enum": [
+              "TEST", "BUILD", "PACKAGE", "REPLAY", "DETERMINISM", "SECURITY",
+              "DEPENDENCY", "ENVIRONMENT", "TIMEOUT", "CONCURRENCY", "POLICY", "UNKNOWN"
+            ]
+          },
+          "phase": {"type": "string"},
+          "command_name": {"type": "string"},
+          "argv": {"type": "array", "items": {"type": "string"}},
+          "sequence": {"type": "integer", "minimum": 1},
+          "pass_number": {"anyOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]},
+          "hash_seed": {"anyOf": [{"type": "integer", "minimum": 0}, {"type": "null"}]},
+          "exit_code": {"anyOf": [{"type": "integer"}, {"type": "null"}]},
+          "duration_seconds": {"type": "number", "minimum": 0},
+          "log_path": {"type": "string"},
+          "message": {"type": "string"}
+        }
+      }
+    },
+    "final_status": {"enum": ["pending", "passed", "failed", "blocked", "unknown"]}
+  }
+}
