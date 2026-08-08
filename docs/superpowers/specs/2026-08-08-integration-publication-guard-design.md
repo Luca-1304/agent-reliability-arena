@@ -2,215 +2,194 @@
 
 Date: 2026-08-08
 Repository: `Luca-1304/agent-reliability-arena`
-Status: approved concept, written spec awaiting review
+Status: implemented on feature branch; exact-head acceptance required before merge
 
 ## Purpose
 
-Decouple ordinary repository integration from public publication without weakening verification.
+Decouple ordinary Git integration from public publication without weakening automatic verification.
 
-The repository currently has two important side effects on `main` pushes:
+Before this guard, ordinary `main` pushes could cause two unrelated public writes:
 
-1. `.github/workflows/pages.yml` publishes the GitHub Pages site after verification.
-2. `.github/workflows/release.yml` can attest and publish the immutable `v0.2.0rc2` prerelease when release-sensitive paths such as `pyproject.toml` change.
+1. `.github/workflows/pages.yml` could deploy the GitHub Pages site.
+2. `.github/workflows/release.yml` could attest and publish the immutable `v0.2.0rc2` prerelease when release-sensitive files changed.
 
-That coupling means an otherwise local package change can trigger unrelated public deployment and release actions. The guard must make publication an intentional event while preserving automatic verification.
+That made an ordinary package/tooling merge capable of changing public state merely because its paths matched a workflow trigger.
 
 ## Primary invariant
 
-**Verification may remain automatic; publication requires explicit publication intent.**
+**Verification may remain automatic. Publication requires both explicit operator intent and the approved source branch.**
 
-A normal pull request or merge must never gain public publication authority merely because a changed file happens to match a broad workflow path filter.
+The canonical publication authority condition is:
+
+```text
+github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+```
+
+Neither changed paths, a normal `main` push, nor manual dispatch from a feature/tag/non-main ref grants publication authority.
 
 ## Non-goals
 
-- Do not weaken or bypass Fast, Specialist, Deep, CodeQL, history, Pages privacy packaging, or release verification.
-- Do not use `[skip ci]`, hidden branch conventions, or token-based bypasses.
-- Do not disable existing privacy verification.
-- Do not change Vercel state, provider state, historical privacy records, or branch protection.
-- Do not publish a release as part of implementing this guard.
-- Do not redesign the public site or release artifact format.
-
-## Approaches considered
-
-### A. Path-filter-only refinement
-
-Narrow the existing `push` path filters so fewer ordinary changes trigger publication.
-
-Rejected as the primary solution. It reduces frequency but keeps publication authority implicit in file selection. A future path-list edit could silently recreate the problem.
-
-### B. Separate verification from publication using explicit workflow intent — recommended
-
-Keep verification jobs automatic on pull requests and appropriate `main` changes. Move public publication into explicit, narrowly defined execution paths.
-
-For Pages, verification/staging remains automatic, while the deploy job requires a deliberate publication condition rather than every `main` push.
-
-For releases, verification/build remains automatic on release-relevant changes, while attest/publish requires manual dispatch of the reviewed fixed-version release workflow.
-
-This approach preserves evidence while removing accidental authority.
-
-### C. External release/deployment orchestration
-
-Move publication entirely outside GitHub Actions into a separate deployment system.
-
-Rejected for now. It adds infrastructure and operational complexity without being necessary to solve the current coupling.
+- Do not weaken Fast, Specialist, Deep, CodeQL, history, Pages privacy packaging, release verification, or clean-wheel testing.
+- Do not use `[skip ci]`, hidden branches, force-pushes, credential tricks, or bypass tokens.
+- Do not change Vercel/provider state, privacy-history records, branch protection, public-site content, or release artifact format.
+- Do not execute a real Pages deployment, attestation publication, tag creation, or GitHub release as part of proving this guard.
 
 ## Architecture
 
-### 1. Verification plane
+### Verification plane
 
-Existing verification remains automatic and non-destructive:
+Pull requests and appropriate `main` pushes continue to run non-destructive verification/build work, including tests, package/release verification, Pages staging/privacy checks, reliability roles, CodeQL, and history checks.
 
-- source tests;
-- package build and clean-wheel verification;
-- release-boundary verification;
-- Pages site staging;
-- public-CV privacy verification;
-- Fast, Specialist and Deep reliability gates;
-- CodeQL and history checks.
+Verification may produce temporary workflow artifacts. It does not acquire publication authority.
 
-The verification plane may create short-lived workflow artifacts, but it does not publish a site, create a Git tag/release, or write public deployment state.
+### Publication plane
 
-### 2. Publication plane
+Publication-capable jobs are a separate authority boundary. A public-write job must satisfy all of the following:
 
-Publication is a separate authority boundary.
+1. required verification dependencies passed;
+2. event is `workflow_dispatch`;
+3. workflow ref is exactly `refs/heads/main`;
+4. write permission is scoped to the publication job, not granted globally;
+5. the publication capability is one of the reviewed allow-listed jobs.
 
-A publication job must satisfy both:
+## Pages contract
 
-1. all required verification dependencies passed; and
-2. an explicit publication-intent condition is true.
+The Pages workflow keeps `pull_request`, `push` to `main`, and `workflow_dispatch` triggers because all three may legitimately run verification/staging.
 
-The intent signal must be visible in workflow source and auditable from the triggering GitHub event. It must not be inferred solely from a changed path.
+`Publish verified site` may execute only when:
 
-### 3. Pages contract
+```text
+github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+```
 
-The Pages workflow keeps pull-request and `main` verification/staging behavior.
+It still depends on the existing build/stage/privacy job, deploys that exact verified artifact, and runs the live portfolio/CV/audit/Arena boundary verification after deployment.
 
-The actual `Publish verified site` job must no longer run merely because the event is a push to `main`.
+Consequences:
 
-Publication mechanism:
+- PR: verify/stage only; deploy skipped.
+- ordinary `main` push: verify/stage only; deploy skipped.
+- dispatch against non-main ref: verify/stage may run; deploy skipped.
+- dispatch against `main`: verified deployment is authorized.
 
-- `workflow_dispatch` is the publication-authority event;
-- the dispatch reruns the same build/privacy/staging verification before deploy;
-- deployment uses the exact verified artifact from that dispatch run;
-- ordinary PRs and `main` pushes stop after verification/staging.
+## Release contract
 
-This preserves the existing live verification after deployment while making the public write deliberate.
+The rc2 workflow keeps automatic verification/build for PRs and release-sensitive `main` changes.
 
-### 4. Release contract
+`attest` and `publish` may execute only when:
 
-The rc2 workflow keeps automatic verification/build for PRs and release-sensitive changes.
+```text
+github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+```
 
-The attestation and immutable release publication jobs must not execute from an ordinary `main` push.
+The release remains fixed to `TAG: v0.2.0rc2`. No free-form version input may alter that authority. Existing collision refusal for an already existing tag or GitHub release remains mandatory, and the attestation/publication jobs retain narrowly scoped permissions.
 
-Publication mechanism:
+Future versions require a reviewed release contract rather than reusing rc2 logic by changing a dispatch input.
 
-- `workflow_dispatch` is the only publication-authority event for this fixed rc2 workflow;
-- no free-form version input is accepted;
-- `TAG` remains hard-coded to `v0.2.0rc2`;
-- attest/publish jobs require `github.event_name == 'workflow_dispatch'`;
-- verification/build reruns in the same dispatch before attestation;
-- existing refusal to overwrite an existing tag/release remains mandatory;
-- future versions require a new reviewed release contract rather than silently reusing rc2 logic.
+## Repository-wide publication capability inventory
 
-This keeps the authority signal simple and prevents version text supplied at dispatch time from changing what the immutable workflow is allowed to publish.
+Structural tests inventory all workflow files using both GitHub-supported extensions:
 
-## Data and control flow
+- `.github/workflows/*.yml`
+- `.github/workflows/*.yaml`
 
-### Normal pull request
+The controlled publication capabilities are currently:
 
-change → automatic verification → evidence only → stop
+- `actions/deploy-pages@` → `pages.yml` / `deploy`
+- `actions/attest@` → `release.yml` / `attest`
+- `gh release create` → `release.yml` / `publish`
 
-### Normal merge / push to main
+A capability appearing in another workflow, another job, or without the main-bound dispatch condition is a test failure.
 
-change → automatic verification → evidence only → stop
+Synthetic tests prove the inventory rejects:
 
-### Intentional Pages publication
+- an alternate unapproved publication job;
+- a `.yaml` bypass rather than `.yml`;
+- dispatch-only publication that is not also bound to `main`.
 
-manual dispatch → full Pages verification/staging → deploy verified artifact → live boundary verification
+## Source verifier alignment
 
-### Intentional rc2 publication
+`src/agent_reliability_arena/github_prerelease.py` independently verifies the release workflow authority contract. It rejects:
 
-manual dispatch → release verification/build → fixed-version/refusal checks → attest → immutable prerelease publish → published metadata verification
+- normal-push authority in attest/publish;
+- missing main-bound dispatch authority;
+- global write permissions;
+- contents write on the attestation job;
+- missing contents write on the publication job;
+- a publication tag that differs from the verified package version;
+- workflow-input-derived release tags;
+- removal of release/tag collision refusal.
+
+This prevents YAML policy and release-domain verification from drifting apart.
 
 ## Failure behavior
 
 - Verification failure blocks publication.
-- Missing publication intent blocks publication.
-- Existing release/tag collision blocks publication.
-- Pages live verification failure makes the publication workflow fail visibly.
-- No fallback path may publish when the intended gate fails.
-- No `continue-on-error` may be added to publication-authority checks.
+- Missing manual intent blocks publication.
+- Dispatch from a non-main ref blocks publication.
+- Existing tag/release collision blocks rc2 publication.
+- Pages live-verification failure makes an intentional deployment fail visibly.
+- No fallback publication path, `continue-on-error`, or ordinary push path is permitted.
 
 ## Anti-gaming / adaptation review
 
-Changing publication policy changes operator and automation behavior, so the design explicitly checks likely adaptations.
-
 ### Intended adaptation
-
-Routine merges become safe to perform without causing unrelated public writes. Publication becomes a conscious release/deployment action.
+Routine merges become verification-only. Public deployment/release becomes a conscious action sourced from `main`.
 
 ### Gaming / exploit adaptation
-
-Potential bypasses include relabeling an ordinary push as publication, weakening the event condition, adding an alternate deploy job, or using a path-filter exception.
-
-Countermeasure: structural tests must enumerate every job/action capable of Pages deploy, attestation, tag creation or GitHub release creation and require the explicit publication-intent contract.
+Likely bypass attempts include moving a publication command to another workflow, using `.yaml` instead of `.yml`, dispatching a feature branch, weakening the job condition, adding an alternate deploy/release job, or relying on path filters as authority. Structural inventory and source-verifier checks are designed to make these visible failures.
 
 ### Strategic / unexpected adaptation
-
-Developers may stop noticing stale public content because merges no longer auto-deploy. This is acceptable: deployment freshness is a product decision, not a justification for implicit publication authority.
+Public content may become stale because merges no longer auto-deploy. That is an explicit product/deployment decision and is preferable to accidental publication authority.
 
 ### Longer-term equilibrium
-
-Verification becomes frequent and cheap in authority terms; publication becomes rarer and deliberate. This is the intended equilibrium.
+Verification remains frequent and low-authority; publication remains rarer, explicit, source-bound, and auditable.
 
 ### Failure signal
-
-The model is failing if any ordinary PR or ordinary `main` push can execute a public deploy, create an attestation intended for release publication, create a tag, or create a GitHub release.
+The model has failed if any ordinary PR, ordinary `main` push, non-main dispatch, unreviewed workflow file, or alternate publication job can deploy Pages, create release attestations, create a tag, or create a GitHub release.
 
 ## Test strategy
 
-Implementation must use RED/GREEN TDD.
+RED/GREEN evidence covers:
 
-Required structural tests before workflow edits:
+1. original push-authorized Pages/release behavior;
+2. release verifier disagreement with the first dispatch-only workflow edit;
+3. manual dispatch not being bound to `main`;
+4. `.yaml` workflow files escaping an initial `.yml`-only inventory.
 
-1. A normal `main` push cannot satisfy the Pages deploy condition.
-2. A normal `main` push cannot satisfy rc2 attest/publish conditions.
-3. Pages dispatch still requires the existing build/stage/privacy job before deployment.
-4. Release dispatch still requires verified build before attestation and publication.
-5. Release workflow retains collision refusal for existing tag/release.
-6. No alternate publication-capable job bypasses the explicit-intent condition.
-7. PR verification remains active for both workflows.
-8. Existing public-CV source/staged/live verification contract remains present; live verification belongs to the intentional publication path.
-9. Existing checkout credential and permission boundaries remain intact.
-10. Existing workflow parser/CI-policy tests stay green.
+Final acceptance requires exact-head success from:
 
-Acceptance after implementation requires the repository's normal Python matrix, Fast, Specialist, Deep, CodeQL, Pages/privacy packaging, release verification and history checks on the exact PR head.
+- Python 3.10, 3.11, 3.12, 3.13 source tests, release verifier, installed commands, wheel build, clean-wheel verification, dependency check;
+- Fast plus `Fast — Role evidence summary`;
+- all Specialist gates plus `Specialist — Role evidence summary`;
+- Deep on Python 3.10 and 3.13 plus diagnostic redaction/scanning and `Deep — Role evidence summary`;
+- CodeQL;
+- repository writable-history boundary;
+- Pages build/stage/privacy packaging, with deploy skipped on PR;
+- release verify/build, with attest and publish skipped on PR.
 
-No real Pages deploy or release publication is required to prove the structural guard. A later intentional publication event remains a separate operational decision.
+No real publication is needed for structural acceptance.
 
 ## Integration sequence
 
-1. Implement this guard in a dedicated PR from current `main`.
-2. Prove RED tests fail against the current implicit-publication workflows.
-3. Make the smallest workflow changes that satisfy the explicit-intent contract.
-4. Run full exact-head acceptance.
-5. Merge the guard only after evidence is green.
-6. Rebase or update Assurance Router PR #97 onto the guarded `main`.
-7. Re-run #97 exact-head verification.
-8. Merge #97; the merge should now produce verification only, not Pages/release publication.
-
-## Rollback
-
-The guard is workflow-only behavior. If its implementation causes verification regressions, do not merge it. If a later merged guard must be reverted, revert the guard commit through a reviewed PR; do not bypass checks or manually mutate publication state as a shortcut.
+1. Finish exact-head verification of this guard PR.
+2. Confirm final diff contains only reviewed guard implementation/tests/docs.
+3. Merge guard into `main` using the exact expected head SHA.
+4. Observe the resulting `main` push and explicitly verify Pages deploy and release attest/publish are skipped while verification runs.
+5. Update/rebase Assurance Router PR #97 onto guarded `main` without force rewriting history.
+6. Re-run #97 exact-head verification and merge only if green.
+7. Observe the Router merge push and again verify publication jobs stay skipped.
+8. Start a separate repository-wide Git operations control-plane audit rather than expanding this already-reviewed guard indefinitely.
 
 ## Success criteria
 
-The design succeeds when all of the following are true:
+The guard is successful only when:
 
-- ordinary PRs still receive the established verification evidence;
-- ordinary `main` pushes still receive appropriate verification;
-- ordinary `main` pushes cannot publish Pages;
-- ordinary `main` pushes cannot attest/publish rc2;
-- intentional publication still reruns required verification before any public write;
-- no CI/security/privacy gate is weakened;
-- Assurance Router PR #97 can eventually merge without implicitly causing public publication.
+- PR and `main` verification remain active;
+- ordinary `main` pushes cannot publish Pages or rc2;
+- non-main manual dispatch cannot publish Pages or rc2;
+- intentional `main` dispatch reruns required verification before any public write;
+- publication capabilities in both `.yml` and `.yaml` workflows are allow-listed and source-bound;
+- write permissions remain narrowly scoped;
+- release verification and workflow authority agree;
+- no security/privacy/reliability gate is weakened;
+- Assurance Router PR #97 can later merge without implicitly causing public publication.
