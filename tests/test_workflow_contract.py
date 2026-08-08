@@ -49,6 +49,28 @@ class WorkflowContractTests(unittest.TestCase):
             "fifteen-pass-${{ github.event.pull_request.number || github.ref }}",
         )
 
+    def test_parser_preserves_job_if_condition(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workflow.yml"
+            path.write_text(
+                "on:\n"
+                "  workflow_dispatch:\n"
+                "permissions:\n"
+                "  contents: read\n"
+                "jobs:\n"
+                "  publish:\n"
+                "    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'\n"
+                "    runs-on: ubuntu-24.04\n"
+                "    steps:\n"
+                "      - run: echo safe\n",
+                encoding="utf-8",
+            )
+            contract = read_workflow_contract(path)
+            self.assertEqual(
+                contract.jobs["publish"].if_condition,
+                "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'",
+            )
+
     def test_parser_preserves_scalar_run_command(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "workflow.yml"
