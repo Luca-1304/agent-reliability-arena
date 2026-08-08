@@ -11,8 +11,7 @@ from typing import Sequence
 from .assurance_router import AssuranceReport, classify_paths
 
 
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_POLICY = ROOT / "reliability-policy.json"
+DEFAULT_POLICY_NAME = "reliability-policy.json"
 
 
 class AssuranceInputError(ValueError):
@@ -34,7 +33,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--paths-file", type=Path)
     parser.add_argument("--base")
     parser.add_argument("--head")
-    parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
+    parser.add_argument("--policy", type=Path)
     parser.add_argument("--json", action="store_true")
     return parser.parse_args(argv)
 
@@ -140,7 +139,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         args = _parse_args(argv)
         paths = _input_paths(args)
-        triggers = _load_policy(args.policy)
+        policy_path = args.policy if args.policy is not None else Path.cwd() / DEFAULT_POLICY_NAME
+        triggers = _load_policy(policy_path)
         report = classify_paths(paths, triggers)
     except (AssuranceInputError, ValueError) as exc:
         print(f"assurance-router: {exc}", file=sys.stderr)
