@@ -103,8 +103,11 @@ class GithubPrereleaseTests(unittest.TestCase):
         ):
             self.assertIn(required.lower(), combined.lower())
 
-    def test_workflow_verifies_automatically_and_publishes_only_on_dispatch(self) -> None:
+    def test_workflow_verifies_automatically_and_publishes_only_on_main_dispatch(self) -> None:
         workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+        authority = (
+            "if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'"
+        )
 
         for marker in (
             "name: Publish attested v0.2.0rc2 prerelease",
@@ -131,7 +134,7 @@ class GithubPrereleaseTests(unittest.TestCase):
             "gh release create",
             "--prerelease",
             "--target \"$GITHUB_SHA\"",
-            "if: github.event_name == 'workflow_dispatch'",
+            authority,
             "needs: [build, attest]",
             "TAG: v0.2.0rc2",
         ):
@@ -146,8 +149,8 @@ class GithubPrereleaseTests(unittest.TestCase):
 
         attest_job = workflow.split("  attest:", 1)[1].split("  publish:", 1)[0]
         publish_job = workflow.split("  publish:", 1)[1]
-        self.assertIn("if: github.event_name == 'workflow_dispatch'", attest_job)
-        self.assertIn("if: github.event_name == 'workflow_dispatch'", publish_job)
+        self.assertIn(authority, attest_job)
+        self.assertIn(authority, publish_job)
         self.assertNotIn("github.event_name == 'push'", attest_job)
         self.assertNotIn("github.event_name == 'push'", publish_job)
         self.assertNotIn("contents: write", attest_job)
