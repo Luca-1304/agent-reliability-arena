@@ -39,6 +39,27 @@ class AssuranceRouterCliTests(unittest.TestCase):
         self.assertIs(payload["authoritative"], False)
         self.assertEqual(stderr, "")
 
+    def test_default_policy_is_loaded_from_current_repository(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            (repo / "reliability-policy.json").write_text(
+                '{"trigger_surfaces":["docs/**"]}\n',
+                encoding="utf-8",
+            )
+            previous = Path.cwd()
+            try:
+                os.chdir(repo)
+                code, stdout, stderr = _invoke(["--path", "src/a.py", "--json"])
+            finally:
+                os.chdir(previous)
+        self.assertEqual(code, 0, stderr)
+        payload = json.loads(stdout)
+        self.assertEqual(
+            payload["outside_reliability_trigger_surface"],
+            ["src/a.py"],
+        )
+        self.assertTrue(payload["attention_required"])
+
     def test_paths_file_mode_reads_one_path_per_non_empty_line(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path_file = Path(directory) / "paths.txt"
@@ -90,8 +111,12 @@ class AssuranceRouterCliTests(unittest.TestCase):
             subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
             subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repo, check=True)
             subprocess.run(["git", "config", "user.name", "Assurance Test"], cwd=repo, check=True)
+            (repo / "reliability-policy.json").write_text(
+                '{"trigger_surfaces":["src/**"]}\n',
+                encoding="utf-8",
+            )
             (repo / "README.md").write_text("base\n", encoding="utf-8")
-            subprocess.run(["git", "add", "README.md"], cwd=repo, check=True)
+            subprocess.run(["git", "add", "README.md", "reliability-policy.json"], cwd=repo, check=True)
             subprocess.run(["git", "commit", "-qm", "base"], cwd=repo, check=True)
             base = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
             (repo / "src").mkdir()
