@@ -454,14 +454,27 @@ def validate_repository_root(root: Path) -> None:
         raise GateInternalError(f"not a Git work tree: {resolved}")
 
 
+def _venv_scripts(venv_root: Path) -> Path:
+    return venv_root / ("Scripts" if os.name == "nt" else "bin")
+
+
 def _venv_python(venv_root: Path) -> Path:
     if os.name == "nt":
-        return venv_root / "Scripts" / "python.exe"
-    return venv_root / "bin" / "python"
+        return _venv_scripts(venv_root) / "python.exe"
+    return _venv_scripts(venv_root) / "python"
+
+
+def _venv_environment(venv_root: Path) -> dict[str, str]:
+    env = _stable_environment()
+    scripts = str(_venv_scripts(venv_root.resolve()))
+    existing = env.get("PATH", "")
+    env["PATH"] = scripts if not existing else scripts + os.pathsep + existing
+    env["PYTHONNOUSERSITE"] = "1"
+    return env
 
 
 def _venv_command(venv_root: Path, name: str) -> Path:
-    scripts = venv_root / ("Scripts" if os.name == "nt" else "bin")
+    scripts = _venv_scripts(venv_root)
     suffix = ".exe" if os.name == "nt" else ""
     return scripts / f"{name}{suffix}"
 
@@ -471,6 +484,7 @@ def _run_internal(
     *,
     cwd: Path,
     timeout_seconds: int = 1200,
+    env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
@@ -480,17 +494,22 @@ def _run_internal(
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            env=_stable_environment(),
+            env=_stable_environment(env),
             timeout=timeout_seconds,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as exc:
         return subprocess.CompletedProcess(list(command), 2, stdout=str(exc), stderr=None)
 
 
-def _run_internal_batch(commands: Sequence[Sequence[str]], *, cwd: Path) -> int:
+def _run_internal_batch(
+    commands: Sequence[Sequence[str]],
+    *,
+    cwd: Path,
+    env: Mapping[str, str] | None = None,
+) -> int:
     first_nonzero = 0
     for command in commands:
-        completed = _run_internal(command, cwd=cwd)
+        completed = _run_internal(command, cwd=cwd, env=env)
         if completed.returncode != 0:
             if first_nonzero == 0:
                 first_nonzero = completed.returncode
@@ -516,6 +535,7 @@ def _internal_verify_wheel(dist_dir: Path, workspace: Path, venv_root: Path) -> 
         return 1
 
     python_path = _venv_python(venv_root)
+    clean_env = _venv_environment(venv_root)
     install = _run_internal(
         (
             str(python_path),
@@ -528,6 +548,7 @@ def _internal_verify_wheel(dist_dir: Path, workspace: Path, venv_root: Path) -> 
             str(wheels[0]),
         ),
         cwd=venv_root.parent,
+        env=clean_env,
     )
     if install.returncode != 0:
         print(install.stdout, file=sys.stderr)
@@ -543,6 +564,7 @@ def _internal_verify_wheel(dist_dir: Path, workspace: Path, venv_root: Path) -> 
     imported = _run_internal(
         (str(python_path), "-c", probe, str(workspace)),
         cwd=venv_root.parent,
+        env=clean_env,
     )
     if imported.returncode != 0:
         print(imported.stdout, file=sys.stderr)
@@ -562,12 +584,17 @@ def _internal_verify_wheel(dist_dir: Path, workspace: Path, venv_root: Path) -> 
         ),
         cwd=workspace,
         timeout_seconds=1500,
+        env=clean_env,
     )
     if source_tests.returncode != 0:
         print(source_tests.stdout, file=sys.stderr)
         return source_tests.returncode
 
-    release_code = _run_internal_batch(_release_commands(str(python_path)), cwd=workspace)
+    release_code = _run_internal_batch(
+        _release_commands(str(python_path)),
+        cwd=workspace,
+        env=clean_env,
+    )
     if release_code != 0:
         return release_code
 
@@ -596,6 +623,7 @@ def _internal_verify_wheel(dist_dir: Path, workspace: Path, venv_root: Path) -> 
     smoke_code = _run_internal_batch(
         _smoke_commands(temp_root=smoke_root, executable_by_name=executables),
         cwd=workspace,
+        env=clean_env,
     )
     if smoke_code != 0:
         return smoke_code
@@ -611,6 +639,7 @@ def _internal_dependency_check(venv_root: Path) -> int:
     checked = _run_internal(
         (str(python_path), "-m", "pip", "check"),
         cwd=venv_root.parent,
+        env=_venv_environment(venv_root.resolve()),
     )
     if checked.returncode != 0:
         print(checked.stdout, file=sys.stderr)
