@@ -32,10 +32,22 @@ def _job_body(text: str, job_id: str) -> str:
     return tail if next_job is None else tail[: next_job.start()]
 
 
+def _workflow_paths(workflows: Path) -> tuple[Path, ...]:
+    return tuple(
+        sorted(
+            {
+                *workflows.glob("*.yml"),
+                *workflows.glob("*.yaml"),
+            },
+            key=lambda path: path.name,
+        )
+    )
+
+
 def _publication_inventory_violations(workflows: Path) -> list[str]:
     violations: list[str] = []
     seen: set[str] = set()
-    for path in sorted(workflows.glob("*.yml")):
+    for path in _workflow_paths(workflows):
         text = path.read_text(encoding="utf-8")
         for capability, (expected_file, expected_job) in PUBLICATION_CAPABILITIES.items():
             if capability not in text:
