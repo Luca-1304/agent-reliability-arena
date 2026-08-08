@@ -38,6 +38,15 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _default_policy_path() -> Path:
+    current = Path.cwd().resolve()
+    for directory in (current, *current.parents):
+        candidate = directory / DEFAULT_POLICY_NAME
+        if candidate.is_file():
+            return candidate
+    return current / DEFAULT_POLICY_NAME
+
+
 def _load_policy(path: Path) -> tuple[str, ...]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -68,7 +77,17 @@ def _read_paths_file(path: Path) -> tuple[str, ...]:
     return tuple(line.strip() for line in content.splitlines() if line.strip())
 
 
+def _validate_git_ref(value: str, label: str) -> str:
+    if value.startswith("-"):
+        raise AssuranceInputError(
+            f"{label} git ref must not begin with a hyphen"
+        )
+    return value
+
+
 def _git_paths(base: str, head: str) -> tuple[str, ...]:
+    base = _validate_git_ref(base, "base")
+    head = _validate_git_ref(head, "head")
     git = shutil.which("git")
     if git is None:
         raise AssuranceInputError("git executable is unavailable")
@@ -139,7 +158,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         args = _parse_args(argv)
         paths = _input_paths(args)
-        policy_path = args.policy if args.policy is not None else Path.cwd() / DEFAULT_POLICY_NAME
+        policy_path = args.policy if args.policy is not None else _default_policy_path()
         triggers = _load_policy(policy_path)
         report = classify_paths(paths, triggers)
     except (AssuranceInputError, ValueError) as exc:
