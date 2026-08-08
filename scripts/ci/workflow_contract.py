@@ -23,6 +23,7 @@ class WorkflowStep:
     name: str | None = None
     step_id: str | None = None
     uses: str = ""
+    run: str = ""
     if_condition: str | None = None
     with_values: dict[str, Scalar] = field(default_factory=dict)
 
@@ -33,6 +34,7 @@ class WorkflowJob:
     name: str | None = None
     runs_on: str | None = None
     timeout_minutes: int | None = None
+    if_condition: str | None = None
     permissions: dict[str, str] = field(default_factory=dict)
     steps: tuple[WorkflowStep, ...] = ()
 
@@ -134,12 +136,17 @@ def _indent_and_content(raw: str, *, line_number: int) -> tuple[int, str]:
     return len(prefix), _strip_comment(raw[len(prefix) :]).rstrip()
 
 
+def _is_literal_block(value: str) -> bool:
+    return value.strip() in {"|", "|-", "|+"}
+
+
 def read_workflow_contract(path: Path) -> WorkflowContract:
-    """Parse only the GitHub Actions fields that the reliability policy enforces.
+    """Parse only the GitHub Actions fields that repository policy enforces.
 
     This is intentionally not a general YAML parser. It preserves GitHub's literal
-    ``on`` key and raw ``${{ ... }}`` expressions while failing on ambiguous or
-    unsupported structural forms that could hide a policy-relevant override.
+    ``on`` key, job authority conditions, shell ``run`` bodies, and raw
+    ``${{ ... }}`` expressions while failing on ambiguous or unsupported structural
+    forms that could hide a policy-relevant override.
     """
 
     text = path.read_text(encoding="utf-8")
@@ -156,8 +163,40 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
     current_step: dict[str, object] | None = None
     in_step_with = False
 
+    run_block_step: dict[str, object] | None = None
+    run_block_property_indent: int | None = None
+    run_block_content_indent: int | None = None
+    run_block_lines: list[str] = []
+
+    def finish_run_block() -> None:
+        nonlocal run_block_step, run_block_property_indent, run_block_content_indent, run_block_lines
+        if run_block_step is not None:
+            run_block_step["run"] = "\n".join(run_block_lines).rstrip("\n")
+        run_block_step = None
+        run_block_property_indent = None
+        run_block_content_indent = None
+        run_block_lines = []
+
     for line_number, raw in enumerate(text.splitlines(), start=1):
         indent, content = _indent_and_content(raw, line_number=line_number)
+
+        if run_block_step is not None:
+            assert run_block_property_indent is not None
+            if not raw.strip():
+                if run_block_content_indent is not None:
+                    run_block_lines.append("")
+                continue
+            if indent > run_block_property_indent:
+                if run_block_content_indent is None:
+                    run_block_content_indent = indent
+                if indent < run_block_content_indent:
+                    raise ValueError(
+                        f"run block indentation became ambiguous at line {line_number}"
+                    )
+                run_block_lines.append(raw[run_block_content_indent:].rstrip())
+                continue
+            finish_run_block()
+
         if not content:
             continue
 
@@ -253,6 +292,7 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                     "name": None,
                     "runs_on": None,
                     "timeout_minutes": None,
+                    "if_condition": None,
                     "permissions": {},
                     "steps": [],
                 },
@@ -293,6 +333,8 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                 job["runs_on"] = None if scalar is None else str(scalar)
             elif key == "timeout-minutes":
                 job["timeout_minutes"] = scalar if isinstance(scalar, int) and not isinstance(scalar, bool) else None
+            elif key == "if":
+                job["if_condition"] = None if scalar is None else str(scalar)
             continue
 
         if job_subsection == "permissions" and indent == 6 and not content.startswith("- "):
@@ -315,7 +357,14 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                 raise ValueError(
                     f"aliased, anchored, or flow-style steps are not supported at line {line_number}"
                 )
-            current_step = {"name": None, "step_id": None, "uses": "", "if_condition": None, "with_values": {}}
+            current_step = {
+                "name": None,
+                "step_id": None,
+                "uses": "",
+                "run": "",
+                "if_condition": None,
+                "with_values": {},
+            }
             cast_steps = job["steps"]
             assert isinstance(cast_steps, list)
             cast_steps.append(current_step)
@@ -330,6 +379,12 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                     current_step["step_id"] = None if scalar is None else str(scalar)
                 elif key == "uses":
                     current_step["uses"] = "" if scalar is None else str(scalar)
+                elif key == "run":
+                    if _is_literal_block(raw_value):
+                        run_block_step = current_step
+                        run_block_property_indent = indent
+                    else:
+                        current_step["run"] = "" if scalar is None else str(scalar)
                 elif key == "if":
                     current_step["if_condition"] = None if scalar is None else str(scalar)
             continue
@@ -355,6 +410,12 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                 current_step["step_id"] = None if scalar is None else str(scalar)
             elif key == "uses":
                 current_step["uses"] = "" if scalar is None else str(scalar)
+            elif key == "run":
+                if _is_literal_block(raw_value):
+                    run_block_step = current_step
+                    run_block_property_indent = indent
+                else:
+                    current_step["run"] = "" if scalar is None else str(scalar)
             elif key == "if":
                 current_step["if_condition"] = None if scalar is None else str(scalar)
             continue
@@ -367,6 +428,8 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                 assert isinstance(cast_with, dict)
                 cast_with[key] = _parse_scalar(raw_value)
             continue
+
+    finish_run_block()
 
     triggers = {
         name: TriggerContract(
@@ -386,6 +449,7 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                 name=step["name"] if isinstance(step["name"], str) else None,
                 step_id=step["step_id"] if isinstance(step["step_id"], str) else None,
                 uses=step["uses"] if isinstance(step["uses"], str) else "",
+                run=step["run"] if isinstance(step["run"], str) else "",
                 if_condition=step["if_condition"] if isinstance(step["if_condition"], str) else None,
                 with_values=dict(step["with_values"]) if isinstance(step["with_values"], dict) else {},
             )
@@ -401,6 +465,9 @@ def read_workflow_contract(path: Path) -> WorkflowContract:
                 values["timeout_minutes"]
                 if isinstance(values["timeout_minutes"], int) and not isinstance(values["timeout_minutes"], bool)
                 else None
+            ),
+            if_condition=(
+                values["if_condition"] if isinstance(values["if_condition"], str) else None
             ),
             permissions={str(key): str(value) for key, value in raw_job_permissions.items()},
             steps=steps,

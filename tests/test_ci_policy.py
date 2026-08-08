@@ -85,6 +85,12 @@ class CiPolicyTests(unittest.TestCase):
         self.assertNotIn("reliability_gate.py --passes 15", text)
         self.assertNotIn("seq 1 15", text)
 
+    def test_fast_gate_runs_git_operations_verifier_before_build(self) -> None:
+        text = FAST_WORKFLOW.read_text(encoding="utf-8")
+        command = "python scripts/ci/verify_git_operations.py --policy git-operations-policy.json"
+        self.assertIn(command, text)
+        self.assertLess(text.index(command), text.index("Build wheel"))
+
     def test_specialist_gate_invokes_each_primary_specialist_exactly_once(self) -> None:
         text = SPECIALIST_WORKFLOW.read_text(encoding="utf-8")
         for tool in (

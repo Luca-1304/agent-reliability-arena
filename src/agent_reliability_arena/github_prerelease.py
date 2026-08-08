@@ -19,6 +19,7 @@ _CITATION_PROVENANCE_PATH = Path("citation/provenance.json")
 _SUPPLY_CHAIN_MANIFEST_PATH = Path("security/supply-chain-manifest.json")
 _SBOM_PATH = Path("security/sbom.cdx.json")
 _WORKFLOW_PATH = Path(".github/workflows/release.yml")
+_ATTESTATION_ACTION = "actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d"
 _VERSION_PATTERN = re.compile(r'^version\s*=\s*"(?P<version>[^"]+)"\s*$', re.MULTILINE)
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 _EXPECTED_CONTRACT_KEYS = {
@@ -128,7 +129,7 @@ def _verify_workflow(workflow: str, version: str) -> None:
         "workflow_dispatch:",
         "python -m build",
         "python scripts/verify_github_prerelease.py",
-        "actions/attest@v4",
+        _ATTESTATION_ACTION,
         "subject-path: |",
         "release-bundle/*.whl",
         "release-bundle/*.tar.gz",
@@ -246,7 +247,7 @@ def verify_github_prerelease_contract(root: Path) -> dict[str, Any]:
         "source_repository": "https://github.com/Luca-1304/agent-reliability-arena",
         "provenance_attestation_required": True,
         "sbom_attestation_required": True,
-        "attestation_action": "actions/attest@v4",
+        "attestation_action": _ATTESTATION_ACTION,
         "attestation_signer_workflow": _WORKFLOW_PATH.as_posix(),
         "provider_called": False,
         "comparative_claim_permitted": False,

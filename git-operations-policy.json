@@ -1,0 +1,104 @@
+{
+  "schema_version": "git-operations-policy-v1",
+  "workflow_directory": ".github/workflows",
+  "default_permissions": {
+    "contents": "read"
+  },
+  "denied_triggers": [
+    "pull_request_target",
+    "repository_dispatch",
+    "workflow_run"
+  ],
+  "untrusted_run_expression_prefixes": [
+    "github.event.pull_request.title",
+    "github.event.pull_request.body",
+    "github.event.pull_request.head.ref",
+    "github.event.pull_request.head.label",
+    "github.event.issue.title",
+    "github.event.issue.body",
+    "github.event.comment.body",
+    "github.event.review.body",
+    "github.event.review_comment.body",
+    "github.head_ref",
+    "github.ref_name"
+  ],
+  "workflows": {
+    "codeql.yml": {
+      "write_jobs": {
+        "analyze": {
+          "permissions": {
+            "contents": "read",
+            "packages": "read",
+            "security-events": "write"
+          },
+          "authority_if": null,
+          "allowed_mutations": []
+        }
+      }
+    },
+    "fifteen-pass-verification.yml": {
+      "write_jobs": {}
+    },
+    "history-boundary.yml": {
+      "write_jobs": {}
+    },
+    "pages.yml": {
+      "write_jobs": {
+        "deploy": {
+          "permissions": {
+            "contents": "read",
+            "id-token": "write",
+            "pages": "write"
+          },
+          "authority_if": "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'",
+          "allowed_mutations": []
+        }
+      }
+    },
+    "pilot-candidate.yml": {
+      "write_jobs": {}
+    },
+    "reliability-ecosystem.yml": {
+      "write_jobs": {}
+    },
+    "reliability-fast.yml": {
+      "write_jobs": {}
+    },
+    "reliability-specialists.yml": {
+      "write_jobs": {}
+    },
+    "release.yml": {
+      "write_jobs": {
+        "attest": {
+          "permissions": {
+            "artifact-metadata": "write",
+            "attestations": "write",
+            "contents": "read",
+            "id-token": "write"
+          },
+          "authority_if": "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'",
+          "allowed_mutations": []
+        },
+        "publish": {
+          "permissions": {
+            "contents": "write"
+          },
+          "authority_if": "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'",
+          "allowed_mutations": [
+            "gh-release-create"
+          ]
+        }
+      }
+    },
+    "tests.yml": {
+      "write_jobs": {}
+    }
+  },
+  "external_settings": {
+    "default_workflow_token_permissions": "externally_required_unverified",
+    "full_sha_action_enforcement": "externally_required_unverified",
+    "main_branch_ruleset": "externally_required_unverified",
+    "merged_branch_auto_delete": "externally_required_unverified",
+    "tag_ruleset": "externally_required_unverified"
+  }
+}
