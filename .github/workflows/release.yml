@@ -33,6 +33,7 @@ on:
       - "src/agent_reliability_arena/citation_package.py"
       - "src/agent_reliability_arena/supply_chain.py"
       - "tests/test_github_prerelease.py"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -100,7 +101,7 @@ jobs:
 
   attest:
     name: Attest and verify executable artifacts
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -162,7 +163,7 @@ jobs:
 
   publish:
     name: Publish immutable attested rc2 prerelease
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: [build, attest]
     runs-on: ubuntu-latest
     permissions:
