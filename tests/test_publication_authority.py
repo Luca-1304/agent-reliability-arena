@@ -12,7 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 PAGES = WORKFLOWS / "pages.yml"
 RELEASE = WORKFLOWS / "release.yml"
-DISPATCH_ONLY = "github.event_name == 'workflow_dispatch'"
+PUBLICATION_AUTHORITY = (
+    "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'"
+)
 PUBLICATION_CAPABILITIES = {
     "actions/deploy-pages@": ("pages.yml", "deploy"),
     "actions/attest@": ("release.yml", "attest"),
@@ -58,9 +60,9 @@ def _publication_inventory_violations(workflows: Path) -> list[str]:
                 violations.append(
                     f"{capability} also appears outside approved job {expected_job} in {path.name}"
                 )
-            if f"if: {DISPATCH_ONLY}" not in body:
+            if f"if: {PUBLICATION_AUTHORITY}" not in body:
                 violations.append(
-                    f"{capability} job {expected_job} is not dispatch-only in {path.name}"
+                    f"{capability} job {expected_job} lacks main-bound dispatch authority in {path.name}"
                 )
     for capability in PUBLICATION_CAPABILITIES:
         if capability not in seen:
@@ -77,10 +79,10 @@ class PublicationAuthorityTests(unittest.TestCase):
         self.assertEqual(contract.triggers["pull_request"].branches, ("main",))
         self.assertEqual(contract.triggers["push"].branches, ("main",))
 
-    def test_pages_publication_is_manual_dispatch_only(self) -> None:
+    def test_pages_publication_requires_main_bound_manual_dispatch(self) -> None:
         text = PAGES.read_text(encoding="utf-8")
         deploy = _job_body(text, "deploy")
-        self.assertIn(f"if: {DISPATCH_ONLY}", deploy)
+        self.assertIn(f"if: {PUBLICATION_AUTHORITY}", deploy)
         self.assertNotIn("github.event_name == 'push'", deploy)
         self.assertIn("needs: build", deploy)
         self.assertIn("actions/deploy-pages@v5", deploy)
@@ -94,12 +96,12 @@ class PublicationAuthorityTests(unittest.TestCase):
         self.assertEqual(contract.triggers["pull_request"].branches, ("main",))
         self.assertEqual(contract.triggers["push"].branches, ("main",))
 
-    def test_release_attestation_and_publication_are_manual_dispatch_only(self) -> None:
+    def test_release_attestation_and_publication_require_main_bound_dispatch(self) -> None:
         text = RELEASE.read_text(encoding="utf-8")
         attest = _job_body(text, "attest")
         publish = _job_body(text, "publish")
-        self.assertIn(f"if: {DISPATCH_ONLY}", attest)
-        self.assertIn(f"if: {DISPATCH_ONLY}", publish)
+        self.assertIn(f"if: {PUBLICATION_AUTHORITY}", attest)
+        self.assertIn(f"if: {PUBLICATION_AUTHORITY}", publish)
         self.assertNotIn("github.event_name == 'push'", attest)
         self.assertNotIn("github.event_name == 'push'", publish)
         self.assertIn("needs: build", attest)
@@ -125,22 +127,23 @@ class PublicationAuthorityTests(unittest.TestCase):
         self.assertEqual(release.jobs["attest"].permissions["attestations"], "write")
         self.assertEqual(release.jobs["publish"].permissions["contents"], "write")
 
-    def test_every_publication_capability_is_allow_listed_and_dispatch_only(self) -> None:
+    def test_every_publication_capability_is_allow_listed_and_main_dispatch_only(self) -> None:
         self.assertEqual(_publication_inventory_violations(WORKFLOWS), [])
 
     def test_publication_inventory_rejects_alternate_unapproved_job(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            authority = f"if: {PUBLICATION_AUTHORITY}\n"
             (root / "pages.yml").write_text(
-                "jobs:\n  deploy:\n    if: github.event_name == 'workflow_dispatch'\n"
-                "    steps:\n      - uses: actions/deploy-pages@v5\n",
+                "jobs:\n  deploy:\n    " + authority
+                + "    steps:\n      - uses: actions/deploy-pages@v5\n",
                 encoding="utf-8",
             )
             (root / "release.yml").write_text(
-                "jobs:\n  attest:\n    if: github.event_name == 'workflow_dispatch'\n"
-                "    steps:\n      - uses: actions/attest@v4\n"
-                "  publish:\n    if: github.event_name == 'workflow_dispatch'\n"
-                "    steps:\n      - run: gh release create ok\n",
+                "jobs:\n  attest:\n    " + authority
+                + "    steps:\n      - uses: actions/attest@v4\n"
+                + "  publish:\n    " + authority
+                + "    steps:\n      - run: gh release create ok\n",
                 encoding="utf-8",
             )
             (root / "bypass.yml").write_text(
@@ -150,6 +153,28 @@ class PublicationAuthorityTests(unittest.TestCase):
             violations = _publication_inventory_violations(root)
         self.assertTrue(
             any("unapproved workflow bypass.yml" in item for item in violations),
+            violations,
+        )
+
+    def test_publication_inventory_rejects_dispatch_from_non_main_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dispatch_only = "if: github.event_name == 'workflow_dispatch'\n"
+            (root / "pages.yml").write_text(
+                "jobs:\n  deploy:\n    " + dispatch_only
+                + "    steps:\n      - uses: actions/deploy-pages@v5\n",
+                encoding="utf-8",
+            )
+            (root / "release.yml").write_text(
+                "jobs:\n  attest:\n    " + dispatch_only
+                + "    steps:\n      - uses: actions/attest@v4\n"
+                + "  publish:\n    " + dispatch_only
+                + "    steps:\n      - run: gh release create ok\n",
+                encoding="utf-8",
+            )
+            violations = _publication_inventory_violations(root)
+        self.assertTrue(
+            any("lacks main-bound dispatch authority" in item for item in violations),
             violations,
         )
 
