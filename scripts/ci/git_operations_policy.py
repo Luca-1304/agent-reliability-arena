@@ -26,9 +26,17 @@ _REQUIRED_DENIED_TRIGGERS = {
     "workflow_run",
 }
 _REQUIRED_UNTRUSTED_PREFIXES = {
-    "github.event.pull_request.",
-    "github.event.issue.",
-    "github.event.comment.",
+    "github.event.pull_request.title",
+    "github.event.pull_request.body",
+    "github.event.pull_request.head.ref",
+    "github.event.pull_request.head.label",
+    "github.event.issue.title",
+    "github.event.issue.body",
+    "github.event.comment.body",
+    "github.event.review.body",
+    "github.event.review_comment.body",
+    "github.head_ref",
+    "github.ref_name",
 }
 _ALLOWED_MUTATIONS = {"gh-release-create"}
 _EXTERNAL_SETTING_STATES = {"externally_required_unverified"}
