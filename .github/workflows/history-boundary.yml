@@ -25,3 +25,24 @@ jobs:
 
       - name: Verify clean history boundary and all writable branches
         run: python scripts/verify_history_boundary.py --verify-remote-branches
+
+      - name: Classify remote branch lifecycle without mutation
+        run: python scripts/ci/report_branch_lifecycle.py --policy branch-lifecycle-policy.json --output /tmp/branch-lifecycle.json
+
+      - name: Summarize report-only branch lifecycle evidence
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/branch-lifecycle.json").read_text(encoding="utf-8"))
+          assert payload["destructive_actions_supported"] is False
+          rows = payload["branches"]
+          assert all(row["deletion_authorized"] is False for row in rows)
+          counts = Counter(row["lifecycle_class"] for row in rows)
+          print(f"Branch lifecycle report: branch_count={len(rows)} destructive_actions_supported=false")
+          print("Lifecycle classes: " + json.dumps(dict(sorted(counts.items())), sort_keys=True))
+          print("deletion_authorized=false for every branch")
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
