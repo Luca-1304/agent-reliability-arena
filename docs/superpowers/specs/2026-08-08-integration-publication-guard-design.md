@@ -2,7 +2,7 @@
 
 Date: 2026-08-08
 Repository: `Luca-1304/agent-reliability-arena`
-Status: approved design, implementation not started
+Status: approved concept, written spec awaiting review
 
 ## Purpose
 
@@ -44,7 +44,7 @@ Keep verification jobs automatic on pull requests and appropriate `main` changes
 
 For Pages, verification/staging remains automatic, while the deploy job requires a deliberate publication condition rather than every `main` push.
 
-For releases, verification/build remains automatic on release-relevant changes, while attest/publish requires an explicit release event or manual dispatch with a fixed version contract.
+For releases, verification/build remains automatic on release-relevant changes, while attest/publish requires manual dispatch of the reviewed fixed-version release workflow.
 
 This approach preserves evidence while removing accidental authority.
 
@@ -87,7 +87,7 @@ The Pages workflow keeps pull-request and `main` verification/staging behavior.
 
 The actual `Publish verified site` job must no longer run merely because the event is a push to `main`.
 
-Recommended publication mechanism:
+Publication mechanism:
 
 - `workflow_dispatch` is the publication-authority event;
 - the dispatch reruns the same build/privacy/staging verification before deploy;
@@ -102,16 +102,17 @@ The rc2 workflow keeps automatic verification/build for PRs and release-sensitiv
 
 The attestation and immutable release publication jobs must not execute from an ordinary `main` push.
 
-Recommended publication mechanism:
+Publication mechanism:
 
-- add `workflow_dispatch` with an explicit expected version input fixed to `v0.2.0rc2` while this release workflow exists;
-- attest/publish jobs require `workflow_dispatch` plus exact expected-version validation;
+- `workflow_dispatch` is the only publication-authority event for this fixed rc2 workflow;
+- no free-form version input is accepted;
+- `TAG` remains hard-coded to `v0.2.0rc2`;
+- attest/publish jobs require `github.event_name == 'workflow_dispatch'`;
 - verification/build reruns in the same dispatch before attestation;
 - existing refusal to overwrite an existing tag/release remains mandatory;
-- no version is inferred from free-form user text;
-- future versions should use a new reviewed release contract rather than silently reusing rc2 logic.
+- future versions require a new reviewed release contract rather than silently reusing rc2 logic.
 
-If GitHub's workflow input model makes the fixed-version input add no safety value, the implementation may use dispatch itself as the authority signal, but the workflow must retain an explicit hard-coded `TAG=v0.2.0rc2` consistency check.
+This keeps the authority signal simple and prevents version text supplied at dispatch time from changing what the immutable workflow is allowed to publish.
 
 ## Data and control flow
 
@@ -129,12 +130,12 @@ manual dispatch → full Pages verification/staging → deploy verified artifact
 
 ### Intentional rc2 publication
 
-manual dispatch → release verification/build → version/refusal checks → attest → immutable prerelease publish → published metadata verification
+manual dispatch → release verification/build → fixed-version/refusal checks → attest → immutable prerelease publish → published metadata verification
 
 ## Failure behavior
 
 - Verification failure blocks publication.
-- Missing or invalid publication intent blocks publication.
+- Missing publication intent blocks publication.
 - Existing release/tag collision blocks publication.
 - Pages live verification failure makes the publication workflow fail visibly.
 - No fallback path may publish when the intended gate fails.
