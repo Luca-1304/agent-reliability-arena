@@ -74,7 +74,7 @@ def _read_paths_file(path: Path) -> tuple[str, ...]:
         content = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         raise AssuranceInputError(f"paths file is unavailable or unreadable: {path}") from exc
-    return tuple(line.strip() for line in content.splitlines() if line.strip())
+    return tuple(line for line in content.splitlines() if line != "")
 
 
 def _validate_git_ref(value: str, label: str) -> str:
@@ -103,7 +103,7 @@ def _git_paths(base: str, head: str) -> tuple[str, ...]:
             first_line = detail.splitlines()[0]
             raise AssuranceInputError(f"git diff failed: {first_line}")
         raise AssuranceInputError("git diff failed")
-    return tuple(line.strip() for line in completed.stdout.splitlines() if line.strip())
+    return tuple(line for line in completed.stdout.splitlines() if line != "")
 
 
 def _input_paths(args: argparse.Namespace) -> tuple[str, ...]:
