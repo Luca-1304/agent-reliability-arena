@@ -101,7 +101,7 @@ jobs:
 
   attest:
     name: Attest and verify executable artifacts
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -163,7 +163,7 @@ jobs:
 
   publish:
     name: Publish immutable attested rc2 prerelease
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: [build, attest]
     runs-on: ubuntu-latest
     permissions:
