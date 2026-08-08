@@ -1,0 +1,18 @@
+{
+  "schema_version": "branch-lifecycle-policy-v1",
+  "default_branch": "main",
+  "remote": "origin",
+  "destructive_actions_supported": false,
+  "release_archive_prefixes": [
+    "release/"
+  ],
+  "temporary_review_prefixes": [
+    "tmp/",
+    "temp/"
+  ],
+  "explicit_retained_branches": {
+    "feature/assurance-router": "Preserve the superseded Router TDD/provenance branch from PR #97.",
+    "feature/clean-room-concurrency-specialists": "Preserve the superseded stacked development evidence from PR #91.",
+    "feature/git-operations-control-plane": "Preserve granular RED/GREEN history from the squash-merged Git operations control plane PR #100."
+  }
+}
