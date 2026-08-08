@@ -5,6 +5,7 @@ import importlib
 import io
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -38,6 +39,21 @@ class AssuranceRouterCliTests(unittest.TestCase):
         self.assertEqual(payload["changed_paths"], ["src/a.py"])
         self.assertIs(payload["authoritative"], False)
         self.assertEqual(stderr, "")
+
+    def test_installed_command_runs_against_repository_policy(self) -> None:
+        command = shutil.which("arena-assurance-route")
+        self.assertIsNotNone(command, "arena-assurance-route entry point is missing")
+        result = subprocess.run(
+            [command, "--path", "README.md", "--json"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["schema_version"], "assurance-router-v1")
+        self.assertIs(payload["authoritative"], False)
 
     def test_default_policy_is_loaded_from_current_repository(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
