@@ -1,0 +1,96 @@
+{
+  "schema_version": "branch-lifecycle-provenance-v1",
+  "branches": {
+    "ci/future-proof-repeated-verification": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #82 merged; provenance resolves squash/rebase ancestry ambiguity without authorizing deletion."
+    },
+    "ci/reliability-gate-v2": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #83 merged; provenance resolves squash/rebase ancestry ambiguity without authorizing deletion."
+    },
+    "design/layered-reliability-assurance": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #84 design was merged before staged implementation."
+    },
+    "docs/branch-protection-contract": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #96 merged the branch-protection operating contract."
+    },
+    "feature/clean-room-concurrency-specialists-main": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #92 merged the rebuilt main-based specialist work."
+    },
+    "feature/determinism-reproducibility-specialists": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #89 merged the determinism and reproducibility specialist foundation."
+    },
+    "feature/layered-reliability-workflows": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #95 merged the layered reliability workflow rollout."
+    },
+    "feature/policy-driven-deep-gate": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #88 merged the policy-driven Deep gate."
+    },
+    "feature/privacy-safe-diagnostic-scanner": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #93 merged privacy-safe diagnostic evidence scanning."
+    },
+    "feature/reliability-evidence-contract": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #87 merged the shared reliability evidence contract."
+    },
+    "feature/reliability-policy-foundation": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #86 merged the central reliability policy foundation."
+    },
+    "feature/structural-ci-policy": {
+      "pr_state": "merged",
+      "superseded_by": null,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #94 merged structural CI-policy enforcement."
+    },
+    "plan/layered-reliability-assurance": {
+      "pr_state": "closed_unmerged",
+      "superseded_by": 95,
+      "retain_as_evidence": false,
+      "retention_reason": null,
+      "note": "PR #85 was explicitly closed as completed/superseded after staged implementation culminated in PR #95."
+    }
+  }
+}
