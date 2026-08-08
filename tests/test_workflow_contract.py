@@ -49,6 +49,49 @@ class WorkflowContractTests(unittest.TestCase):
             "fifteen-pass-${{ github.event.pull_request.number || github.ref }}",
         )
 
+    def test_parser_preserves_scalar_run_command(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workflow.yml"
+            path.write_text(
+                "on:\n"
+                "  pull_request:\n"
+                "permissions:\n"
+                "  contents: read\n"
+                "jobs:\n"
+                "  verify:\n"
+                "    runs-on: ubuntu-24.04\n"
+                "    steps:\n"
+                "      - name: scalar command\n"
+                "        run: echo safe\n",
+                encoding="utf-8",
+            )
+            contract = read_workflow_contract(path)
+            self.assertEqual(contract.jobs["verify"].steps[0].run, "echo safe")
+
+    def test_parser_preserves_multiline_run_body_and_expression(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workflow.yml"
+            path.write_text(
+                "on:\n"
+                "  pull_request:\n"
+                "permissions:\n"
+                "  contents: read\n"
+                "jobs:\n"
+                "  verify:\n"
+                "    runs-on: ubuntu-24.04\n"
+                "    steps:\n"
+                "      - name: block command\n"
+                "        run: |\n"
+                "          echo first\n"
+                "          echo \"${{ github.event.pull_request.title }}\"\n",
+                encoding="utf-8",
+            )
+            contract = read_workflow_contract(path)
+            self.assertEqual(
+                contract.jobs["verify"].steps[0].run,
+                'echo first\necho "${{ github.event.pull_request.title }}"',
+            )
+
     def test_parser_rejects_tabs_in_structural_indentation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "workflow.yml"
