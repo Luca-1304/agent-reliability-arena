@@ -138,7 +138,9 @@ class HistoryBoundaryTests(unittest.TestCase):
         text = WORKFLOW.read_text(encoding="utf-8")
         command = (
             "python scripts/ci/report_branch_lifecycle.py "
-            "--policy branch-lifecycle-policy.json --output /tmp/branch-lifecycle.json"
+            "--policy branch-lifecycle-policy.json "
+            "--provenance branch-lifecycle-provenance.json "
+            "--output /tmp/branch-lifecycle.json"
         )
         self.assertIn(command, text)
         self.assertIn("deletion_authorized", text)

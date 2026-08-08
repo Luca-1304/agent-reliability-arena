@@ -27,7 +27,7 @@ jobs:
         run: python scripts/verify_history_boundary.py --verify-remote-branches
 
       - name: Classify remote branch lifecycle without mutation
-        run: python scripts/ci/report_branch_lifecycle.py --policy branch-lifecycle-policy.json --output /tmp/branch-lifecycle.json
+        run: python scripts/ci/report_branch_lifecycle.py --policy branch-lifecycle-policy.json --provenance branch-lifecycle-provenance.json --output /tmp/branch-lifecycle.json
 
       - name: Summarize report-only branch lifecycle evidence
         run: |
