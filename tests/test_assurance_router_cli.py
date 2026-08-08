@@ -76,6 +76,26 @@ class AssuranceRouterCliTests(unittest.TestCase):
         )
         self.assertTrue(payload["attention_required"])
 
+    def test_default_policy_is_found_from_nested_repository_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            nested = repo / "docs" / "notes"
+            nested.mkdir(parents=True)
+            (repo / "reliability-policy.json").write_text(
+                '{"trigger_surfaces":["docs/**"]}\n',
+                encoding="utf-8",
+            )
+            previous = Path.cwd()
+            try:
+                os.chdir(nested)
+                code, stdout, stderr = _invoke(["--path", "docs/guide.md", "--json"])
+            finally:
+                os.chdir(previous)
+        self.assertEqual(code, 0, stderr)
+        payload = json.loads(stdout)
+        self.assertEqual(payload["outside_reliability_trigger_surface"], [])
+        self.assertEqual(payload["touched_surfaces"], ["documentation"])
+
     def test_paths_file_mode_reads_one_path_per_non_empty_line(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path_file = Path(directory) / "paths.txt"
@@ -101,6 +121,15 @@ class AssuranceRouterCliTests(unittest.TestCase):
         self.assertEqual(stdout, "")
         self.assertIn("base", stderr.casefold())
         self.assertIn("head", stderr.casefold())
+
+    def test_option_shaped_git_ref_is_rejected_before_git_invocation(self) -> None:
+        code, stdout, stderr = _invoke(
+            ["--base=--no-index", "--head", "HEAD", "--json"]
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout, "")
+        self.assertIn("ref", stderr.casefold())
+        self.assertIn("hyphen", stderr.casefold())
 
     def test_unreadable_paths_file_is_rejected(self) -> None:
         code, stdout, stderr = _invoke(
