@@ -134,6 +134,18 @@ class HistoryBoundaryTests(unittest.TestCase):
         ):
             self.assertIn(marker, text)
 
+    def test_workflow_emits_fresh_report_only_branch_lifecycle_summary(self) -> None:
+        text = WORKFLOW.read_text(encoding="utf-8")
+        command = (
+            "python scripts/ci/report_branch_lifecycle.py "
+            "--policy branch-lifecycle-policy.json --output /tmp/branch-lifecycle.json"
+        )
+        self.assertIn(command, text)
+        self.assertIn("deletion_authorized", text)
+        self.assertIn("destructive_actions_supported", text)
+        self.assertNotIn("git push", text)
+        self.assertNotIn("git update-ref", text)
+
     def test_recovery_guide_requires_a_fresh_clone(self) -> None:
         text = GUIDE.read_text(encoding="utf-8")
         for marker in (
