@@ -125,6 +125,7 @@ def _assert_publication_safe(text: str) -> None:
 def _verify_workflow(workflow: str, version: str) -> None:
     required = (
         f"name: Publish attested v{version} prerelease",
+        "workflow_dispatch:",
         "python -m build",
         "python scripts/verify_github_prerelease.py",
         "actions/attest@v4",
@@ -143,6 +144,8 @@ def _verify_workflow(workflow: str, version: str) -> None:
         "id-token: write",
         "attestations: write",
         "artifact-metadata: write",
+        "Refuse conflicting tag or release",
+        "git ls-remote --exit-code --tags",
     )
     for marker in required:
         if marker not in workflow:
@@ -163,6 +166,9 @@ def _verify_workflow(workflow: str, version: str) -> None:
     if "  attest:" not in workflow or "  publish:" not in workflow:
         raise GithubPrereleaseError("Release workflow must contain separate attest and publish jobs.")
     attest_job = workflow.split("  attest:", 1)[1].split("  publish:", 1)[0]
+    publish_job = workflow.split("  publish:", 1)[1]
+    publication_condition = "if: github.event_name == 'workflow_dispatch'"
+
     for required_permission in (
         "contents: read",
         "id-token: write",
@@ -175,8 +181,29 @@ def _verify_workflow(workflow: str, version: str) -> None:
             )
     if "contents: write" in attest_job:
         raise GithubPrereleaseError("Attestation job must not receive contents write permission.")
-    if "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" not in attest_job:
-        raise GithubPrereleaseError("Attestation job is not restricted to a main-branch push.")
+    if publication_condition not in attest_job:
+        raise GithubPrereleaseError(
+            "Attestation job is not restricted to explicit workflow dispatch."
+        )
+    if "github.event_name == 'push'" in attest_job:
+        raise GithubPrereleaseError("Attestation job must not be authorized by a normal push.")
+
+    if publication_condition not in publish_job:
+        raise GithubPrereleaseError(
+            "Publication job is not restricted to explicit workflow dispatch."
+        )
+    if "github.event_name == 'push'" in publish_job:
+        raise GithubPrereleaseError("Publication job must not be authorized by a normal push.")
+    if "contents: write" not in publish_job:
+        raise GithubPrereleaseError("Publication job is missing scoped contents write permission.")
+    if f"TAG: v{version}" not in publish_job:
+        raise GithubPrereleaseError(
+            "Publication job tag does not match the verified prerelease version."
+        )
+    if "inputs." in publish_job:
+        raise GithubPrereleaseError(
+            "Publication job must not derive the fixed prerelease tag from workflow inputs."
+        )
 
 
 def verify_github_prerelease_contract(root: Path) -> dict[str, Any]:
