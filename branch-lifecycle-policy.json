@@ -12,6 +12,8 @@
   ],
   "explicit_retained_branches": {
     "feature/assurance-router": "Preserve the superseded Router TDD/provenance branch from PR #97.",
+    "feature/branch-lifecycle-reporting": "Preserve granular RED/GREEN history from the squash-merged branch lifecycle PR #101.",
+    "feature/branch-provenance-enrichment": "Preserve granular RED/GREEN history from the branch provenance enrichment control-plane work.",
     "feature/clean-room-concurrency-specialists": "Preserve the superseded stacked development evidence from PR #91.",
     "feature/git-operations-control-plane": "Preserve granular RED/GREEN history from the squash-merged Git operations control plane PR #100."
   }
