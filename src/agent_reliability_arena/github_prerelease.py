@@ -167,7 +167,9 @@ def _verify_workflow(workflow: str, version: str) -> None:
         raise GithubPrereleaseError("Release workflow must contain separate attest and publish jobs.")
     attest_job = workflow.split("  attest:", 1)[1].split("  publish:", 1)[0]
     publish_job = workflow.split("  publish:", 1)[1]
-    publication_condition = "if: github.event_name == 'workflow_dispatch'"
+    publication_condition = (
+        "if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'"
+    )
 
     for required_permission in (
         "contents: read",
@@ -183,14 +185,14 @@ def _verify_workflow(workflow: str, version: str) -> None:
         raise GithubPrereleaseError("Attestation job must not receive contents write permission.")
     if publication_condition not in attest_job:
         raise GithubPrereleaseError(
-            "Attestation job is not restricted to explicit workflow dispatch."
+            "Attestation job is not restricted to explicit main-branch workflow dispatch."
         )
     if "github.event_name == 'push'" in attest_job:
         raise GithubPrereleaseError("Attestation job must not be authorized by a normal push.")
 
     if publication_condition not in publish_job:
         raise GithubPrereleaseError(
-            "Publication job is not restricted to explicit workflow dispatch."
+            "Publication job is not restricted to explicit main-branch workflow dispatch."
         )
     if "github.event_name == 'push'" in publish_job:
         raise GithubPrereleaseError("Publication job must not be authorized by a normal push.")
