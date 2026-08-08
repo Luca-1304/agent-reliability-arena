@@ -34,7 +34,7 @@ def _write_single_workflow_policy(
         "untrusted_run_expression_prefixes": [
             "github.event.pull_request.",
             "github.event.issue.",
-            "github.event.comment.",
+            "github.event.comment."
         ],
         "workflows": {
             workflow_name: {
@@ -253,6 +253,29 @@ class GitOperationsMutationTests(unittest.TestCase):
             )
             policy_path = _write_single_workflow_policy(root, workflow_name="test.yml")
             self.assertIn("untrusted-expression-in-run", _codes(root, policy_path))
+
+    def test_structured_pull_request_sha_is_not_treated_as_untrusted_text(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_workflow(
+                root,
+                "test.yml",
+                """
+                name: test
+                on:
+                  pull_request:
+                permissions:
+                  contents: read
+                jobs:
+                  verify:
+                    runs-on: ubuntu-latest
+                    steps:
+                      - name: record source identity
+                        run: printf '%s\\n' '${{ github.event.pull_request.head.sha || github.sha }}'
+                """,
+            )
+            policy_path = _write_single_workflow_policy(root, workflow_name="test.yml")
+            self.assertNotIn("untrusted-expression-in-run", _codes(root, policy_path))
 
 
 if __name__ == "__main__":
