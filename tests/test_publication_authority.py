@@ -146,13 +146,13 @@ class PublicationAuthorityTests(unittest.TestCase):
                 + "    steps:\n      - run: gh release create ok\n",
                 encoding="utf-8",
             )
-            (root / "bypass.yml").write_text(
+            (root / "bypass.yaml").write_text(
                 "jobs:\n  publish-anyway:\n    steps:\n      - run: gh release create bypass\n",
                 encoding="utf-8",
             )
             violations = _publication_inventory_violations(root)
         self.assertTrue(
-            any("unapproved workflow bypass.yml" in item for item in violations),
+            any("unapproved workflow bypass.yaml" in item for item in violations),
             violations,
         )
 
