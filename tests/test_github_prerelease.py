@@ -124,7 +124,7 @@ class GithubPrereleaseTests(unittest.TestCase):
             "python scripts/verify_github_prerelease.py",
             "release-record.json",
             "SHA256SUMS",
-            "actions/attest@v4",
+            "actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d",
             "subject-path: |",
             "release-bundle/*.whl",
             "release-bundle/*.tar.gz",
