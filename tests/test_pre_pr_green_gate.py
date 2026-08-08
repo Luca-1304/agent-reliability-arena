@@ -48,10 +48,7 @@ class PrePRGreenGateTests(unittest.TestCase):
         code, report = run_gate(specs, cwd=ROOT)
         self.assertEqual(code, 1)
         self.assertEqual(report["pre_pr_failures"], 2)
-        self.assertEqual(
-            [check["identifier"] for check in report["checks"]],
-            ["source-tests", "later", "other-failure"],
-        )
+        self.assertEqual([c["identifier"] for c in report["checks"]], ["source-tests", "later", "other-failure"])
         self.assertEqual(report["checks"][1]["status"], "pass")
 
     def test_multi_command_check_runs_all_children_and_reports_one_logical_failure(self) -> None:
@@ -91,10 +88,7 @@ class PrePRGreenGateTests(unittest.TestCase):
 
     def test_missing_executable_and_timeout_fail_closed(self) -> None:
         with self.assertRaises(GateInternalError):
-            run_check(
-                CheckSpec("missing", (("definitely-not-a-real-executable",),), 10),
-                cwd=ROOT,
-            )
+            run_check(CheckSpec("missing", (("definitely-not-a-real-executable",),), 10), cwd=ROOT)
         code, report = run_gate(
             (
                 CheckSpec("first", ((sys.executable, "-c", "pass"),), 10),
@@ -104,18 +98,11 @@ class PrePRGreenGateTests(unittest.TestCase):
             cwd=ROOT,
         )
         self.assertEqual(code, 2)
-        self.assertEqual(
-            [item["identifier"] for item in report["checks"]],
-            ["first", "missing"],
-        )
+        self.assertEqual([item["identifier"] for item in report["checks"]], ["first", "missing"])
         self.assertEqual(report["checks"][1]["returncode"], 2)
         with self.assertRaises(GateInternalError):
             run_check(
-                CheckSpec(
-                    "timeout",
-                    ((sys.executable, "-c", "import time; time.sleep(1)"),),
-                    0.01,
-                ),
+                CheckSpec("timeout", ((sys.executable, "-c", "import time; time.sleep(1)"),), 0.01),
                 cwd=ROOT,
             )
 
@@ -124,7 +111,7 @@ class PrePRGreenGateTests(unittest.TestCase):
         payload = "x" * 9000 + marker
         spec = CheckSpec(
             "noisy",
-            ((sys.executable, "-c", f"print({payload!r}); raise SystemExit(1)"),),
+            ((sys.executable, "-c", f"import sys; print({payload!r}); raise SystemExit(1)"),),
             10,
         )
         result = run_check(spec, cwd=ROOT)
@@ -169,9 +156,7 @@ class PrePRGreenGateTests(unittest.TestCase):
                 write_report_atomic(root, report)
 
     def test_implementation_does_not_gain_destructive_or_shell_authority(self) -> None:
-        source = (ROOT / "scripts" / "ci" / "pre_pr_green_gate.py").read_text(
-            encoding="utf-8"
-        )
+        source = (ROOT / "scripts" / "ci" / "pre_pr_green_gate.py").read_text(encoding="utf-8")
         banned = (
             "shell=true",
             "git push",
