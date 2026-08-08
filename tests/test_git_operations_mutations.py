@@ -32,9 +32,17 @@ def _write_single_workflow_policy(
         "default_permissions": {"contents": "read"},
         "denied_triggers": ["pull_request_target", "repository_dispatch", "workflow_run"],
         "untrusted_run_expression_prefixes": [
-            "github.event.pull_request.",
-            "github.event.issue.",
-            "github.event.comment."
+            "github.event.pull_request.title",
+            "github.event.pull_request.body",
+            "github.event.pull_request.head.ref",
+            "github.event.pull_request.head.label",
+            "github.event.issue.title",
+            "github.event.issue.body",
+            "github.event.comment.body",
+            "github.event.review.body",
+            "github.event.review_comment.body",
+            "github.head_ref",
+            "github.ref_name",
         ],
         "workflows": {
             workflow_name: {
