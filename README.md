@@ -252,8 +252,24 @@ The Arena vendors Agent Completion Verifier v0.6.0 at commit `f65fb3450e3c1d7db1
 | `arena-preflight-pilot` | Validate an exact pilot policy and print permission/budget evidence. | Never |
 | `arena-export-live-evidence` | Derive an allow-listed public bundle from an indexed private evidence set. | Never |
 | `arena-verify-live-export` | Verify a public live-evidence bundle and reconstruct its aggregates. | Never |
+| `arena-assurance-route` | Classify changed paths into advisory assurance surfaces and evidence needs. | Never |
 
 A public installed live-provider or repeated-experiment command is deliberately absent. `scripts/run_private_pilot.py` is a local-only, explicitly approved path documented in the [Private pilot runbook](docs/PRIVATE_PILOT_RUNBOOK.md). The repeated runner is currently a reviewed Python interface and provider-free release fixture, not an unattended command.
+
+## Assurance Router
+
+`arena-assurance-route` is a deterministic, advisory change classifier. It reads repository-relative changed paths and the current repository's `reliability-policy.json`, then reports touched assurance surfaces, stable evidence IDs, unknown paths, paths outside the existing reliability trigger surface, and the `attention_required` flag.
+
+```bash
+arena-assurance-route --base main --head HEAD --json
+arena-assurance-route --path src/agent_reliability_arena/runner.py --path .github/workflows/pages.yml
+```
+
+Use `--paths-file FILE` for one changed path per line, or `--policy FILE` to inspect against an explicit policy file. The default policy is `reliability-policy.json` in the current working repository.
+
+The Router is deliberately non-authoritative: existing repository policy and CI remain authoritative for merge evidence. `attention_required` means the change needs additional evidence or review; it is not a probability of failure and it is not a numerical risk score. Unknown or outside-trigger paths stay visible rather than being treated as low consequence.
+
+The command makes no network request, reads no provider credentials, calls no model or provider, and does not deploy or mutate GitHub, Vercel, production, branch protection, or provider state. Its output cannot replace or auto-satisfy Fast, Deep, Specialist, CodeQL, Pages/privacy, history, or any other required check.
 
 ## Layered reliability assurance
 
