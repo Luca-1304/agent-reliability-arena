@@ -287,8 +287,8 @@ def _verify_automation(root: Path) -> None:
     for marker in (
         "security-events: write",
         "contents: read",
-        "github/codeql-action/init@v4",
-        "github/codeql-action/analyze@v4",
+        "github/codeql-action/init@a703997fb046009056d67585e9f1bd74fca57eb4",
+        "github/codeql-action/analyze@a703997fb046009056d67585e9f1bd74fca57eb4",
         "languages: [python]",
     ):
         if marker not in codeql:
