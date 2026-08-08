@@ -26,7 +26,7 @@ Intentional TDD RED evidence must be produced outside an open PR whenever practi
 
 Add one thin orchestration layer under `scripts/ci/`. It reuses existing repository verifiers and tests through argv-based subprocess execution. It does not reimplement their policies.
 
-Proposed entry point:
+Canonical entry point:
 
 `python scripts/ci/pre_pr_green_gate.py --report /tmp/pre-pr-green.json`
 
@@ -36,37 +36,52 @@ No shell evaluation is permitted. Every command is represented as an argv list a
 
 ## Required checks
 
-The first version runs only checks that are deterministic, local, and cheap enough to be useful before PR creation:
+Version 1 runs only checks that are deterministic, local, and appropriate before PR creation. It mirrors the trusted single-interpreter portions of `.github/workflows/tests.yml` without copying policy logic.
 
 1. **Source compilation**
    - `python -m compileall -q src tests scripts`
 
 2. **Full source test suite on the current interpreter**
    - `python -m unittest discover -s tests -p test_*.py -v`
-   - This deliberately reuses the repository's existing unit contracts, including CI-policy, Git-operations, release, privacy, history, lifecycle, and workflow-contract tests.
+   - This reuses the repository's existing unit contracts, including CI-policy, Git-operations, release, privacy, history, lifecycle, and workflow-contract tests.
 
 3. **Repository Git-operations authority verifier**
-   - run the existing `scripts/ci/verify_git_operations.py` directly as an explicit policy boundary, even though related tests also cover it;
-   - this keeps a clear named failure in the preflight report if workflow authority drifts.
+   - `python scripts/ci/verify_git_operations.py`
+   - Run directly as an explicit named policy boundary even though related unit tests also cover it.
 
-4. **Release/package verifier**
-   - run the repository's existing release verification command directly;
-   - do not duplicate release rules inside the new gate.
+4. **Canonical release/package verifiers**
+   - `python scripts/verify_release.py`
+   - `python scripts/verify_disclosure_release.py`
+   - `python scripts/verify_repeated_release.py`
+   - `python scripts/verify_showcase_release.py`
+   - `python scripts/verify_launch_package.py`
+   - `python scripts/verify_citation_package.py`
+   - `python scripts/verify_supply_chain.py`
+   - These are invoked as existing authorities; their rules are not duplicated in the gate.
 
-5. **Wheel build and clean installed verification**
-   - build the wheel using the same provider-free/local path used by trusted CI primitives;
-   - install/test it outside the source workspace so editable-import success cannot hide packaging defects.
+5. **Installed-command smoke verification**
+   - run the same provider-free fixture commands exercised by `tests.yml`: `arena-run`, `arena-replay`, `arena-export-web`, `arena-verify-showcase`, `arena-verify-launch-package`, `arena-verify-citation-package`, and `arena-verify-supply-chain`;
+   - use isolated temporary output paths and reject collisions rather than reusing prior evidence.
 
-6. **Local history-boundary validation**
-   - verify the checked-out branch still descends from the clean history boundary using existing history logic;
-   - do not fetch or mutate remotes;
+6. **Wheel build and clean installed verification**
+   - build with `python -m pip wheel . --no-deps --no-build-isolation --wheel-dir <temp-dist>`;
+   - create a temporary virtual environment;
+   - install the produced wheel with `--no-deps`;
+   - run the source tests, canonical release/package verifiers, installed-command smoke checks, deterministic reference-output assertions, and `pip check` from the clean environment;
+   - use only locally available source/wheel material. The gate must not resolve application dependencies from the network.
+
+7. **Local history-boundary validation**
+   - `python scripts/verify_history_boundary.py` without remote-branch fetching;
+   - verify the checked-out branch still descends from the clean history boundary;
    - remote freshness and full remote-branch coverage remain responsibilities of the GitHub history job.
 
 The gate must not run Deep repetition, Specialist evidence suites, CodeQL, Pages deployment, release publication, provider calls, or any network-dependent action. Those remain GitHub-side final acceptance checks.
 
 ## Execution model
 
-The gate should run all independent cheap checks and aggregate their outcomes instead of stopping at the first failure. This avoids repeated edit-run cycles caused by discovering one failure at a time.
+The gate runs all independent pre-PR checks and aggregates their outcomes instead of stopping at the first ordinary check failure. This avoids repeated edit-run cycles caused by discovering one failure at a time.
+
+Environment/setup failures that make later results meaningless may stop execution with exit `2`, but already-completed check evidence must still be written to the report.
 
 Each check records:
 
@@ -99,10 +114,10 @@ Top-level fields:
 Exit codes:
 
 - `0`: all required pre-PR checks passed;
-- `1`: one or more checks failed;
-- `2`: invalid invocation, unsupported environment, malformed configuration, or internal gate error.
+- `1`: one or more required checks completed and failed;
+- `2`: invalid invocation, unsupported environment, malformed configuration, missing required executable, or internal gate error.
 
-A report with missing checks, duplicate check identifiers, unsupported schema fields, or an internal exception must fail closed.
+A report with missing required checks, duplicate check identifiers, unsupported schema fields, or an internal exception must fail closed.
 
 ## Safety boundaries
 
@@ -133,11 +148,13 @@ Required tests include:
 7. duplicate/missing check definitions are rejected;
 8. source scan proves no destructive Git/GitHub/provider command is present;
 9. the gate cannot claim merge safety or GitHub CI success;
-10. current repository integration passes before a PR is opened.
+10. current repository integration passes before a PR is opened;
+11. wheel verification imports and executes outside the source workspace;
+12. temporary output collisions are rejected or isolated rather than silently overwritten.
 
 ## PR workflow and zero-failure rule
 
-After local/off-PR implementation verification is green:
+After off-PR implementation verification is green:
 
 1. open one PR from the implementation branch;
 2. freeze the exact head while the matrix runs;
