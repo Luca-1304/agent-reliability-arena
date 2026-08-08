@@ -3,6 +3,10 @@ from __future__ import annotations
 import importlib
 import json
 import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _router():
@@ -175,6 +179,26 @@ class AssuranceRouterTests(unittest.TestCase):
         by_path = {row["path"]: row for row in payload["path_results"]}
         self.assertGreaterEqual(len(by_path[".github/workflows/pages.yml"]["rule_ids"]), 2)
         self.assertEqual(by_path["README.md"]["surfaces"], ["documentation"])
+
+
+class AssuranceRouterDocumentationTests(unittest.TestCase):
+    def test_readme_documents_advisory_boundary(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        marker = "## Assurance Router"
+        self.assertIn(marker, readme)
+        section = readme.split(marker, 1)[1].split("\n## ", 1)[0].casefold()
+        for required in (
+            "arena-assurance-route",
+            "advisory",
+            "authoritative",
+            "unknown",
+            "attention_required",
+            "no network",
+            "does not deploy",
+        ):
+            self.assertIn(required, section)
+        self.assertNotIn("safe to merge", section)
+        self.assertNotIn("merge authority", section)
 
 
 if __name__ == "__main__":
