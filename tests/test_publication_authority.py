@@ -97,7 +97,10 @@ class PublicationAuthorityTests(unittest.TestCase):
         self.assertIn(f"if: {PUBLICATION_AUTHORITY}", deploy)
         self.assertNotIn("github.event_name == 'push'", deploy)
         self.assertIn("needs: build", deploy)
-        self.assertIn("actions/deploy-pages@v5", deploy)
+        self.assertIn(
+            "actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128",
+            deploy,
+        )
         self.assertIn("Verify live portfolio, CV, audit and Arena boundaries", deploy)
 
     def test_release_keeps_pr_push_and_manual_verification_triggers(self) -> None:
