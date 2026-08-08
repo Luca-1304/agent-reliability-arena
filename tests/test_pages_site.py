@@ -99,19 +99,20 @@ class PagesSiteTests(unittest.TestCase):
             for marker in forbidden:
                 self.assertNotIn(marker, combined)
 
-    def test_pages_workflow_verifies_stages_and_deploys_only_from_main(self) -> None:
+    def test_pages_workflow_verifies_stages_and_deploys_only_on_dispatch(self) -> None:
         workflow = (ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")
         for marker in (
             "name: Deploy portfolio and verified Arena to GitHub Pages",
             "pull_request:",
             "push:",
+            "workflow_dispatch:",
             "branches: [main]",
             "contents: read",
             "pages: write",
             "id-token: write",
             "environment:",
             "name: github-pages",
-            "if: github.event_name == 'push' && github.ref == 'refs/heads/main'",
+            "if: github.event_name == 'workflow_dispatch'",
             "actions/checkout@v7",
             "actions/setup-python@v7",
             "python scripts/verify_showcase_release.py",
@@ -128,6 +129,8 @@ class PagesSiteTests(unittest.TestCase):
             "Agent Reliability Arena — Evidence-first agent evaluation",
         ):
             self.assertIn(marker, workflow)
+        deploy = workflow.split("  deploy:\n", 1)[1]
+        self.assertNotIn("github.event_name == 'push'", deploy)
 
 
 if __name__ == "__main__":
