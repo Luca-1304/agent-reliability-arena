@@ -146,6 +146,18 @@ class HistoryBoundaryTests(unittest.TestCase):
         self.assertNotIn("git push", text)
         self.assertNotIn("git update-ref", text)
 
+    def test_workflow_retains_exact_report_as_short_lived_read_only_evidence(self) -> None:
+        text = WORKFLOW.read_text(encoding="utf-8")
+        for marker in (
+            "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+            "name: branch-lifecycle-report-${{ github.run_attempt }}",
+            "path: /tmp/branch-lifecycle.json",
+            "if-no-files-found: error",
+            "retention-days: 14",
+        ):
+            self.assertIn(marker, text)
+        self.assertNotIn("actions: write", text)
+
     def test_recovery_guide_requires_a_fresh_clone(self) -> None:
         text = GUIDE.read_text(encoding="utf-8")
         for marker in (
