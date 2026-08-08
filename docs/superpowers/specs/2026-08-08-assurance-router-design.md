@@ -1,7 +1,7 @@
 # Assurance Router design
 
 Date: 8 August 2026
-Status: approved design, implementation not started
+Status: design approved in chat; written-spec review pending
 Base: `main` at `207d6b806eea8b24fde87bd45241f18a1da52efc`
 
 ## Purpose
@@ -30,22 +30,38 @@ The first version must not:
 
 ## Inputs
 
-The core engine accepts an ordered set of repository-relative changed paths. A thin CLI adapter may obtain those paths from one of these explicit sources:
+The core engine accepts an ordered set of repository-relative changed paths plus the existing reliability trigger-surface patterns supplied by its caller.
+
+A thin CLI adapter may obtain changed paths from one of these explicit sources:
 
 - `--path PATH` repeated one or more times;
 - `--paths-file FILE`, one repository-relative path per line;
 - `--base REF --head REF`, resolved locally with `git diff --name-only`.
 
-The core classifier must not shell out. Git invocation belongs only in the adapter so the classification logic is deterministic and directly testable.
+The CLI accepts `--policy FILE`, defaulting to `reliability-policy.json`, and reads `trigger_surfaces` from that policy. The classifier therefore consumes the repository policy rather than duplicating it.
+
+The core classifier must not shell out or perform network access. Git invocation belongs only in the adapter so the classification logic is deterministic and directly testable.
 
 Input rules:
 
 - normalize separators to `/`;
 - reject absolute paths;
 - reject traversal such as `../`;
-- deduplicate while preserving deterministic sorted output;
-- an empty change set is valid and reports no touched surfaces plus an explicit observation;
-- any syntactically valid path that matches no known rule is classified as `unknown`, never silently ignored.
+- reject empty path strings after normalization;
+- deduplicate and emit paths in stable lexical order;
+- an empty aggregate change set is valid and reports no touched surfaces plus an explicit observation;
+- any syntactically valid path that matches no known assurance rule is classified as `unknown`, never silently ignored.
+
+## Path-pattern semantics
+
+Version 1 deliberately supports only two rule forms:
+
+- exact repository-relative path, for example `pyproject.toml`;
+- prefix pattern ending in `/**`, for example `src/**`.
+
+For a prefix pattern `X/**`, a path matches when it starts with `X/`. No user-supplied regex, shell glob, or platform-dependent matcher is executed.
+
+The same deterministic matcher is used when evaluating the repository policy's current `trigger_surfaces`. If a future policy introduces a trigger pattern outside these supported forms, the Router must report a policy-input error rather than guess at semantics. Supporting new pattern forms requires a separate reviewed change.
 
 ## Assurance surfaces
 
@@ -112,9 +128,9 @@ A path may map to more than one surface.
 The Router must complement, not fork, `reliability-policy.json`.
 
 - Existing `trigger_surfaces` remain authoritative for deciding whether layered reliability workflows should be triggered.
-- The Router may add a more human-meaningful assurance classification over those paths.
-- If a changed path lies outside `trigger_surfaces`, the Router must report that fact explicitly as `outside_reliability_trigger_surface` rather than pretending the change is covered.
-- The Router must never advise removing an existing Fast, Specialist, Deep, CodeQL, Pages/privacy, history, or other independent required check.
+- The Router adds a human-meaningful assurance classification over changed paths.
+- If a changed path lies outside `trigger_surfaces`, the Router reports it explicitly in `outside_reliability_trigger_surface` rather than pretending the change is covered.
+- The Router never advises removing an existing Fast, Specialist, Deep, CodeQL, Pages/privacy, history, or other independent required check.
 - Scheduled ecosystem evidence remains advisory unless repository policy separately changes.
 
 ## Rule representation
@@ -124,15 +140,49 @@ Rules live in one versioned, reviewable data structure in the package, not scatt
 Each rule has:
 
 - stable rule ID;
-- path pattern;
+- exact or prefix path pattern;
 - one or more assurance surfaces;
 - concise rationale;
-- required/recommended evidence labels;
+- one or more stable evidence IDs;
 - optional observation flags.
 
-Rules use deterministic repository-relative glob matching. No regex supplied by the user is executed.
-
 The initial rule set is code-owned rather than externally configurable. This avoids creating a policy-injection surface before the semantics are stable. A future config format requires a separate design review.
+
+## Evidence vocabulary
+
+Version 1 uses stable evidence IDs so JSON output does not depend on changing prose:
+
+- `normal-tests`;
+- `fast-role`;
+- `specialist-role`;
+- `deep-role`;
+- `structural-ci-policy`;
+- `codeql`;
+- `pages-privacy-package`;
+- `live-publication-verification`;
+- `history-boundary`;
+- `clean-install-build`;
+- `supply-chain-verification`;
+- `release-evidence-verification`;
+- `manual-review`.
+
+These are recommendations, not proof that the corresponding evidence passed. A report contains only requested evidence IDs; it does not ingest or assert check results in version 1.
+
+## Initial surface-to-evidence intent
+
+The initial rules should follow these defaults, with path-specific rules allowed to add evidence:
+
+- `runtime`: `normal-tests`, `fast-role`, `specialist-role`, `deep-role`;
+- `tests`: `normal-tests`, `fast-role`, `specialist-role`, `deep-role`, `manual-review`;
+- `ci-policy`: `normal-tests`, `fast-role`, `specialist-role`, `deep-role`, `structural-ci-policy`, `manual-review`;
+- `security-privacy`: `normal-tests`, `specialist-role`, `deep-role`, `codeql`, `history-boundary`, `manual-review`;
+- `deployment-publication`: `normal-tests`, `pages-privacy-package`, `live-publication-verification`, `manual-review`;
+- `dependency-supply-chain`: `normal-tests`, `clean-install-build`, `supply-chain-verification`, `codeql`, `manual-review`;
+- `release-evidence`: `normal-tests`, `release-evidence-verification`, `manual-review`;
+- `documentation`: `normal-tests` plus any evidence added by a more specific overlapping rule;
+- `unknown`: `manual-review`.
+
+The Router does not subtract evidence when multiple rules match; it returns the union.
 
 ## Output contract
 
@@ -141,7 +191,7 @@ The engine returns a machine-readable report with schema version `assurance-rout
 - normalized changed paths;
 - touched assurance surfaces;
 - per-path matched rule IDs and surfaces;
-- evidence recommendations, deduplicated and sorted;
+- requested evidence IDs, deduplicated and sorted;
 - unknown paths;
 - paths outside the existing reliability trigger surface;
 - observations;
@@ -167,8 +217,10 @@ Output ordering must be stable across runs and supported Python versions.
 
 User/input errors return exit code `2` and a concise stderr message, including:
 
-- invalid absolute/traversal path;
+- invalid absolute/traversal/empty path;
 - unreadable paths file;
+- missing or invalid reliability policy;
+- unsupported trigger-surface pattern in the policy;
 - malformed local Git invocation request;
 - Git not available when `--base/--head` mode is requested;
 - Git diff failure.
@@ -181,10 +233,10 @@ Unexpected internal failures return a non-zero code and must not emit a misleadi
 
 Proposed implementation units:
 
-- `src/agent_reliability_arena/assurance_router.py` — pure normalization, rule matching, report model and serialization;
-- `src/agent_reliability_arena/cli_assurance.py` — argument parsing, optional local Git adapter, stdout/stderr contract;
+- `src/agent_reliability_arena/assurance_router.py` — pure normalization, deterministic path matching, rule matching, report model and serialization;
+- `src/agent_reliability_arena/cli_assurance.py` — argument parsing, policy loading, optional local Git adapter, stdout/stderr contract;
 - `tests/test_assurance_router.py` — pure engine contract tests;
-- `tests/test_assurance_router_cli.py` — CLI and local Git-adapter tests;
+- `tests/test_assurance_router_cli.py` — CLI, policy-input and local Git-adapter tests;
 - `pyproject.toml` — console entry point `arena-assurance-route` only after engine/CLI tests pass;
 - documentation update only after behavior is verified.
 
@@ -196,22 +248,26 @@ The first failing tests must establish behavior before implementation.
 
 Minimum cases:
 
-1. `src/...` maps to `runtime` and recommends normal reliability evidence.
+1. `src/...` maps to `runtime` and recommends normal layered reliability evidence.
 2. `tests/...` maps to `tests` and does not describe a test-only change as safe.
 3. `.github/workflows/...` maps to `ci-policy` and requires attention.
 4. public CV/privacy verifier changes map to `security-privacy` and require attention.
 5. Pages/Vercel publication files map to `deployment-publication` without performing a deployment.
 6. dependency metadata maps to `dependency-supply-chain` and requires attention.
 7. docs can map to `documentation` and, when relevant, additional operational surfaces.
-8. one path may map to multiple surfaces.
+8. one path may map to multiple surfaces and unions evidence rather than subtracting it.
 9. unknown valid paths are preserved in `unknown_paths` and force `attention_required=true`.
 10. paths outside existing reliability trigger surfaces are explicitly reported.
-11. absolute and traversal paths fail closed.
+11. absolute, traversal and empty paths fail closed.
 12. duplicate and differently ordered inputs produce byte-stable canonical JSON.
-13. empty input produces a valid deterministic report rather than an exception.
-14. CLI `--json` output round-trips as valid JSON.
-15. Git adapter errors do not produce a successful report.
-16. no test or production path requires network access or credentials.
+13. empty aggregate input produces a valid deterministic report rather than an exception.
+14. exact and prefix matching behave identically across supported Python versions.
+15. unsupported trigger-pattern syntax fails rather than being guessed.
+16. CLI `--json` output round-trips as valid JSON.
+17. Git adapter errors do not produce a successful report.
+18. missing/invalid reliability policy fails closed.
+19. requested evidence IDs are stable, deduplicated and sorted.
+20. no test or production path requires network access or credentials.
 
 ## Adversarial / adaptation review
 
