@@ -46,3 +46,11 @@ jobs:
           print("deletion_authorized=false for every branch")
           print(json.dumps(payload, indent=2, sort_keys=True))
           PY
+
+      - name: Retain report-only branch lifecycle evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: branch-lifecycle-report-${{ github.run_attempt }}
+          path: /tmp/branch-lifecycle.json
+          if-no-files-found: error
+          retention-days: 14
