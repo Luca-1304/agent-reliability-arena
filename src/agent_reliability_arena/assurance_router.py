@@ -229,9 +229,9 @@ _RULES: tuple[AssuranceRule, ...] = (
 
 
 def normalize_path(path: str) -> str:
-    if not isinstance(path, str) or not path.strip():
+    if not isinstance(path, str) or path == "":
         raise ValueError("changed path must be a non-empty string")
-    value = path.strip().replace("\\", "/")
+    value = path.replace("\\", "/")
     if value.startswith("/") or value.startswith("//"):
         raise ValueError(f"absolute path is not permitted: {path}")
     if len(value) >= 3 and value[1] == ":" and value[2] == "/":
