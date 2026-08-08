@@ -1,371 +1,99 @@
 # Integration Publication Guard Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+**Goal:** Keep repository verification automatic while making every reviewed public-write path require explicit manual intent from the approved `main` ref.
 
-**Goal:** Preserve automatic verification while ensuring ordinary pull requests and ordinary `main` pushes cannot deploy GitHub Pages or attest/publish the immutable `v0.2.0rc2` release.
-
-**Architecture:** Keep the existing verification/build jobs and their evidence intact. Change only the publication authority conditions: Pages deploy and release attest/publish become `workflow_dispatch`-only, while PR and `main` push verification remains automatic. Structural tests own the event/permission/dependency contract so later workflow edits cannot silently restore implicit publication.
-
-**Tech Stack:** GitHub Actions YAML, Python 3.10–3.13 standard-library `unittest`, existing `scripts.ci.workflow_contract` parser and repository CI/reliability policy.
-
-## Global Constraints
-
-- Verification may remain automatic; publication requires explicit publication intent.
-- No `[skip ci]`, hidden branch convention, credential bypass, workflow weakening, Vercel mutation, provider mutation, privacy-history mutation, or branch-protection mutation.
-- Pages publication authority is `workflow_dispatch` only.
-- rc2 publication authority is `workflow_dispatch` only; the release tag remains hard-coded as `v0.2.0rc2` with no free-form version input.
-- PR and ordinary `main` push verification must remain active.
-- Existing source/staged/live CV privacy verification must remain present; live verification belongs only to the intentional Pages publication path.
-- Existing release/tag collision refusal remains mandatory.
-- No real Pages deploy or release publication is required during implementation or acceptance.
-
----
-
-### Task 1: Add repository publication-authority contract tests
-
-**Files:**
-- Create: `tests/test_publication_authority.py`
-- Read: `.github/workflows/pages.yml`
-- Read: `.github/workflows/release.yml`
-- Reuse: `scripts/ci/workflow_contract.py`
-
-**Interfaces:**
-- Consumes: `read_workflow_contract(path: Path) -> WorkflowContract`.
-- Produces: structural test contract for trigger presence, publication job conditions, permissions, dependencies, and publication-capable steps.
-
-- [ ] **Step 1: Write failing tests against current workflows**
-
-Create `tests/test_publication_authority.py` with tests that assert:
-
-```python
-from __future__ import annotations
-
-import unittest
-from pathlib import Path
-
-from scripts.ci.workflow_contract import read_workflow_contract
-
-ROOT = Path(__file__).resolve().parents[1]
-PAGES = ROOT / ".github" / "workflows" / "pages.yml"
-RELEASE = ROOT / ".github" / "workflows" / "release.yml"
-DISPATCH_ONLY = "github.event_name == 'workflow_dispatch'"
-
-
-class PublicationAuthorityTests(unittest.TestCase):
-    def test_pages_keeps_pr_push_and_manual_verification_triggers(self) -> None:
-        contract = read_workflow_contract(PAGES)
-        self.assertIn("pull_request", contract.triggers)
-        self.assertIn("push", contract.triggers)
-        self.assertIn("workflow_dispatch", contract.triggers)
-        self.assertEqual(contract.triggers["pull_request"].branches, ("main",))
-        self.assertEqual(contract.triggers["push"].branches, ("main",))
-
-    def test_pages_publication_is_manual_dispatch_only(self) -> None:
-        text = PAGES.read_text(encoding="utf-8")
-        deploy = text.split("  deploy:\n", 1)[1]
-        self.assertIn(f"if: {DISPATCH_ONLY}", deploy)
-        self.assertNotIn("github.event_name == 'push'", deploy)
-        self.assertIn("needs: build", deploy)
-        self.assertIn("actions/deploy-pages@v5", deploy)
-        self.assertIn("Verify live portfolio, CV, audit and Arena boundaries", deploy)
-
-    def test_release_keeps_pr_push_and_manual_verification_triggers(self) -> None:
-        contract = read_workflow_contract(RELEASE)
-        self.assertIn("pull_request", contract.triggers)
-        self.assertIn("push", contract.triggers)
-        self.assertIn("workflow_dispatch", contract.triggers)
-        self.assertEqual(contract.triggers["pull_request"].branches, ("main",))
-        self.assertEqual(contract.triggers["push"].branches, ("main",))
-
-    def test_release_attestation_and_publication_are_manual_dispatch_only(self) -> None:
-        text = RELEASE.read_text(encoding="utf-8")
-        attest = text.split("  attest:\n", 1)[1].split("  publish:\n", 1)[0]
-        publish = text.split("  publish:\n", 1)[1]
-        self.assertIn(f"if: {DISPATCH_ONLY}", attest)
-        self.assertIn(f"if: {DISPATCH_ONLY}", publish)
-        self.assertNotIn("github.event_name == 'push'", attest)
-        self.assertNotIn("github.event_name == 'push'", publish)
-        self.assertIn("needs: build", attest)
-        self.assertIn("needs: [build, attest]", publish)
-
-    def test_release_publication_contract_remains_fixed_rc2_and_collision_safe(self) -> None:
-        text = RELEASE.read_text(encoding="utf-8")
-        publish = text.split("  publish:\n", 1)[1]
-        self.assertIn("TAG: v0.2.0rc2", publish)
-        self.assertNotIn("inputs.", publish)
-        self.assertIn("Refuse conflicting tag or release", publish)
-        self.assertIn('gh release view "$TAG"', publish)
-        self.assertIn('git ls-remote --exit-code --tags', publish)
-        self.assertIn("gh release create", publish)
-
-    def test_publication_permissions_remain_job_scoped(self) -> None:
-        pages = read_workflow_contract(PAGES)
-        release = read_workflow_contract(RELEASE)
-        self.assertEqual(pages.permissions, {"contents": "read"})
-        self.assertEqual(release.permissions, {"contents": "read"})
-        self.assertEqual(pages.jobs["deploy"].permissions["pages"], "write")
-        self.assertEqual(pages.jobs["deploy"].permissions["id-token"], "write")
-        self.assertEqual(release.jobs["attest"].permissions["attestations"], "write")
-        self.assertEqual(release.jobs["publish"].permissions["contents"], "write")
-
-
-if __name__ == "__main__":
-    unittest.main()
-```
-
-- [ ] **Step 2: Run only the new test module and prove RED**
-
-Run through GitHub Actions by committing the test-only change to the feature branch. Expected result: publication-authority tests fail because current Pages and release publication jobs still authorize on `push` to `main`, and release lacks `workflow_dispatch`.
-
-- [ ] **Step 3: Confirm failures are isolated**
-
-Read a Python job log. Expected: existing tests remain green and only the new publication-authority assertions fail for the intended conditions.
-
-- [ ] **Step 4: Commit the RED contract**
-
-Commit message:
+**Final authority condition:**
 
 ```text
-test: define explicit publication authority
+github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
 ```
 
----
+**Tech stack:** GitHub Actions YAML, Python 3.10–3.13, standard-library `unittest`, existing workflow parser/release verifier/reliability policy.
 
-### Task 2: Make Pages publication explicit without weakening verification
+## Constraints
 
-**Files:**
-- Modify: `.github/workflows/pages.yml`
-- Modify: `tests/test_pages_site.py`
-- Test: `tests/test_publication_authority.py`
+- No real Pages deploy, release attestation publication, tag creation, or GitHub release during implementation/PR acceptance.
+- No `[skip ci]`, force push, hidden branch bypass, workflow weakening, Vercel/provider mutation, privacy-history mutation, or branch-protection mutation.
+- Verification remains active on PRs and appropriate `main` pushes.
+- Dispatch from a feature branch/tag/non-main ref is not publication authority.
+- Both `.yml` and `.yaml` workflow files are in publication-capability scope.
+- `v0.2.0rc2` remains fixed; no free-form version input.
 
-**Interfaces:**
-- Consumes: existing `build` job and uploaded `_site` artifact.
-- Produces: `deploy` job that can execute only when `github.event_name == 'workflow_dispatch'`, still requiring `build`, and still running live verification after deployment.
+## Task 1 — Prove the original implicit-publication problem
 
-- [ ] **Step 1: Update the existing Pages-specific test contract**
+- [x] Add `tests/test_publication_authority.py`.
+- [x] Prove RED against the original workflows.
+- [x] Confirm exactly three new authority failures while surrounding tests remain green.
 
-Replace the old marker requiring push-only deployment:
+Observed RED: Pages push publication, release push attest/publish, and missing release manual trigger were isolated by the new contract.
 
-```python
-"if: github.event_name == 'push' && github.ref == 'refs/heads/main'",
-```
+## Task 2 — Separate verification from Pages publication
 
-with:
+- [x] Keep `pull_request`, `push` to `main`, and `workflow_dispatch` as verification/staging triggers.
+- [x] Change `Publish verified site` away from ordinary-push authority.
+- [x] Preserve `needs: build`, Pages job permissions, environment, deployment action, staged privacy checks and live post-deployment verification.
+- [x] Update `tests/test_pages_site.py`.
 
-```python
-"workflow_dispatch:",
-"if: github.event_name == 'workflow_dispatch'",
-```
+## Task 3 — Separate verification from rc2 attestation/publication
 
-and keep all existing staging, privacy, permission, deployment and live-verification markers.
+- [x] Add `workflow_dispatch` to release workflow while retaining automatic PR/main verification/build triggers.
+- [x] Remove normal-push authority from `attest` and `publish`.
+- [x] Preserve fixed `TAG: v0.2.0rc2`, collision refusal, attestations, SBOM, provenance verification and scoped permissions.
+- [x] Update `tests/test_github_prerelease.py`.
 
-- [ ] **Step 2: Run tests before the workflow edit and verify RED remains**
+## Task 4 — Align the release-domain verifier
 
-Expected: `test_pages_workflow_verifies_stages_and_deploys_only_from_main` and the publication-authority Pages test fail because the workflow still uses the push condition.
+Initial YAML changes exposed a deeper contract mismatch: `github_prerelease.py` still required `main`-push attestation.
 
-- [ ] **Step 3: Make the minimal workflow change**
+- [x] Trace the verifier failure to `_verify_workflow`.
+- [x] Make the verifier enforce explicit publication authority for both `attest` and `publish`.
+- [x] Reject normal-push publication authority.
+- [x] Enforce scoped write permissions.
+- [x] Enforce fixed version/tag and collision refusal.
+- [x] Reject workflow-input-derived rc2 tag authority.
 
-Keep:
+## Task 5 — Harden manual publication to the approved source ref
 
-```yaml
-on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
-  workflow_dispatch:
-```
+Adversarial review found that `workflow_dispatch` can target a selected ref, so dispatch-only publication was insufficient.
 
-Change only the deploy authority condition from:
+- [x] Add RED tests requiring dispatch **and** `refs/heads/main`.
+- [x] Confirm exactly three failures: Pages, release, and capability inventory.
+- [x] Update Pages deploy authority to main-bound dispatch.
+- [x] Update release attest/publish authority to main-bound dispatch.
+- [x] Update `github_prerelease.py` to enforce the same condition.
+- [x] Update legacy Pages/release tests.
 
-```yaml
-if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-```
+## Task 6 — Inventory publication capabilities across every workflow location
 
-to:
-
-```yaml
-if: github.event_name == 'workflow_dispatch'
-```
-
-Do not change `needs: build`, job permissions, environment, deploy action, or live verification.
-
-- [ ] **Step 4: Run focused tests and verify GREEN**
-
-Run:
+Controlled capabilities:
 
 ```text
-python -m unittest tests.test_publication_authority tests.test_pages_site tests.test_public_cv_privacy_contract
+actions/deploy-pages@  -> pages.yml / deploy
+actions/attest@        -> release.yml / attest
+gh release create      -> release.yml / publish
 ```
 
-Expected: Pages authority/staging/privacy tests pass; release authority remains RED until Task 3.
+- [x] Reject capability use in any unapproved workflow/job.
+- [x] Require the main-bound manual authority condition in every allow-listed publication job.
+- [x] Add a synthetic alternate-publication-job rejection test.
+- [x] Add a synthetic dispatch-from-non-main rejection test.
+- [x] Prove RED when the inventory scanned only `*.yml` and a bypass used `*.yaml`.
+- [x] Expand discovery to both `*.yml` and `*.yaml`.
 
-- [ ] **Step 5: Commit Pages guard**
+## Task 7 — Remove implementation scaffolding
 
-Commit message:
+- [x] Remove temporary RED markers/notes from the operative branch.
+- [x] Preserve RED/GREEN evidence in Git history rather than shipping scaffolding.
+- [x] Avoid force rewriting/deleting remote branch history merely for cosmetic cleanup.
 
-```text
-fix: require explicit Pages publication intent
-```
+## Task 8 — Freeze documents and final diff
 
----
-
-### Task 3: Make rc2 attestation/publication explicit without weakening verification
-
-**Files:**
-- Modify: `.github/workflows/release.yml`
-- Modify: `tests/test_github_prerelease.py`
-- Test: `tests/test_publication_authority.py`
-
-**Interfaces:**
-- Consumes: existing release `build` job and verified `v0.2.0rc2-prerelease-assets` artifact.
-- Produces: `attest` and `publish` jobs that can execute only on `workflow_dispatch`; fixed `TAG=v0.2.0rc2`; existing collision refusal and attestation verification remain unchanged.
-
-- [ ] **Step 1: Update the existing prerelease workflow contract test**
-
-Rename the behavioral expectation to reflect explicit publication, and require these markers:
-
-```python
-"workflow_dispatch:",
-"if: github.event_name == 'workflow_dispatch'",
-"needs: build",
-"needs: [build, attest]",
-"TAG: v0.2.0rc2",
-```
-
-Explicitly assert `github.event_name == 'push'` is absent from both `attest` and `publish` job bodies.
-
-- [ ] **Step 2: Run focused tests before the workflow edit and verify RED**
-
-Expected: release publication-authority tests fail because `workflow_dispatch` is absent and attest/publish are push-authorized.
-
-- [ ] **Step 3: Make the minimal release workflow change**
-
-Add a top-level trigger:
-
-```yaml
-  workflow_dispatch:
-```
-
-Keep the existing `pull_request` and `push` path filters for automatic verification/build.
-
-Change both publication-authority job conditions from:
-
-```yaml
-if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-```
-
-to:
-
-```yaml
-if: github.event_name == 'workflow_dispatch'
-```
-
-Do not add workflow inputs. Keep `TAG: v0.2.0rc2`, collision refusal, attestation permissions, `gh attestation verify`, and `gh release create` unchanged.
-
-- [ ] **Step 4: Run focused contract tests and verify GREEN**
-
-Run:
-
-```text
-python -m unittest tests.test_publication_authority tests.test_github_prerelease tests.test_workflow_contract tests.test_workflow_checkout_credentials
-```
-
-Expected: all focused tests pass.
-
-- [ ] **Step 5: Commit release guard**
-
-Commit message:
-
-```text
-fix: require explicit prerelease publication intent
-```
-
----
-
-### Task 4: Add repository-wide publication-capability enumeration
-
-**Files:**
-- Modify: `tests/test_publication_authority.py`
-- Read: `.github/workflows/*.yml`
-
-**Interfaces:**
-- Consumes: every workflow YAML file under `.github/workflows`.
-- Produces: a fail-closed inventory test that catches newly introduced publication-capable workflow steps outside the two reviewed publication jobs.
-
-- [ ] **Step 1: Add a test that scans all workflow text**
-
-Add a controlled marker inventory:
-
-```python
-PUBLICATION_MARKERS = {
-    "actions/deploy-pages@": ("pages.yml", "deploy"),
-    "actions/attest@": ("release.yml", "attest"),
-    "gh release create": ("release.yml", "publish"),
-}
-```
-
-For every `.yml` file, if a marker appears, assert the file is the expected workflow and the marker occurs inside the expected job body. Also assert those expected jobs contain `if: github.event_name == 'workflow_dispatch'`.
-
-- [ ] **Step 2: Verify the inventory catches a synthetic bypass**
-
-In the test, mutate a temporary workflow copy by appending a fake job containing `gh release create` without the dispatch condition and assert the helper rejects it. Keep mutation entirely inside a temporary directory.
-
-- [ ] **Step 3: Run the new inventory test**
-
-Expected: current guarded workflow set passes; synthetic bypass fails closed inside the unit test.
-
-- [ ] **Step 4: Commit capability inventory**
-
-Commit message:
-
-```text
-test: inventory public publication capabilities
-```
-
----
-
-### Task 5: Exact-head acceptance and integration hold verification
-
-**Files:**
-- No product-file changes unless a failing check exposes a genuine defect.
-- PR metadata only after exact-head evidence is complete.
-
-**Interfaces:**
-- Consumes: final feature head.
-- Produces: review-ready PR with no actual publication performed.
-
-- [ ] **Step 1: Open a draft PR from the feature branch to `main`**
-
-PR description must state that no Pages deploy, tag, attestation publication or GitHub release was intentionally executed.
-
-- [ ] **Step 2: Verify normal Python matrix on exact PR head**
-
-Required Python versions: 3.10, 3.11, 3.12, 3.13. Require source tests, release verifier, installed commands, wheel build and clean-wheel verification to pass.
-
-- [ ] **Step 3: Verify Fast, Specialist and Deep role evidence**
-
-Require:
-
-```text
-Fast — Role evidence summary
-Specialist — Role evidence summary
-Deep — Role evidence summary
-```
-
-Deep must complete its policy-governed repeated gates on Python 3.10 and 3.13 including diagnostic redaction/scanning.
-
-- [ ] **Step 4: Verify independent checks**
-
-Require CodeQL, repository history boundary, Pages verification/staging/privacy packaging, and release verification/build to pass. On a PR, Pages publish, release attest and release publish jobs must be skipped.
-
-- [ ] **Step 5: Compare final diff to `main`**
-
-Expected intended files only:
+Expected durable files:
 
 ```text
 .github/workflows/pages.yml
 .github/workflows/release.yml
+src/agent_reliability_arena/github_prerelease.py
 tests/test_pages_site.py
 tests/test_github_prerelease.py
 tests/test_publication_authority.py
@@ -373,6 +101,60 @@ docs/superpowers/specs/2026-08-08-integration-publication-guard-design.md
 docs/superpowers/plans/2026-08-08-integration-publication-guard.md
 ```
 
-- [ ] **Step 6: Mark PR ready only after all exact-head evidence is green**
+- [x] Update design/spec to main-bound publication authority.
+- [x] Document `.yml` + `.yaml` inventory coverage.
+- [x] Document source-verifier alignment.
+- [ ] Re-run compare after final docs commit and confirm no other file remains in the diff.
 
-Do not merge automatically until the merge-side event behavior has been checked against the final workflow source. The expected result is that the guard PR itself can merge with verification-only effects; intentional future publication remains a separate `workflow_dispatch` action.
+## Task 9 — Exact-head PR acceptance
+
+On the final frozen PR head require:
+
+- [ ] Python 3.10 source tests, release verifier, installed commands, wheel, clean-wheel, dependency check.
+- [ ] Python 3.11 same.
+- [ ] Python 3.12 same.
+- [ ] Python 3.13 same.
+- [ ] Fast Python 3.10–3.13 and `Fast — Role evidence summary`.
+- [ ] All Specialist gates and `Specialist — Role evidence summary`.
+- [ ] Deep Python 3.10 and 3.13 full repeated gates, diagnostic redaction/scanning and `Deep — Role evidence summary`.
+- [ ] CodeQL.
+- [ ] Repository writable-history boundary.
+- [ ] Pages verification/staging/privacy packaging succeeds; `Publish verified site` is skipped on PR.
+- [ ] Release verify/build succeeds; `attest` and `publish` are skipped on PR.
+
+Do not mark PR ready before all checks above are green on the exact final documentation head.
+
+## Task 10 — Merge-side proof
+
+After exact-head acceptance:
+
+- [ ] Re-read final workflow source and capability inventory.
+- [ ] Mark PR #98 ready for review.
+- [ ] Merge with `expected_head_sha`; do not force or bypass checks.
+- [ ] Inspect workflows on the exact merge commit.
+- [ ] Prove the ordinary `main` push still runs verification but skips Pages deployment.
+- [ ] Prove the ordinary `main` push still runs release verification/build but skips attest and immutable release publication.
+- [ ] Confirm no public Pages/release write occurred during guard integration.
+
+## Task 11 — Unblock Assurance Router
+
+- [ ] Move PR #97 onto guarded `main` without force rewriting history.
+- [ ] Re-run #97 exact-head full acceptance.
+- [ ] Confirm Router merge push is verification-only under the new guard.
+- [ ] Merge #97 only when evidence is green.
+
+## Follow-on: repository-wide Git operations control plane
+
+Do **not** broaden PR #98 indefinitely. After the guard and Router are integrated, create a separate design/PR covering Git operation quality across all repository locations, including:
+
+- both workflow extensions;
+- checkout credential persistence;
+- top-level and job-level permissions;
+- all remote-write commands/actions;
+- branch/ref semantics;
+- complete-history checks and writable branches;
+- local/nested Git adapters;
+- path/ref fidelity;
+- publication authority;
+- trigger-surface coverage;
+- anti-gaming tests for alternate workflow/job/file locations.
