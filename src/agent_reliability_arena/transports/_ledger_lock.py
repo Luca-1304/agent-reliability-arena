@@ -6,6 +6,7 @@ import os
 import stat
 import threading
 import time
+import weakref
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
@@ -18,7 +19,7 @@ else:
 
 _DEFAULT_RETRY_SECONDS = 0.01
 _THREAD_LOCKS_GUARD = threading.Lock()
-_THREAD_LOCKS: dict[str, threading.Lock] = {}
+_THREAD_LOCKS = weakref.WeakValueDictionary()
 _BUSY_ERRNOS = {
     errno.EACCES,
     errno.EAGAIN,
