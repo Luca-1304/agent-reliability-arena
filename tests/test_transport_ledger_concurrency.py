@@ -18,11 +18,7 @@ from agent_reliability_arena.transports import (
     TransportError,
     verify_transport_ledger,
 )
-
-try:
-    from agent_reliability_arena.transports._ledger_lock import _exclusive_ledger_lock
-except ModuleNotFoundError:
-    _exclusive_ledger_lock = None
+from agent_reliability_arena.transports._ledger_lock import _exclusive_ledger_lock
 
 
 FIXED_TIME = datetime(2026, 8, 9, 21, 0, tzinfo=timezone.utc)
@@ -81,20 +77,38 @@ class ErrorTransport:
         )
 
 
+class BarrierTransport:
+    provider = "fixture-provider"
+
+    def __init__(self, barrier: threading.Barrier) -> None:
+        self.barrier = barrier
+
+    def complete(self, request: ModelCallRequest) -> ModelCallResult:
+        self.barrier.wait(timeout=10)
+        return make_result(request)
+
+
+def _wait_for_path(path: Path, timeout_seconds: float) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    while not path.exists():
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"Timed out waiting for process marker: {path}")
+        time.sleep(0.01)
+
+
 def _process_writer(
     ledger_text: str,
     call_id: str,
     should_error: bool,
-    ready_queue,
-    start_event,
+    ready_dir_text: str,
+    start_marker_text: str,
 ) -> None:
     ledger = Path(ledger_text)
     request = make_request(call_id)
     transport = ErrorTransport() if should_error else StaticTransport()
     recorder = RecordingTransport(transport, ledger, clock=lambda: FIXED_TIME)
-    ready_queue.put(call_id)
-    if not start_event.wait(20):
-        raise RuntimeError("process writer start barrier timed out")
+    Path(ready_dir_text, call_id).write_text("ready", encoding="utf-8")
+    _wait_for_path(Path(start_marker_text), 20.0)
     try:
         recorder.complete(request)
     except TransportError:
@@ -102,17 +116,41 @@ def _process_writer(
             raise
 
 
-def _hold_lock_process(ledger_text: str, ready_queue, release_event) -> None:
+def _hold_lock_process(
+    ledger_text: str,
+    ready_marker_text: str,
+    release_marker_text: str,
+) -> None:
     from agent_reliability_arena.transports._ledger_lock import _exclusive_ledger_lock as hold_lock
 
     with hold_lock(Path(ledger_text), timeout_seconds=5.0):
-        ready_queue.put("locked")
-        if not release_event.wait(20):
-            raise RuntimeError("lock holder release timed out")
+        Path(ready_marker_text).write_text("locked", encoding="utf-8")
+        _wait_for_path(Path(release_marker_text), 20.0)
 
 
 def _load_rows(ledger: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
+
+
+def _wait_for_ready_processes(
+    ready_dir: Path,
+    expected_names: set[str],
+    processes: list[multiprocessing.Process],
+    timeout_seconds: float,
+) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        observed = {path.name for path in ready_dir.iterdir()}
+        if observed == expected_names:
+            return
+        exited = [process.exitcode for process in processes if process.exitcode is not None]
+        if exited:
+            raise AssertionError(f"Writer exited before start marker: {exited}")
+        if time.monotonic() >= deadline:
+            raise AssertionError(
+                f"Timed out waiting for writer readiness: expected={sorted(expected_names)} observed={sorted(observed)}"
+            )
+        time.sleep(0.01)
 
 
 class ConcurrentTransportLedgerTests(unittest.TestCase):
@@ -156,25 +194,67 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
             )
             self.assertEqual(verify_transport_ledger(ledger)["records"], count)
 
-    def test_spawned_processes_write_unique_sequences_and_mixed_outcomes(self) -> None:
+    def test_provider_calls_remain_parallel_while_commits_serialize(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             ledger = Path(directory) / "calls.jsonl"
             count = 6
+            provider_barrier = threading.Barrier(count)
+            recorders = [
+                (
+                    RecordingTransport(
+                        BarrierTransport(provider_barrier),
+                        ledger,
+                        clock=lambda: FIXED_TIME,
+                    ),
+                    make_request(f"provider-{index}"),
+                )
+                for index in range(count)
+            ]
+            failures: list[BaseException] = []
+
+            def worker(recorder: RecordingTransport, request: ModelCallRequest) -> None:
+                try:
+                    recorder.complete(request)
+                except BaseException as exc:
+                    failures.append(exc)
+
+            threads = [threading.Thread(target=worker, args=item, daemon=True) for item in recorders]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=20)
+
+            self.assertFalse(any(thread.is_alive() for thread in threads))
+            self.assertEqual(failures, [])
+            self.assertEqual(verify_transport_ledger(ledger)["records"], count)
+
+    def test_spawned_processes_write_unique_sequences_and_mixed_outcomes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger = root / "calls.jsonl"
+            ready_dir = root / "ready"
+            ready_dir.mkdir()
+            start_marker = root / "start"
+            count = 6
+            expected_names = {f"process-{index}" for index in range(count)}
             context = multiprocessing.get_context("spawn")
-            ready_queue = context.Queue()
-            start_event = context.Event()
             processes = [
                 context.Process(
                     target=_process_writer,
-                    args=(str(ledger), f"process-{index}", index % 3 == 0, ready_queue, start_event),
+                    args=(
+                        str(ledger),
+                        f"process-{index}",
+                        index % 3 == 0,
+                        str(ready_dir),
+                        str(start_marker),
+                    ),
                 )
                 for index in range(count)
             ]
             for process in processes:
                 process.start()
-            ready = {ready_queue.get(timeout=30) for _ in range(count)}
-            self.assertEqual(ready, {f"process-{index}" for index in range(count)})
-            start_event.set()
+            _wait_for_ready_processes(ready_dir, expected_names, processes, 30.0)
+            start_marker.write_text("go", encoding="utf-8")
             for process in processes:
                 process.join(timeout=30)
                 if process.is_alive():
@@ -186,7 +266,7 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
             self.assertEqual([row["sequence"] for row in rows], list(range(1, count + 1)))
             self.assertEqual(
                 {row["request"]["call_id"] for row in rows},
-                {f"process-{index}" for index in range(count)},
+                expected_names,
             )
             summary = verify_transport_ledger(ledger)
             self.assertEqual(summary["records"], count)
@@ -218,8 +298,6 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
             self.assertEqual(ledger.read_bytes(), before)
 
     def test_public_verifier_waits_for_cooperating_writer_lock(self) -> None:
-        if _exclusive_ledger_lock is None:
-            self.skipTest("ledger lock not implemented in RED phase")
         with tempfile.TemporaryDirectory() as directory:
             ledger = Path(directory) / "calls.jsonl"
             request = make_request("verified")
@@ -248,27 +326,26 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
             self.assertEqual(outcome[0]["records"], 1)
 
     def test_cross_process_lock_timeout_leaves_ledger_unchanged(self) -> None:
-        if _exclusive_ledger_lock is None:
-            self.skipTest("ledger lock not implemented in RED phase")
         with tempfile.TemporaryDirectory() as directory:
-            ledger = Path(directory) / "calls.jsonl"
+            root = Path(directory)
+            ledger = root / "calls.jsonl"
             request = make_request("timeout")
             RecordingTransport(StaticTransport(), ledger, clock=lambda: FIXED_TIME).complete(request)
             before = ledger.read_bytes()
+            ready_marker = root / "holder-ready"
+            release_marker = root / "holder-release"
             context = multiprocessing.get_context("spawn")
-            ready_queue = context.Queue()
-            release_event = context.Event()
             holder = context.Process(
                 target=_hold_lock_process,
-                args=(str(ledger), ready_queue, release_event),
+                args=(str(ledger), str(ready_marker), str(release_marker)),
             )
             holder.start()
-            self.assertEqual(ready_queue.get(timeout=20), "locked")
+            _wait_for_path(ready_marker, 20.0)
             try:
                 with self.assertRaises(TimeoutError):
                     verify_transport_ledger(ledger, lock_timeout_seconds=0.1)
             finally:
-                release_event.set()
+                release_marker.write_text("release", encoding="utf-8")
                 holder.join(timeout=20)
                 if holder.is_alive():
                     holder.terminate()
@@ -277,10 +354,11 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
             self.assertEqual(ledger.read_bytes(), before)
 
     def test_rejects_invalid_lock_timeout_values(self) -> None:
-        if _exclusive_ledger_lock is None:
-            self.skipTest("ledger lock not implemented in RED phase")
         with tempfile.TemporaryDirectory() as directory:
             ledger = Path(directory) / "calls.jsonl"
+            RecordingTransport(StaticTransport(), ledger, clock=lambda: FIXED_TIME).complete(
+                make_request("timeout-validation")
+            )
             invalid = (0, -1, math.inf, -math.inf, math.nan, True, "1")
             for value in invalid:
                 with self.subTest(value=value):
@@ -291,15 +369,15 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
                             clock=lambda: FIXED_TIME,
                             lock_timeout_seconds=value,
                         )
+                    with self.assertRaises(ValueError):
+                        verify_transport_ledger(ledger, lock_timeout_seconds=value)
 
     def test_rejects_symlink_lock_file_when_supported(self) -> None:
-        if _exclusive_ledger_lock is None:
-            self.skipTest("ledger lock not implemented in RED phase")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             ledger = root / "calls.jsonl"
             lock_target = root / "lock-target"
-            lock_target.write_bytes(b"0")
+            lock_target.write_bytes(b"")
             lock_path = Path(str(ledger) + ".lock")
             try:
                 lock_path.symlink_to(lock_target)
@@ -308,6 +386,16 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "lock.*symlink|symlink.*lock"):
                 RecordingTransport(StaticTransport(), ledger, clock=lambda: FIXED_TIME)
+
+    def test_persistent_lock_file_contains_no_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = Path(directory) / "calls.jsonl"
+            RecordingTransport(StaticTransport(), ledger, clock=lambda: FIXED_TIME).complete(
+                make_request("empty-lock")
+            )
+            lock_path = Path(str(ledger) + ".lock")
+            self.assertTrue(lock_path.is_file())
+            self.assertEqual(lock_path.read_bytes(), b"")
 
 
 if __name__ == "__main__":
