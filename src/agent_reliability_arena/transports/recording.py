@@ -7,9 +7,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+from ._ledger_lock import (
+    _exclusive_ledger_lock,
+    _validate_lock_timeout,
+    validate_ledger_lock_path,
+)
 from .base import ModelCallRequest, ModelCallResult, ModelTransport, TransportError, canonical_json_sha256
 
 SCHEMA_VERSION = "1"
+DEFAULT_LOCK_TIMEOUT_SECONDS = 30.0
 _RECORD_KEYS = {
     "schema_version",
     "sequence",
@@ -115,7 +121,7 @@ def _validate_record(row: object, line_number: int) -> str:
     raise ValueError(f"Ledger outcome_type is invalid at line {line_number}.")
 
 
-def verify_transport_ledger(path: Path) -> dict[str, object]:
+def _verify_transport_ledger_unlocked(path: Path) -> dict[str, object]:
     ledger_path = Path(path)
     _validate_path(ledger_path, require_exists=True)
     raw = ledger_path.read_bytes()
@@ -153,6 +159,20 @@ def verify_transport_ledger(path: Path) -> dict[str, object]:
     }
 
 
+def verify_transport_ledger(
+    path: Path,
+    *,
+    lock_timeout_seconds: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
+) -> dict[str, object]:
+    ledger_path = Path(path)
+    timeout = _validate_lock_timeout(lock_timeout_seconds)
+    # Preserve the old missing-ledger behavior without creating a sidecar lock file.
+    _validate_path(ledger_path, require_exists=True)
+    validate_ledger_lock_path(ledger_path)
+    with _exclusive_ledger_lock(ledger_path, timeout_seconds=timeout):
+        return _verify_transport_ledger_unlocked(ledger_path)
+
+
 class RecordingTransport:
     def __init__(
         self,
@@ -160,6 +180,7 @@ class RecordingTransport:
         ledger_path: Path,
         *,
         clock: Callable[[], datetime] = _utc_now,
+        lock_timeout_seconds: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
     ) -> None:
         provider = getattr(transport, "provider", None)
         if not isinstance(provider, str) or not provider.strip() or not callable(getattr(transport, "complete", None)):
@@ -170,24 +191,27 @@ class RecordingTransport:
         self.provider = provider.strip()
         self.ledger_path = Path(ledger_path)
         self.clock = clock
+        self.lock_timeout_seconds = _validate_lock_timeout(lock_timeout_seconds)
         _validate_path(self.ledger_path, require_exists=False)
+        validate_ledger_lock_path(self.ledger_path)
         if self.ledger_path.exists() and self.ledger_path.stat().st_size > 0:
-            summary = verify_transport_ledger(self.ledger_path)
-            self._next_sequence = int(summary["records"]) + 1
-        else:
-            self._next_sequence = 1
+            verify_transport_ledger(
+                self.ledger_path,
+                lock_timeout_seconds=self.lock_timeout_seconds,
+            )
 
     def _record(
         self,
         request: ModelCallRequest,
         *,
+        sequence: int,
         outcome_type: str,
         result: dict[str, object] | None,
         error: dict[str, object] | None,
     ) -> dict[str, object]:
         return {
             "schema_version": SCHEMA_VERSION,
-            "sequence": self._next_sequence,
+            "sequence": sequence,
             "recorded_at": _timestamp(self.clock()),
             "provider": self.provider,
             "request": request.to_dict(),
@@ -197,19 +221,61 @@ class RecordingTransport:
             "error": error,
         }
 
-    def _append(self, record: dict[str, object]) -> None:
+    def _append_unlocked(self, record: dict[str, object]) -> None:
         _validate_path(self.ledger_path, require_exists=False)
         signed = dict(record)
         signed["record_digest"] = canonical_json_sha256(record)
-        encoded = json.dumps(signed, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
+        encoded = (
+            json.dumps(signed, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+            + "\n"
+        ).encode("utf-8")
         flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+        if hasattr(os, "O_BINARY"):
+            flags |= os.O_BINARY
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
         descriptor = os.open(self.ledger_path, flags, 0o600)
-        with os.fdopen(descriptor, "a", encoding="utf-8", newline="\n") as handle:
-            handle.write(encoded)
-            handle.flush()
-            os.fsync(handle.fileno())
+        try:
+            view = memoryview(encoded)
+            offset = 0
+            while offset < len(view):
+                written = os.write(descriptor, view[offset:])
+                if written <= 0:
+                    raise OSError("Ledger append made no forward progress.")
+                offset += written
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+    def _commit_record(
+        self,
+        request: ModelCallRequest,
+        *,
+        outcome_type: str,
+        result: dict[str, object] | None,
+        error: dict[str, object] | None,
+    ) -> None:
+        with _exclusive_ledger_lock(
+            self.ledger_path,
+            timeout_seconds=self.lock_timeout_seconds,
+        ):
+            _validate_path(self.ledger_path, require_exists=False)
+            if self.ledger_path.exists() and self.ledger_path.stat().st_size > 0:
+                summary = _verify_transport_ledger_unlocked(self.ledger_path)
+                sequence = int(summary["records"]) + 1
+            else:
+                sequence = 1
+            self._append_unlocked(
+                self._record(
+                    request,
+                    sequence=sequence,
+                    outcome_type=outcome_type,
+                    result=result,
+                    error=error,
+                )
+            )
 
     def complete(self, request: ModelCallRequest) -> ModelCallResult:
         if not isinstance(request, ModelCallRequest):
@@ -217,15 +283,12 @@ class RecordingTransport:
         try:
             result = self.transport.complete(request)
         except TransportError as error:
-            self._append(
-                self._record(
-                    request,
-                    outcome_type="error",
-                    result=None,
-                    error=error.to_dict(),
-                )
+            self._commit_record(
+                request,
+                outcome_type="error",
+                result=None,
+                error=error.to_dict(),
             )
-            self._next_sequence += 1
             raise
         if not isinstance(result, ModelCallResult):
             raise ValueError("Wrapped transport must return a ModelCallResult.")
@@ -233,13 +296,10 @@ class RecordingTransport:
             raise ValueError("Wrapped transport result does not match the request.")
         if result.provider != self.provider:
             raise ValueError("Wrapped transport result provider does not match the transport provider.")
-        self._append(
-            self._record(
-                request,
-                outcome_type="result",
-                result=result.to_dict(),
-                error=None,
-            )
+        self._commit_record(
+            request,
+            outcome_type="result",
+            result=result.to_dict(),
+            error=None,
         )
-        self._next_sequence += 1
         return result
