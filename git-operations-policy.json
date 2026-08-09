@@ -36,6 +36,9 @@
         }
       }
     },
+    "concurrent-ledger.yml": {
+      "write_jobs": {}
+    },
     "fifteen-pass-verification.yml": {
       "write_jobs": {}
     },
