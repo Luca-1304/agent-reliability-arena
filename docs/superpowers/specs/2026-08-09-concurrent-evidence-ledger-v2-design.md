@@ -58,13 +58,13 @@ Use `fcntl.flock(fd, LOCK_EX | LOCK_NB)` in a bounded retry loop.
 
 ### Windows lock
 
-Use `msvcrt.locking(fd, LK_NBLCK, 1)` in a bounded retry loop. The persistent lock file contains at least one byte so byte-range locking is valid.
+Use `msvcrt.locking(fd, LK_NBLCK, 1)` in a bounded retry loop from byte offset zero. Python documents that a locked range may extend beyond end-of-file, so the persistent lock file may remain empty; no lock-byte initialization protocol is required.
 
 ### Persistent lock file
 
-The sibling lock file is never deleted as part of normal release. Deleting a lock file can split waiters across different inodes/files and invalidate mutual exclusion. The file contains no evidence or secret material.
+The sibling lock file is never deleted as part of normal release. Deleting a lock file can split waiters across different filesystem objects and invalidate mutual exclusion. The file contains no evidence or secret material and may remain zero bytes.
 
-The lock path must not be a symlink and, when present, must be a regular file. Use `O_NOFOLLOW` where the OS exposes it and validate the opened descriptor with `fstat`.
+The lock path must not be a symlink and, when present, must be a regular file. Use `O_NOFOLLOW` where the OS exposes it and validate the opened descriptor with `fstat` plus path identity checks where the platform exposes stable inode/device values.
 
 ## Timeout and failure policy
 
@@ -99,16 +99,18 @@ The implementation is not complete until all of the following are proven:
 4. final sequences are exactly `1..N` with no duplicates or gaps caused by writer races;
 5. every submitted request appears exactly once;
 6. `verify_transport_ledger` validates the final ledger;
-7. a verifier blocks behind a held writer lock rather than reading an in-progress state;
-8. lock timeout raises and leaves ledger bytes unchanged;
-9. a malformed tail prevents later writers from appending;
-10. a reopened recorder after a concurrent run continues at `N+1`;
-11. an unsafe lock-file symlink is rejected;
-12. existing schema-1 ledger tests stay green;
-13. focused concurrency tests pass on `ubuntu-latest` and `windows-latest` for Python 3.10 and 3.13;
-14. the full repository PR matrix completes with zero genuine failures before merge.
+7. provider/model calls can overlap while evidence commits serialize;
+8. a verifier blocks behind a held writer lock rather than reading an in-progress state;
+9. lock timeout raises and leaves ledger bytes unchanged;
+10. a malformed tail prevents later writers from appending;
+11. a reopened recorder after a concurrent run continues at `N+1`;
+12. an unsafe lock-file symlink is rejected;
+13. the persistent lock file contains no evidence;
+14. existing schema-1 ledger tests stay green;
+15. focused concurrency tests pass on `ubuntu-latest` and `windows-latest` for Python 3.10 and 3.13;
+16. the full repository PR matrix completes with zero genuine failures before merge.
 
-All multiprocessing tests use the `spawn` start method on every OS so Linux does not accidentally pass via fork-only behavior.
+All multiprocessing tests use the `spawn` start method on every OS so Linux does not accidentally pass via fork-only behavior. Spawned writers coordinate readiness/start through temporary filesystem marker files, avoiding an unrelated multiprocessing Queue/Event dependency in the concurrency proof.
 
 ## CI integration
 
