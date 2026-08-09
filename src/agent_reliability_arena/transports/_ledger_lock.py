@@ -64,52 +64,37 @@ def _thread_lock_for(lock_path: Path) -> threading.Lock:
         return existing
 
 
-def _open_lock_file(lock_path: Path) -> int:
-    flags = os.O_RDWR | os.O_CREAT
+def _base_open_flags() -> int:
+    flags = os.O_RDWR
     if hasattr(os, "O_BINARY"):
         flags |= os.O_BINARY
     if hasattr(os, "O_CLOEXEC"):
         flags |= os.O_CLOEXEC
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
+    return flags
 
-    try:
-        descriptor = os.open(lock_path, flags, 0o600)
-    except OSError as exc:
-        if lock_path.is_symlink():
-            raise ValueError(f"Ledger lock path must not be a symlink: {lock_path}") from exc
-        raise
 
-    try:
-        opened = os.fstat(descriptor)
-        if not stat.S_ISREG(opened.st_mode):
-            raise ValueError(f"Ledger lock path must be a regular file: {lock_path}")
+def _validate_opened_lock_file(descriptor: int, lock_path: Path) -> os.stat_result:
+    opened = os.fstat(descriptor)
+    if not stat.S_ISREG(opened.st_mode):
+        raise ValueError(f"Ledger lock path must be a regular file: {lock_path}")
 
-        current = os.stat(lock_path, follow_symlinks=False)
-        if stat.S_ISLNK(current.st_mode):
-            raise ValueError(f"Ledger lock path must not be a symlink: {lock_path}")
-        if not stat.S_ISREG(current.st_mode):
-            raise ValueError(f"Ledger lock path must be a regular file: {lock_path}")
+    current = os.stat(lock_path, follow_symlinks=False)
+    if stat.S_ISLNK(current.st_mode):
+        raise ValueError(f"Ledger lock path must not be a symlink: {lock_path}")
+    if not stat.S_ISREG(current.st_mode):
+        raise ValueError(f"Ledger lock path must be a regular file: {lock_path}")
 
-        opened_inode = getattr(opened, "st_ino", 0)
-        current_inode = getattr(current, "st_ino", 0)
-        opened_device = getattr(opened, "st_dev", 0)
-        current_device = getattr(current, "st_dev", 0)
-        if opened_inode and current_inode and (
-            opened_inode != current_inode or opened_device != current_device
-        ):
-            raise ValueError(f"Ledger lock path changed while opening: {lock_path}")
-
-        if opened.st_size < 1:
-            os.lseek(descriptor, 0, os.SEEK_SET)
-            written = os.write(descriptor, b"\0")
-            if written != 1:
-                raise OSError("Could not initialise ledger lock byte.")
-            os.fsync(descriptor)
-        return descriptor
-    except BaseException:
-        os.close(descriptor)
-        raise
+    opened_inode = getattr(opened, "st_ino", 0)
+    current_inode = getattr(current, "st_ino", 0)
+    opened_device = getattr(opened, "st_dev", 0)
+    current_device = getattr(current, "st_dev", 0)
+    if opened_inode and current_inode and (
+        opened_inode != current_inode or opened_device != current_device
+    ):
+        raise ValueError(f"Ledger lock path changed while opening: {lock_path}")
+    return opened
 
 
 def _wait_or_timeout(deadline: float, lock_path: Path) -> None:
@@ -117,6 +102,45 @@ def _wait_or_timeout(deadline: float, lock_path: Path) -> None:
     if remaining <= 0:
         raise TimeoutError(f"Timed out acquiring ledger lock: {lock_path}")
     time.sleep(min(_DEFAULT_RETRY_SECONDS, remaining))
+
+
+def _open_lock_file(lock_path: Path, deadline: float) -> int:
+    flags = _base_open_flags()
+    created = False
+    try:
+        try:
+            descriptor = os.open(
+                lock_path,
+                flags | os.O_CREAT | os.O_EXCL,
+                0o600,
+            )
+            created = True
+        except FileExistsError:
+            descriptor = os.open(lock_path, flags, 0o600)
+    except OSError as exc:
+        if lock_path.is_symlink():
+            raise ValueError(f"Ledger lock path must not be a symlink: {lock_path}") from exc
+        raise
+
+    try:
+        opened = _validate_opened_lock_file(descriptor, lock_path)
+        if created:
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            written = os.write(descriptor, b"\0")
+            if written != 1:
+                raise OSError("Could not initialise ledger lock byte.")
+            os.fsync(descriptor)
+        else:
+            # Only the O_EXCL creator is allowed to initialise byte zero. A follower
+            # waits for that durable byte so Windows never writes into a range that
+            # another process may already have locked.
+            while opened.st_size < 1:
+                _wait_or_timeout(deadline, lock_path)
+                opened = os.fstat(descriptor)
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
 
 
 def _acquire_process_lock(descriptor: int, lock_path: Path, deadline: float) -> None:
@@ -161,7 +185,7 @@ def _exclusive_ledger_lock(
     try:
         # Validate again after the in-process wait so a changed lock path is not trusted.
         lock_path = validate_ledger_lock_path(Path(ledger_path))
-        descriptor = _open_lock_file(lock_path)
+        descriptor = _open_lock_file(lock_path, deadline)
         _acquire_process_lock(descriptor, lock_path, deadline)
         process_locked = True
         yield
