@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+import importlib.util
 import json
 import os
 import subprocess
@@ -7,6 +9,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from agent_reliability_arena.pilot_policy import PilotPolicy
 
@@ -27,6 +30,15 @@ def read_json(path: Path) -> dict[str, object]:
 
 def write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def load_script_module():
+    spec = importlib.util.spec_from_file_location("stage7_private_pilot_script_test", SCRIPT)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Could not load private pilot script for provider-free boundary test.")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class Stage7PrivateScriptBoundaryTests(unittest.TestCase):
@@ -55,6 +67,17 @@ class Stage7PrivateScriptBoundaryTests(unittest.TestCase):
         path = directory / "enabled-policy.json"
         write_json(path, raw)
         return path, PilotPolicy.from_dict(raw)
+
+    def args(self, policy: Path, output: Path, digest: str) -> argparse.Namespace:
+        return argparse.Namespace(
+            config=CONFIG,
+            catalog=CATALOG,
+            policy=policy,
+            output=output,
+            reviewed_policy_digest=digest,
+            approve_external_execution=True,
+            operator_confirmation=APPROVAL,
+        )
 
     def base_environment(self) -> dict[str, str]:
         environment = dict(os.environ)
@@ -103,8 +126,6 @@ class Stage7PrivateScriptBoundaryTests(unittest.TestCase):
                 check=False,
             )
             self.assertNotEqual(result.returncode, 0)
-            # The committed privacy hold may stop first today. Once that gate is closed,
-            # the candidate-binding validator remains the next execution boundary.
             self.assertTrue(
                 "privacy" in result.stderr.lower() or "candidate" in result.stderr.lower(),
                 result.stderr,
@@ -164,6 +185,74 @@ class Stage7PrivateScriptBoundaryTests(unittest.TestCase):
                 result.stderr,
             )
             self.assertFalse(output.exists())
+
+    def test_prepared_output_validation_runs_before_key_lookup_after_closed_gate(self) -> None:
+        module = load_script_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            policy_path, policy = self.enabled_policy(root)
+            output = root / "not-created-yet"
+            environment = self.base_environment()
+            with mock.patch.dict(os.environ, environment, clear=True), mock.patch.object(
+                module,
+                "verify_stage7_privacy_gate",
+                return_value={
+                    "status": "verified",
+                    "issue_number": 14,
+                    "incident_status": "closed",
+                    "last_verified_date": "2026-08-10",
+                    "execution_permitted": True,
+                    "rationale": "test-only injected closure state",
+                },
+            ):
+                with self.assertRaisesRegex(RuntimeError, "already exist") as raised:
+                    module._run(self.args(policy_path, output, policy.digest))
+            self.assertNotIn("openai_api_key", str(raised.exception).lower())
+            self.assertFalse(output.exists())
+
+    def test_valid_prepared_output_reaches_key_gate_only_after_path_check(self) -> None:
+        module = load_script_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            policy_path, policy = self.enabled_policy(root)
+            output = root / "pilot"
+            output.mkdir(mode=0o700)
+            if os.name != "nt":
+                output.chmod(0o700)
+            environment = self.base_environment()
+            with mock.patch.dict(os.environ, environment, clear=True), mock.patch.object(
+                module,
+                "verify_stage7_privacy_gate",
+                return_value={
+                    "status": "verified",
+                    "issue_number": 14,
+                    "incident_status": "closed",
+                    "last_verified_date": "2026-08-10",
+                    "execution_permitted": True,
+                    "rationale": "test-only injected closure state",
+                },
+            ):
+                with self.assertRaisesRegex(RuntimeError, "OPENAI_API_KEY"):
+                    module._run(self.args(policy_path, output, policy.digest))
+            self.assertTrue(output.is_dir())
+            self.assertFalse(any(output.iterdir()))
+
+    def test_prepared_output_rejects_dirty_and_overbroad_directory(self) -> None:
+        module = load_script_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dirty = root / "dirty"
+            dirty.mkdir(mode=0o700)
+            (dirty / "existing.txt").write_text("evidence", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "empty"):
+                module._verify_prepared_private_output(dirty)
+
+            if os.name != "nt":
+                broad = root / "broad"
+                broad.mkdir(mode=0o755)
+                broad.chmod(0o755)
+                with self.assertRaisesRegex(RuntimeError, "0700"):
+                    module._verify_prepared_private_output(broad)
 
 
 if __name__ == "__main__":
