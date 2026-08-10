@@ -70,6 +70,8 @@ def _auth_path(root: Path, auth_path: Path, *, require_exists: bool) -> Path:
             raise ValueError(
                 "Detached receipt authentication envelope must be an existing regular non-symlink file."
             )
+        if target.stat().st_nlink != 1:
+            raise ValueError("Detached receipt authentication envelope must have exactly one hard link.")
     elif target.exists():
         raise ValueError(
             "Detached receipt authentication output must be a new path and must not already exist."
