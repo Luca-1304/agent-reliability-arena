@@ -14,6 +14,8 @@ The system has three independent execution barriers:
 
 **External network execution is disabled by default.** Injected test transports remain available for provider-free tests and release rehearsals.
 
+Provider-returned model identity is enforced again at the private recording boundary. A `ModelCallResult` whose `model_id` differs from the exact requested `ModelCallRequest.model_id` is never returned to orchestration as a successful result. Instead, `RecordingTransport` durably appends a non-retryable `model_identity_mismatch` error record containing the expected and observed model IDs, response ID and raw-response SHA-256, then raises. The ledger verifier independently checks those mismatch fields.
+
 ## Provider-free preflight
 
 The committed example policy is disabled:
@@ -61,7 +63,7 @@ The release suite rehearses the private runner without a credential or network r
 - both independently verified condition outcomes;
 - `comparative_claim_permitted: false`.
 
-The tests also prove that malformed role output creates `abort.json`, preserves the partial ledger and prevents reuse of the dirty run directory.
+The tests also prove that malformed role output creates `abort.json`, preserves the partial ledger and prevents reuse of the dirty run directory. A separate provider-free regression returns a deliberately different provider-reported model ID and proves the first call becomes a verifiable `model_identity_mismatch` ledger error, the pilot aborts, and no second provider-shaped call begins.
 
 ## Private policy preparation
 
@@ -188,7 +190,7 @@ Stop the pilot immediately and make no further paid request when any of these oc
 - policy, configuration, contract or prompt-catalogue digest mismatch;
 - a request not listed in the reviewed preflight plan;
 - duplicate call ID or attempt drift;
-- provider or model-version drift;
+- provider identity or provider-reported model ID drift from the exact requested model snapshot;
 - API-key or authentication-header exposure;
 - ledger write or ledger verification failure;
 - non-empty, unsafe, symlinked or unexpectedly shared run directory;
