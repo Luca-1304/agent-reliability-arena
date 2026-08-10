@@ -212,6 +212,26 @@ def _reconcile(
             raise ValueError(f"Witness verification summary digest mismatch for trial {trial_id!r}.")
 
 
+def inspect_completed_trial_witnesses(
+    experiment_root: Path,
+    plan_digest: str,
+    preflight_manifest_digest: str,
+) -> list[dict[str, object]]:
+    root = _root(Path(experiment_root))
+    plan = _digest(plan_digest, "plan_digest")
+    preflight = _digest(preflight_manifest_digest, "preflight_manifest_digest")
+    rows = _read_witness_rows(
+        root / WITNESS_FILENAME,
+        plan_digest=plan,
+        preflight_manifest_digest=preflight,
+    )
+    if not rows:
+        raise ValueError("Experiment evidence witness contains no completed trial records.")
+    trial_ids = [_trial_id(row.get("trial_id")) for row in rows]
+    _reconcile(root, rows, trial_ids)
+    return rows
+
+
 def verify_completed_trial_witnesses(
     experiment_root: Path,
     completed_trial_ids: list[str],
