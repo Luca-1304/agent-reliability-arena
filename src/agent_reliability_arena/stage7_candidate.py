@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 
 from .config import ExperimentConfig
@@ -11,11 +12,13 @@ from .transports.base import canonical_json_sha256
 
 
 PACKET_SCHEMA = "arena-stage7-disabled-execution-packet-v1"
-_PACKET_FILES = {
+PRIVACY_GATE_SCHEMA = "arena-stage7-privacy-execution-gate-v1"
+_CANDIDATE_FILES = {
     "experiment.json",
     "policy.disabled.json",
     "price-source.json",
     "packet.json",
+    "privacy-execution-gate.json",
 }
 _PACKET_KEYS = {
     "schema_version",
@@ -41,6 +44,29 @@ _PACKET_KEYS = {
     "provider_called",
     "packet_digest",
 }
+_PRIVACY_GATE_KEYS = {
+    "schema_version",
+    "issue_number",
+    "incident_status",
+    "last_verified_date",
+    "execution_permitted",
+    "rationale",
+}
+_EXECUTION_PREFLIGHT_INVARIANTS = (
+    "provider",
+    "model_id",
+    "model_version",
+    "prompt_version",
+    "scenario_ids",
+    "planned_call_ceiling",
+    "planned_requested_output_tokens",
+    "reserved_total_tokens",
+    "max_reserved_total_tokens",
+    "reserved_cost_minor_units",
+    "max_cost_minor_units",
+    "currency",
+    "calls",
+)
 
 
 def _decode_object(text: str, name: str) -> dict[str, object]:
@@ -61,7 +87,7 @@ def _decode_object(text: str, name: str) -> dict[str, object]:
     return value
 
 
-def _read_object(path: Path, name: str) -> dict[str, object]:
+def read_stage7_json_object(path: Path, name: str) -> dict[str, object]:
     target = Path(path)
     if target.is_symlink() or not target.is_file():
         raise ValueError(f"{name} must be a regular non-symlink file.")
@@ -77,17 +103,19 @@ def _candidate_root(path: Path, *, require_packet: bool) -> Path:
     if root.is_symlink() or not root.is_dir():
         raise ValueError("Stage 7 candidate root must be a regular non-symlink directory.")
     names = {item.name for item in root.iterdir()}
-    required = _PACKET_FILES if require_packet else _PACKET_FILES - {"packet.json"}
+    required = _CANDIDATE_FILES if require_packet else _CANDIDATE_FILES - {"packet.json"}
     if require_packet:
         if names != required:
-            raise ValueError("Stage 7 candidate root must contain exactly the documented packet files.")
+            raise ValueError("Stage 7 candidate root must contain exactly the documented candidate files.")
     elif not required.issubset(names) or names - required not in (set(), {"packet.json"}):
         raise ValueError("Stage 7 candidate root contains unexpected files.")
     return root
 
 
 def _catalog(path: Path) -> PromptCatalog:
-    return PromptCatalog.from_dict(_read_object(Path(path), "Stage 7 prompt catalogue"))
+    return PromptCatalog.from_dict(
+        read_stage7_json_object(Path(path), "Stage 7 prompt catalogue")
+    )
 
 
 def _positive_int(value: object, name: str) -> int:
@@ -105,18 +133,57 @@ def _conservative_price_bound(policy: PilotPolicy, price_source: PriceSource) ->
     return (numerator + 999_999) // 1_000_000
 
 
+def verify_stage7_privacy_gate(path: Path) -> dict[str, object]:
+    raw = read_stage7_json_object(Path(path), "Stage 7 privacy execution gate")
+    if set(raw) != _PRIVACY_GATE_KEYS:
+        raise ValueError("Stage 7 privacy execution gate shape is invalid.")
+    if raw.get("schema_version") != PRIVACY_GATE_SCHEMA:
+        raise ValueError("Stage 7 privacy execution gate schema_version is invalid.")
+    if raw.get("issue_number") != 14:
+        raise ValueError("Stage 7 privacy execution gate must reference issue 14.")
+    incident_status = raw.get("incident_status")
+    if incident_status not in {"open", "closed"}:
+        raise ValueError("Stage 7 privacy execution gate incident_status is invalid.")
+    execution_permitted = raw.get("execution_permitted")
+    if not isinstance(execution_permitted, bool):
+        raise ValueError("Stage 7 privacy execution gate execution_permitted must be boolean.")
+    if (incident_status == "closed") != execution_permitted:
+        raise ValueError("Stage 7 privacy execution gate status and execution permission disagree.")
+    verified_date = raw.get("last_verified_date")
+    if not isinstance(verified_date, str):
+        raise ValueError("Stage 7 privacy execution gate last_verified_date must be a string.")
+    try:
+        date.fromisoformat(verified_date)
+    except ValueError as exc:
+        raise ValueError("Stage 7 privacy execution gate last_verified_date is invalid.") from exc
+    rationale = raw.get("rationale")
+    if not isinstance(rationale, str) or not rationale.strip():
+        raise ValueError("Stage 7 privacy execution gate rationale must be non-empty.")
+    return {
+        "status": "verified",
+        "issue_number": 14,
+        "incident_status": incident_status,
+        "last_verified_date": verified_date,
+        "execution_permitted": execution_permitted,
+        "rationale": rationale.strip(),
+    }
+
+
 def build_stage7_candidate_packet(
     candidate_root: Path,
     catalog_path: Path,
 ) -> dict[str, object]:
     root = _candidate_root(Path(candidate_root), require_packet=False)
-    config = ExperimentConfig.from_dict(_read_object(root / "experiment.json", "Stage 7 experiment"))
+    verify_stage7_privacy_gate(root / "privacy-execution-gate.json")
+    config = ExperimentConfig.from_dict(
+        read_stage7_json_object(root / "experiment.json", "Stage 7 experiment")
+    )
     catalog = _catalog(Path(catalog_path))
     policy = PilotPolicy.from_dict(
-        _read_object(root / "policy.disabled.json", "Stage 7 disabled policy")
+        read_stage7_json_object(root / "policy.disabled.json", "Stage 7 disabled policy")
     )
     price_source = PriceSource.from_dict(
-        _read_object(root / "price-source.json", "Stage 7 price source")
+        read_stage7_json_object(root / "price-source.json", "Stage 7 price source")
     )
 
     if policy.provider != "openai-responses":
@@ -207,8 +274,9 @@ def verify_stage7_candidate(
     catalog_path: Path,
 ) -> dict[str, object]:
     root = _candidate_root(Path(candidate_root), require_packet=True)
+    verify_stage7_privacy_gate(root / "privacy-execution-gate.json")
     committed = _validate_committed_packet(
-        _read_object(root / "packet.json", "Stage 7 packet")
+        read_stage7_json_object(root / "packet.json", "Stage 7 packet")
     )
     expected = build_stage7_candidate_packet(root, Path(catalog_path))
     if committed != expected:
@@ -222,6 +290,10 @@ def verify_stage7_candidate(
         "model_id": expected["model_id"],
         "model_version": expected["model_version"],
         "scenario_ids": expected["scenario_ids"],
+        "config_digest": expected["config_digest"],
+        "prompt_catalog_digest": expected["prompt_catalog_digest"],
+        "policy_digest": expected["policy_digest"],
+        "preflight_manifest_digest": expected["preflight_manifest_digest"],
         "planned_call_ceiling": expected["planned_call_ceiling"],
         "max_requested_output_tokens": expected["max_requested_output_tokens"],
         "max_reserved_total_tokens": expected["max_reserved_total_tokens"],
@@ -235,4 +307,74 @@ def verify_stage7_candidate(
         "operator_approved": False,
         "provider_called": False,
         "packet_digest": expected["packet_digest"],
+    }
+
+
+def verify_stage7_execution_policy(
+    candidate_root: Path,
+    config_path: Path,
+    catalog_path: Path,
+    enabled_policy_path: Path,
+) -> dict[str, object]:
+    root = _candidate_root(Path(candidate_root), require_packet=True)
+    candidate = verify_stage7_candidate(root, Path(catalog_path))
+    config = ExperimentConfig.from_dict(
+        read_stage7_json_object(Path(config_path), "Stage 7 execution config")
+    )
+    if config.digest != candidate["config_digest"]:
+        raise ValueError("Stage 7 execution config does not match the reviewed candidate config.")
+    catalog = _catalog(Path(catalog_path))
+    disabled = PilotPolicy.from_dict(
+        read_stage7_json_object(root / "policy.disabled.json", "Stage 7 disabled policy")
+    )
+    enabled = PilotPolicy.from_dict(
+        read_stage7_json_object(Path(enabled_policy_path), "Stage 7 enabled policy")
+    )
+
+    expected_enabled = disabled.to_dict()
+    if expected_enabled["external_execution_enabled"] is not False:
+        raise ValueError("Stage 7 reviewed candidate policy is not disabled.")
+    expected_enabled["external_execution_enabled"] = True
+    actual_enabled = enabled.to_dict()
+    if actual_enabled != expected_enabled:
+        differing = sorted(
+            key
+            for key in expected_enabled
+            if actual_enabled.get(key) != expected_enabled.get(key)
+        )
+        detail = ", ".join(differing) if differing else "unknown"
+        raise ValueError(
+            "Stage 7 enabled policy differs from the reviewed candidate outside the single "
+            f"execution-enable flag: {detail}."
+        )
+
+    disabled_preflight = build_pilot_preflight(config, catalog, disabled)
+    enabled_preflight = build_pilot_preflight(config, catalog, enabled)
+    for key in _EXECUTION_PREFLIGHT_INVARIANTS:
+        if enabled_preflight.get(key) != disabled_preflight.get(key):
+            raise ValueError(
+                f"Stage 7 enabled preflight differs from the reviewed candidate at {key}."
+            )
+    if enabled_preflight.get("external_execution_enabled") is not True:
+        raise ValueError("Stage 7 enabled preflight did not preserve execution enablement.")
+
+    return {
+        "status": "verified",
+        "candidate_packet_digest": candidate["packet_digest"],
+        "config_digest": config.digest,
+        "prompt_catalog_digest": catalog.digest,
+        "policy_digest": enabled.digest,
+        "preflight_manifest_digest": enabled_preflight["manifest_digest"],
+        "provider": enabled.provider,
+        "model_id": enabled.model_id,
+        "model_version": enabled.model_version,
+        "scenario_ids": list(enabled.scenario_ids),
+        "planned_call_ceiling": enabled_preflight["planned_call_ceiling"],
+        "max_requested_output_tokens": enabled.max_requested_output_tokens,
+        "max_reserved_total_tokens": enabled.max_reserved_total_tokens,
+        "reserved_cost_minor_units": enabled_preflight["reserved_cost_minor_units"],
+        "max_cost_minor_units": enabled.max_cost_minor_units,
+        "currency": enabled.currency,
+        "external_execution_enabled": True,
+        "provider_called": False,
     }
