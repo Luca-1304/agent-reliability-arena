@@ -227,6 +227,7 @@ def write_detached_receipt_auth(
         "auth_tag": _auth_tag(secret, receipt_digest),
     }
     _write_exclusive(target, envelope)
+    _auth_path(root, target, require_exists=True)
     persisted = _read_auth(target)
     _verify_envelope(_verified_receipt(root, Path(receipt_path)), persisted, secret)
     return persisted
