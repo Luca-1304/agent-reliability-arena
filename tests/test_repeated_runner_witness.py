@@ -7,6 +7,7 @@ from pathlib import Path
 
 from agent_reliability_arena.repeated_runner import run_private_repeated_experiment
 from agent_reliability_arena.repeated_witness import WITNESS_FILENAME
+from agent_reliability_arena.transports import verify_transport_ledger
 from test_private_pilot import ScriptedTransport, success_outputs
 from test_repeated_runner import build_plan
 
@@ -105,6 +106,54 @@ class RepeatedRunnerWitnessTests(unittest.TestCase):
             summary_path.write_bytes(summary_path.read_bytes() + b" ")
             fresh_transport = ScriptedTransport(success_outputs(config))
             with self.assertRaisesRegex(ValueError, "Witness verification summary digest mismatch"):
+                run_private_repeated_experiment(
+                    config,
+                    catalog,
+                    plan,
+                    template,
+                    fresh_transport,
+                    root,
+                    reviewed_plan_digest=plan.digest,
+                    reviewed_policy_template_digest=template.digest,
+                    external_execution_approved=True,
+                )
+            self.assertEqual(len(fresh_transport.calls), 0)
+
+    def test_resume_rejects_valid_ledger_suffix_truncation_even_after_summary_rewrite(self) -> None:
+        config, catalog, template, plan = build_plan(3, starting_seed=1400)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "experiment"
+            run_private_repeated_experiment(
+                config,
+                catalog,
+                plan,
+                template,
+                ScriptedTransport(success_outputs(config)),
+                root,
+                reviewed_plan_digest=plan.digest,
+                reviewed_policy_template_digest=template.digest,
+                external_execution_approved=True,
+                max_new_trials=1,
+            )
+
+            trial_root = root / "trial-0001"
+            ledger_path = trial_root / "transport-calls.jsonl"
+            lines = ledger_path.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(lines), 5)
+            ledger_path.write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
+            shorter_ledger = verify_transport_ledger(ledger_path)
+            self.assertEqual(shorter_ledger["records"], 4)
+
+            summary_path = trial_root / "verification-summary.json"
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            summary["ledger"] = shorter_ledger
+            summary_path.write_text(
+                json.dumps(summary, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+
+            fresh_transport = ScriptedTransport(success_outputs(config))
+            with self.assertRaisesRegex(ValueError, "Witness ledger record count mismatch"):
                 run_private_repeated_experiment(
                     config,
                     catalog,
