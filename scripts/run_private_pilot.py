@@ -10,14 +10,19 @@ from agent_reliability_arena.config import ExperimentConfig
 from agent_reliability_arena.live_requests import PromptCatalog
 from agent_reliability_arena.pilot_policy import PilotPolicy, build_pilot_preflight
 from agent_reliability_arena.private_pilot import run_private_paired_pilot
+from agent_reliability_arena.stage7_candidate import (
+    read_stage7_json_object,
+    verify_stage7_candidate,
+    verify_stage7_execution_policy,
+    verify_stage7_privacy_gate,
+)
 from agent_reliability_arena.transports import OpenAIResponsesTransport
 
 
+ROOT = Path(__file__).resolve().parents[1]
+CANDIDATE_ROOT = ROOT / "examples" / "stage7_candidate"
+PRIVACY_GATE = CANDIDATE_ROOT / "privacy-execution-gate.json"
 OPERATOR_CONFIRMATION = "I_APPROVE_ONE_PRIVATE_PILOT"
-
-
-def _read_json(path: Path) -> object:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _run(args: argparse.Namespace) -> dict[str, object]:
@@ -29,19 +34,43 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
     if os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true":
         raise RuntimeError("Private provider execution is always refused inside GitHub Actions.")
 
-    config = ExperimentConfig.from_dict(_read_json(args.config))
-    catalog = PromptCatalog.from_dict(_read_json(args.catalog))
-    policy = PilotPolicy.from_dict(_read_json(args.policy))
+    privacy_gate = verify_stage7_privacy_gate(PRIVACY_GATE)
+    if not privacy_gate["execution_permitted"]:
+        raise RuntimeError(
+            "Stage 7 privacy execution gate is still open; real-provider execution remains blocked."
+        )
+
+    candidate = verify_stage7_candidate(CANDIDATE_ROOT, args.catalog)
+    execution = verify_stage7_execution_policy(
+        CANDIDATE_ROOT,
+        args.config,
+        args.catalog,
+        args.policy,
+    )
+    if execution["candidate_packet_digest"] != candidate["packet_digest"]:
+        raise RuntimeError("Stage 7 execution policy is not bound to the verified candidate packet.")
+    if args.reviewed_policy_digest != execution["policy_digest"]:
+        raise RuntimeError("The reviewed policy digest does not match the exact enabled Stage 7 policy.")
+
+    config = ExperimentConfig.from_dict(
+        read_stage7_json_object(args.config, "Stage 7 execution config")
+    )
+    catalog = PromptCatalog.from_dict(
+        read_stage7_json_object(args.catalog, "Stage 7 prompt catalogue")
+    )
+    policy = PilotPolicy.from_dict(
+        read_stage7_json_object(args.policy, "Stage 7 enabled policy")
+    )
     if policy.provider != "openai-responses":
         raise RuntimeError("The local OpenAI pilot script requires provider 'openai-responses'.")
-    if args.reviewed_policy_digest != policy.digest:
-        raise RuntimeError("The reviewed policy digest does not match the exact policy file.")
     if not policy.external_execution_enabled:
         raise RuntimeError("External execution is disabled by the reviewed pilot policy.")
 
     preflight = build_pilot_preflight(config, catalog, policy)
     if preflight["policy_digest"] != args.reviewed_policy_digest:
         raise RuntimeError("The preflight policy digest does not match the reviewed digest.")
+    if preflight["manifest_digest"] != execution["preflight_manifest_digest"]:
+        raise RuntimeError("The execution preflight no longer matches the reviewed Stage 7 boundary.")
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if not isinstance(api_key, str) or not api_key.strip():
@@ -78,8 +107,8 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Run one local private paired pilot. This command can make paid provider requests and "
-            "is never run by the test or release workflow."
+            "Run the reviewed Stage 7 local private paired pilot. This command can make paid "
+            "provider requests only after the source-controlled privacy gate is closed."
         )
     )
     parser.add_argument("--config", type=Path, required=True)
