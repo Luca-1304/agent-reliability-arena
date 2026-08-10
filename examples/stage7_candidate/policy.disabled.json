@@ -1,0 +1,18 @@
+{
+  "currency": "USD",
+  "external_execution_enabled": false,
+  "max_calls": 8,
+  "max_cost_minor_units": 100,
+  "max_requested_output_tokens": 2068,
+  "max_reserved_total_tokens": 16384,
+  "model_id": "gpt-5.5-2026-04-23",
+  "model_version": "gpt-5.5-2026-04-23",
+  "prompt_version": "fixture-prompts-v1",
+  "provider": "openai-responses",
+  "reserved_cost_per_call_minor_units": 12,
+  "reserved_total_tokens_per_call": 2048,
+  "scenario_ids": [
+    "success"
+  ],
+  "schema_version": "1"
+}

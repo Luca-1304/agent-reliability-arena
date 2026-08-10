@@ -105,7 +105,7 @@ These controls verify repository, packaging, deterministic fixture, isolation an
 
 ### Stage 7 — Minimal private provider pilot
 
-Status: **runner implemented and provider-free rehearsed; real provider execution not yet performed**  
+Status: **runner and disabled execution packet implemented and provider-free rehearsed; real provider execution not yet performed**  
 Tracking: [#14 — Run a minimal private real-provider pilot](https://github.com/Luca-1304/agent-reliability-arena/issues/14)
 
 Completed preparation:
@@ -121,13 +121,17 @@ Completed preparation:
 - [x] provider-reported model identity is checked at the recording boundary, preserved as a non-retryable independently verifiable mismatch error, and rejected before orchestration can use mismatched output;
 - [x] provider-free paired rehearsal covering both conditions and five role calls;
 - [x] local-only execution script refuses GitHub Actions, missing approvals and missing environment credentials;
+- [x] disabled review packet pins candidate snapshot `gpt-5.5-2026-04-23`, one `success` scenario, exact config/policy/preflight commitments and a dated `2026-08-10` price-source digest;
+- [x] disabled packet reserves 16,384 total tokens and 96 USD cents against a deliberately pessimistic 50-cent all-tokens-at-output-rate planning bound, under a proposed-not-approved $1.00 hard ceiling;
+- [x] packet verification reconstructs every commitment provider-free and requires `external_execution_enabled: false`, `operator_approved: false` and `provider_called: false`;
 - [x] complete Python 3.10–3.13 source, release, wheel and clean-wheel verification.
 
 Still required to complete Stage 7:
 
-- [ ] choose one explicitly dated real model snapshot;
-- [ ] create and privately review an enabled one-scenario policy;
-- [ ] approve an exact worst-case monetary ceiling;
+- [ ] freshly re-confirm the exact dated model snapshot is available at the execution time;
+- [ ] freshly re-confirm current provider pricing and review a new packet if the dated source is stale or changed;
+- [ ] create and privately review an enabled one-scenario policy from the disabled candidate;
+- [ ] explicitly approve the exact worst-case monetary ceiling after reading the final preflight;
 - [ ] supply `OPENAI_API_KEY` through the local process environment only;
 - [ ] execute one local paired pilot;
 - [ ] verify the resulting private ledger and final manifest independently;

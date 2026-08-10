@@ -51,6 +51,38 @@ Review the complete output, especially:
 - policy and manifest digests;
 - `external_execution_enabled`.
 
+## Disabled Stage 7 candidate packet
+
+A source-controlled candidate packet now makes the intended first real-pilot boundary reviewable **without enabling execution**:
+
+```bash
+python scripts/verify_stage7_candidate.py
+```
+
+The candidate under `examples/stage7_candidate/` pins, for review only:
+
+- provider `openai-responses`;
+- exact dated model ID/version `gpt-5.5-2026-04-23`;
+- one `success` scenario;
+- the existing `fixture-prompts-v1` catalogue and exact file-write contract;
+- eight permitted preflight calls;
+- 2,068 maximum requested output tokens;
+- 2,048 reserved total tokens per permitted call and 16,384 aggregate;
+- a dated `2026-08-10` USD price source recording 500 minor units per million input tokens and 3,000 per million output tokens;
+- a conservative 50-cent planning bound obtained by pricing **every** reserved token at the higher output-token rate;
+- a 96-cent aggregate policy reservation;
+- a **proposed, not approved** $1.00 hard monetary ceiling.
+
+The committed packet must verify with all three authority flags false:
+
+- `external_execution_enabled: false`;
+- `operator_approved: false`;
+- `provider_called: false`.
+
+The verifier reconstructs the configuration, policy, preflight and price-source commitments instead of trusting the packet JSON. It makes no provider request, reads no API credential and creates no private run directory.
+
+This candidate is a review artifact, not durable permission to spend. Before any later real execution, re-check that the exact model snapshot is still available and that the provider's current pricing still supports the reviewed reservation. If either changed, stop and create a new reviewed candidate rather than editing around the old commitments.
+
 ## Provider-free paired rehearsal
 
 The release suite rehearses the private runner without a credential or network request. It executes one controlled success scenario through both conditions and verifies:
@@ -67,15 +99,16 @@ The tests also prove that malformed role output creates `abort.json`, preserves 
 
 ## Private policy preparation
 
-Use a private copy of the policy file. Do not commit an enabled pilot policy unless every value is deliberately suitable for public disclosure.
+Use a **private copy** of the disabled Stage 7 candidate policy when preparing a real run. Do not commit an enabled pilot policy unless every value is deliberately suitable for public disclosure.
 
 The policy schema contains no credential field. Unknown fields, including `api_key`, are rejected.
 
 For the first real pilot:
 
+- start from the reviewed `examples/stage7_candidate/experiment.json` and a private copy of `examples/stage7_candidate/policy.disabled.json`;
+- freshly confirm the exact dated model snapshot and dated price source before enabling anything;
 - use provider `openai-responses`;
-- use one explicitly dated model snapshot;
-- use one scenario;
+- use exactly one scenario;
 - permit exactly the preflight call ceiling;
 - disable automatic retries;
 - reserve total tokens conservatively before each call;
@@ -137,17 +170,19 @@ The transport stores neither the API key nor raw HTTP authorisation headers in `
 
 The paid path is a repository script, not a public installed command. It is never invoked by CI or the release verifier.
 
-1. Copy the disabled policy to a private location.
-2. Set the exact dated model ID/version, one scenario, conservative reservations and `external_execution_enabled: true`.
-3. Run provider-free preflight against that private policy.
-4. Review the complete output and record the exact `policy_digest`.
-5. Confirm the full worst-case monetary reservation is acceptable.
-6. Set `OPENAI_API_KEY` in the local process environment.
-7. Run:
+1. Verify the committed disabled packet with `python scripts/verify_stage7_candidate.py`.
+2. Freshly re-check exact model availability and current provider pricing. If either differs from the committed candidate, stop and review a new packet.
+3. Copy `examples/stage7_candidate/policy.disabled.json` to a private location.
+4. Change only the privately reviewed policy fields needed for execution, including `external_execution_enabled: true`; do not change the committed candidate.
+5. Run provider-free preflight against `examples/stage7_candidate/experiment.json`, the existing prompt catalogue and that private enabled policy.
+6. Review the complete output and record the exact `policy_digest`.
+7. Explicitly approve the full worst-case monetary reservation only if it remains acceptable.
+8. Set `OPENAI_API_KEY` in the local process environment.
+9. Run:
 
 ```bash
 python scripts/run_private_pilot.py \
-  --config examples/fixture_experiment.json \
+  --config examples/stage7_candidate/experiment.json \
   --catalog examples/live_prompt_catalog.json \
   --policy /private/path/pilot-policy.json \
   --output /private/path/private_runs/<run-id> \
@@ -170,16 +205,17 @@ The script has no API-key argument. It refuses execution when:
 
 A real-provider caller must possess all of the following:
 
-1. the exact reviewed private policy JSON;
-2. the exact `PilotPolicy.digest` printed by preflight;
-3. a policy with `external_execution_enabled: true`;
-4. an acceptable full monetary and token reservation;
-5. `--approve-external-execution`;
-6. `--operator-confirmation I_APPROVE_ONE_PRIVATE_PILOT`;
-7. `OpenAIResponsesTransport(..., external_execution_approved=True)` as constructed by the script;
-8. a private, empty, non-symlink run directory;
-9. `OPENAI_API_KEY` supplied through the local environment only;
-10. a deliberate operator decision after reading the preflight.
+1. a freshly re-verified Stage 7 candidate whose model availability and dated price assumptions have been checked for the execution date;
+2. the exact reviewed private enabled policy JSON;
+3. the exact `PilotPolicy.digest` printed by preflight;
+4. a policy with `external_execution_enabled: true`;
+5. explicit approval of the full monetary and token reservation;
+6. `--approve-external-execution`;
+7. `--operator-confirmation I_APPROVE_ONE_PRIVATE_PILOT`;
+8. `OpenAIResponsesTransport(..., external_execution_approved=True)` as constructed by the script;
+9. a private, empty, non-symlink run directory;
+10. `OPENAI_API_KEY` supplied through the local environment only;
+11. a deliberate operator decision after reading the exact preflight.
 
 Missing any item means no external call.
 
@@ -217,4 +253,4 @@ On abort, `abort.json` and any verifiable partial ledger are retained. Repair an
 
 ## Claims boundary
 
-Completing one private pilot can establish that the real-provider path executed and produced preserved evidence for that controlled run. It cannot establish representative model performance, universal superiority of specialist orchestration, production readiness or general tool safety.
+The disabled candidate packet establishes only that one proposed configuration is internally consistent and budget-bounded against a dated public price source while execution remains disabled. Completing one later private pilot can establish that the real-provider path executed and produced preserved evidence for that controlled run. Neither establishes representative model performance, universal superiority of specialist orchestration, production readiness or general tool safety.

@@ -1,0 +1,8 @@
+{
+  "currency": "USD",
+  "input_per_million_minor_units": 500,
+  "output_per_million_minor_units": 3000,
+  "source_date": "2026-08-10",
+  "source_name": "OpenAI GPT-5.5 API pricing",
+  "source_reference": "https://developers.openai.com/api/docs/models/gpt-5.5"
+}
