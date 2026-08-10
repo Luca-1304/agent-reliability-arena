@@ -9,7 +9,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from agent_reliability_arena.stage7_candidate import verify_stage7_candidate
+from agent_reliability_arena.stage7_candidate import (
+    build_stage7_candidate_packet,
+    verify_stage7_candidate,
+)
 from agent_reliability_arena.transports.base import canonical_json_sha256
 
 
@@ -42,6 +45,14 @@ def rewrite_packet_digest(packet: dict[str, object]) -> None:
 
 class Stage7DisabledCandidateTests(unittest.TestCase):
     def test_committed_candidate_verifies_and_remains_disabled(self) -> None:
+        committed = read_json(CANDIDATE / "packet.json")
+        rebuilt = build_stage7_candidate_packet(CANDIDATE, CATALOG)
+        self.assertEqual(
+            committed["preflight_manifest_digest"],
+            rebuilt["preflight_manifest_digest"],
+        )
+        self.assertEqual(committed["packet_digest"], rebuilt["packet_digest"])
+
         result = verify_stage7_candidate(CANDIDATE, CATALOG)
 
         self.assertEqual(result["status"], "verified")
@@ -160,19 +171,24 @@ class Stage7DisabledCandidateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "candidate"
             shutil.copytree(CANDIDATE, root)
-            (root / "packet.json").write_text('{"schema_version":"x","schema_version":"y"}\n', encoding="utf-8")
+            (root / "packet.json").write_text(
+                '{"schema_version":"x","schema_version":"y"}\n',
+                encoding="utf-8",
+            )
             with self.assertRaisesRegex(ValueError, "duplicate"):
                 verify_stage7_candidate(root, CATALOG)
 
         if hasattr(os, "symlink"):
             with tempfile.TemporaryDirectory() as directory:
-                root = Path(directory) / "candidate"
+                base = Path(directory)
+                root = base / "candidate"
                 shutil.copytree(CANDIDATE, root)
                 packet = root / "packet.json"
-                real = root / "real-packet.json"
-                packet.rename(real)
+                external = base / "real-packet.json"
+                shutil.copy2(packet, external)
+                packet.unlink()
                 try:
-                    packet.symlink_to(real)
+                    packet.symlink_to(external)
                 except (OSError, NotImplementedError):
                     return
                 with self.assertRaisesRegex(ValueError, "non-symlink"):
