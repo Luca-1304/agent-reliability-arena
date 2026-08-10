@@ -1,6 +1,6 @@
 # Hosting and privacy boundary
 
-Last verified: 3 August 2026
+Last verified: 10 August 2026
 
 ## Canonical public route
 
@@ -23,6 +23,8 @@ Vercel is not a supported publication route for this repository.
 
 The repository-root `vercel.json` intentionally keeps future Vercel Git builds fail-closed with `ignoreCommand: "exit 0"` while the two historical Vercel projects and their immutable deployments are removed by Vercel.
 
+As re-verified on 10 August 2026, the two historical Arena Vercel projects still exist even though their latest deployments are cancelled and no new deployment was created by the recent Arena merges. Absence of new deployments is not evidence that historical immutable deployments or project-level data have been erased.
+
 Do not restore Vercel deployment, preview or production checks. Do not publish a Vercel URL in repository files, pull-request descriptions, issues or portfolio copy.
 
 ## Historical incident boundary
@@ -31,11 +33,26 @@ Older Git and Vercel objects contained a CV version with unnecessary personal an
 
 The historical material must not be reused, linked, mirrored, copied into a new repository or treated as a professional document.
 
+## Machine execution gate
+
+Stage 7 now has a source-controlled machine gate at:
+
+`examples/stage7_candidate/privacy-execution-gate.json`
+
+The gate is intentionally committed as:
+
+- `incident_status: "open"`;
+- `execution_permitted: false`.
+
+`scripts/run_private_pilot.py` reads this fixed repository gate before Stage 7 candidate/policy validation, API-key access, output-directory creation or provider transport construction. There is no runtime command-line override for the privacy gate.
+
+Closing the machine gate requires a separately reviewed source change **after** the external closure criteria below have been independently verified. A local operator assertion, a successful repository test, a lack of new deployments, or possession of an API key cannot substitute for that reviewed closure evidence.
+
 ## Execution gate
 
 No real-provider pilot, disclosure export based on real-provider evidence, or new third-party hosting migration should take priority over closing the historical privacy incident.
 
-Provider-free tests, documentation improvements, dependency maintenance and GitHub Pages privacy verification may continue. External execution remains disabled unless separately reviewed after the incident is closed.
+Provider-free tests, documentation improvements, dependency maintenance and GitHub Pages privacy verification may continue. External execution remains disabled while the machine privacy gate is open.
 
 ## Closure criteria
 
@@ -46,3 +63,5 @@ The incident is closed only when all of the following are verified:
 3. GitHub confirms removal of affected historical blobs, pull-request references and cached views;
 4. the canonical GitHub Pages CV still passes the source, staged and live privacy verifier;
 5. no tracked public file contains a Vercel deployment URL or private contact value.
+
+Only after all five conditions hold should a focused review change `privacy-execution-gate.json` to `incident_status: "closed"` and `execution_permitted: true`. That change is execution authority and must receive the normal exact-head repository verification before merge.
