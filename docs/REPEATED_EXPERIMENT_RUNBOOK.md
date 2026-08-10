@@ -110,6 +110,43 @@ A completed trial with no matching witness, a shorter witness, a witness ahead o
 
 This is a **local continuity control**, not an external notarization system. It detects later truncation or consistent rewriting of already-witnessed trial evidence while the witness remains trustworthy. An actor able to rewrite both the complete local evidence history and the complete witness history can still construct a different internally consistent local history. Defeating that stronger threat requires an independently controlled external anchor, signature/transparency service, hardware-backed monotonic counter or equivalent separately reviewed mechanism.
 
+## Detached continuity receipt
+
+A detached receipt lets an operator preserve a compact checkpoint of a verified witness prefix **outside** the experiment root without adding network or Git authority.
+
+Create a receipt only after the relevant completed trial evidence has verified and the root witness contains the checkpoint you want to retain:
+
+```bash
+python -m agent_reliability_arena.repeated_receipt create \
+  --experiment-root /private/experiment-root \
+  --receipt /separate/receipts/checkpoint-0001.json
+```
+
+Verify that retained receipt later with:
+
+```bash
+python -m agent_reliability_arena.repeated_receipt verify \
+  --experiment-root /private/experiment-root \
+  --receipt /separate/receipts/checkpoint-0001.json
+```
+
+The receipt is deterministic and create-once. It stores only:
+
+- plan and preflight digests;
+- number of witness records covered;
+- exact byte length and SHA-256 of the covered witness prefix;
+- witness-head digest at that checkpoint;
+- final trial ID covered by the receipt;
+- canonical receipt digest.
+
+It stores no path, prompt, model output, provider payload, credential, operator note, billing value or timestamp.
+
+The receipt commits an exact **prefix**, not only the whole current witness file. This means a receipt created after trial 1 remains valid after trials 2–N are appended, as long as every byte in the original trial-1 witness prefix is unchanged. Verification also revalidates the complete current witness against its referenced trial ledgers and verification summaries before accepting the detached checkpoint.
+
+Receipt creation refuses an existing output and requires the resolved destination parent to be outside the experiment root. Receipt verification applies the same detached-path rule. The software does not create external storage and does not claim that another directory on the same machine is an independent trust domain; the operator must retain at least one copy somewhere outside the failure/adversary domain that could rewrite the experiment root for the receipt to strengthen that threat boundary.
+
+A retained old receipt can therefore detect a wholesale replacement of the local witness/evidence history when the replacement changes the committed prefix. If an actor can rewrite both the complete experiment root **and every retained detached receipt**, this mechanism does not provide external notarization. A stronger stage would require separately controlled signatures, timestamping, transparency infrastructure, hardware-backed monotonic state or another independently governed anchor.
+
 ## Safe pause and continuation
 
 The provider-free API supports a deliberate `max_new_trials` limit. This allows an operator to run a bounded number of new trials and stop only after the last new trial has independently verified and been witnessed.
@@ -124,7 +161,7 @@ On continuation:
 - the next preregistered trial begins;
 - the same exact plan, preflight and start records must match.
 
-The checkpoint remains useful as an atomic progress convenience, but it is not the stronger history commitment: the append-only witness must agree first.
+The checkpoint remains useful as an atomic progress convenience, but it is not the stronger history commitment: the append-only witness must agree first. Detached receipts are optional operator-retained checkpoints and are not required for ordinary provider-free runner continuation.
 
 ## Terminal conditions
 
@@ -176,7 +213,7 @@ Monetary cost is not inferred from tokens. Any cost calculation requires separat
 7. preserves its trial and experiment abort records;
 8. proves continuation of that aborted root is refused.
 
-Dedicated witness regression tests additionally prove retained-witness rejection of a valid-looking ledger suffix truncation even when the trial's ledger summary is rewritten to match the shorter still-valid ledger.
+Dedicated witness regression tests prove retained-witness rejection of a valid-looking ledger suffix truncation even when the trial's ledger summary is rewritten to match the shorter still-valid ledger. Detached-receipt tests additionally prove that an older separately retained prefix receipt remains valid after later witness appends but rejects a rewritten committed prefix or a different locally valid replacement history.
 
 The release reproduction explicitly reports `provider_called: false` and `comparative_claim_permitted: false`.
 
@@ -196,4 +233,4 @@ No standard test, release verifier or installed public command makes a real prov
 
 ## Claims boundary
 
-The repeated runner, witness, resume rules and analysis methods can be validated using provider-free scripted evidence. That proves experiment infrastructure, not hosted-model performance. The local witness strengthens continuity while retained; it is not proof against an adversary who can rewrite both witness and evidence history. Real comparative claims remain prohibited until a preregistered real dataset is complete, independently verified, disclosure-safe and interpreted with its limitations intact.
+The repeated runner, witness, optional detached receipts, resume rules and analysis methods can be validated using provider-free scripted evidence. That proves experiment infrastructure, not hosted-model performance. The local witness strengthens continuity while retained; a detached receipt can additionally detect replacement of the prefix it committed when that receipt is retained outside the rewritten root. Neither mechanism is proof against an adversary who can rewrite every local evidence copy and every retained receipt. Real comparative claims remain prohibited until a preregistered real dataset is complete, independently verified, disclosure-safe and interpreted with its limitations intact.

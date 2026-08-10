@@ -9,6 +9,7 @@ from pathlib import Path
 from agent_reliability_arena.repeated_witness import (
     WITNESS_FILENAME,
     append_completed_trial_witness,
+    inspect_completed_trial_witnesses,
     verify_completed_trial_witnesses,
 )
 from agent_reliability_arena.transports import RecordingTransport
@@ -111,6 +112,18 @@ class RepeatedWitnessTests(unittest.TestCase):
             self.assertIsNone(rows[0]["previous_witness_digest"])
             self.assertEqual(rows[1]["previous_witness_digest"], rows[0]["witness_digest"])
             self.assertEqual(rows[2]["previous_witness_digest"], rows[1]["witness_digest"])
+
+    def test_inspection_reverifies_witness_history_without_expected_id_argument(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for index in range(1, 3):
+                trial_id = f"trial-{index:04d}"
+                make_trial(root, trial_id, f"call-{index}")
+                append_completed_trial_witness(root, trial_id, PLAN_DIGEST, PREFLIGHT_DIGEST)
+
+            rows = inspect_completed_trial_witnesses(root, PLAN_DIGEST, PREFLIGHT_DIGEST)
+
+            self.assertEqual([row["trial_id"] for row in rows], ["trial-0001", "trial-0002"])
 
     def test_rejects_mutated_witnessed_ledger_and_summary(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
