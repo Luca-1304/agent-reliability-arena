@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
@@ -14,9 +15,11 @@ from ._ledger_lock import (
 )
 from .base import ModelCallRequest, ModelCallResult, ModelTransport, TransportError, canonical_json_sha256
 
-SCHEMA_VERSION = "1"
+LEGACY_SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "2"
+_SUPPORTED_SCHEMA_VERSIONS = {LEGACY_SCHEMA_VERSION, SCHEMA_VERSION}
 DEFAULT_LOCK_TIMEOUT_SECONDS = 30.0
-_RECORD_KEYS = {
+_RECORD_KEYS_V1 = {
     "schema_version",
     "sequence",
     "recorded_at",
@@ -28,6 +31,26 @@ _RECORD_KEYS = {
     "error",
     "record_digest",
 }
+_RECORD_KEYS_V2 = _RECORD_KEYS_V1 | {"previous_record_digest"}
+
+
+@dataclass(frozen=True)
+class _LedgerState:
+    schema_version: str
+    records: int
+    results: int
+    errors: int
+    ledger_sha256: str
+    last_record_digest: str
+
+    def to_summary(self) -> dict[str, object]:
+        return {
+            "schema_version": self.schema_version,
+            "records": self.records,
+            "results": self.results,
+            "errors": self.errors,
+            "ledger_sha256": self.ledger_sha256,
+        }
 
 
 def _utc_now() -> datetime:
@@ -69,10 +92,20 @@ def _validate_path(path: Path, *, require_exists: bool) -> None:
         raise ValueError(f"Ledger does not exist: {path}")
 
 
-def _validate_record(row: object, line_number: int) -> str:
+def _validate_record(
+    row: object,
+    line_number: int,
+    *,
+    schema_version: str,
+    expected_previous_digest: str | None,
+) -> tuple[str, str]:
     if not isinstance(row, dict):
         raise ValueError(f"Ledger line {line_number} must contain a JSON object.")
-    if set(row) != _RECORD_KEYS:
+    if row.get("schema_version") != schema_version:
+        raise ValueError(f"Ledger schema_version mismatch at line {line_number}.")
+
+    expected_keys = _RECORD_KEYS_V2 if schema_version == SCHEMA_VERSION else _RECORD_KEYS_V1
+    if set(row) != expected_keys:
         raise ValueError(f"Ledger record shape is invalid at line {line_number}.")
 
     record_digest = _required_text(row.get("record_digest"), "record_digest", line_number)
@@ -81,11 +114,24 @@ def _validate_record(row: object, line_number: int) -> str:
     if canonical_json_sha256(unsigned) != record_digest:
         raise ValueError(f"Ledger record digest mismatch at line {line_number}.")
 
-    if row.get("schema_version") != SCHEMA_VERSION:
-        raise ValueError(f"Unsupported ledger schema_version at line {line_number}.")
     sequence = row.get("sequence")
     if not isinstance(sequence, int) or isinstance(sequence, bool) or sequence != line_number:
         raise ValueError(f"Ledger sequence mismatch at line {line_number}.")
+
+    if schema_version == SCHEMA_VERSION:
+        previous_record_digest = row.get("previous_record_digest")
+        if line_number == 1:
+            if previous_record_digest is not None:
+                raise ValueError("Ledger schema-2 genesis previous_record_digest must be null at line 1.")
+        else:
+            previous_text = _required_text(
+                previous_record_digest,
+                "previous_record_digest",
+                line_number,
+            )
+            if previous_text != expected_previous_digest:
+                raise ValueError(f"Ledger previous_record_digest mismatch at line {line_number}.")
+
     _validate_timestamp(row.get("recorded_at"), line_number)
     provider = _required_text(row.get("provider"), "provider", line_number)
 
@@ -109,7 +155,7 @@ def _validate_record(row: object, line_number: int) -> str:
             raise ValueError(f"Ledger result call_id mismatch at line {line_number}.")
         if result.get("provider") != provider:
             raise ValueError(f"Ledger result provider mismatch at line {line_number}.")
-        return "result"
+        return "result", record_digest
     if outcome_type == "error":
         if result is not None or not isinstance(error, dict):
             raise ValueError(f"Ledger result/error shape is invalid at line {line_number}.")
@@ -117,11 +163,11 @@ def _validate_record(row: object, line_number: int) -> str:
         _required_text(error.get("category"), "error category", line_number)
         if not isinstance(error.get("retryable"), bool):
             raise ValueError(f"Ledger error retryable flag is invalid at line {line_number}.")
-        return "error"
+        return "error", record_digest
     raise ValueError(f"Ledger outcome_type is invalid at line {line_number}.")
 
 
-def _verify_transport_ledger_unlocked(path: Path) -> dict[str, object]:
+def _inspect_transport_ledger_unlocked(path: Path) -> _LedgerState:
     ledger_path = Path(path)
     _validate_path(ledger_path, require_exists=True)
     raw = ledger_path.read_bytes()
@@ -137,6 +183,9 @@ def _verify_transport_ledger_unlocked(path: Path) -> dict[str, object]:
     lines = text.splitlines()
     if not lines:
         raise ValueError(f"Ledger is empty: {ledger_path}")
+
+    ledger_schema: str | None = None
+    previous_record_digest: str | None = None
     for line_number, line in enumerate(lines, start=1):
         if not line:
             raise ValueError(f"Ledger contains a blank line at line {line_number}.")
@@ -144,19 +193,44 @@ def _verify_transport_ledger_unlocked(path: Path) -> dict[str, object]:
             row = json.loads(line)
         except json.JSONDecodeError as exc:
             raise ValueError(f"Ledger contains invalid JSON at line {line_number}.") from exc
-        outcome_type = _validate_record(row, line_number)
+        if not isinstance(row, dict):
+            raise ValueError(f"Ledger line {line_number} must contain a JSON object.")
+
+        row_schema = row.get("schema_version")
+        if line_number == 1:
+            if row_schema not in _SUPPORTED_SCHEMA_VERSIONS:
+                raise ValueError(f"Unsupported ledger schema_version at line {line_number}.")
+            ledger_schema = str(row_schema)
+        elif row_schema != ledger_schema:
+            raise ValueError(f"Ledger schema_version mismatch at line {line_number}.")
+
+        assert ledger_schema is not None
+        outcome_type, record_digest = _validate_record(
+            row,
+            line_number,
+            schema_version=ledger_schema,
+            expected_previous_digest=previous_record_digest,
+        )
         if outcome_type == "result":
             results += 1
         else:
             errors += 1
+        previous_record_digest = record_digest
 
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "records": len(lines),
-        "results": results,
-        "errors": errors,
-        "ledger_sha256": hashlib.sha256(raw).hexdigest(),
-    }
+    assert ledger_schema is not None
+    assert previous_record_digest is not None
+    return _LedgerState(
+        schema_version=ledger_schema,
+        records=len(lines),
+        results=results,
+        errors=errors,
+        ledger_sha256=hashlib.sha256(raw).hexdigest(),
+        last_record_digest=previous_record_digest,
+    )
+
+
+def _verify_transport_ledger_unlocked(path: Path) -> dict[str, object]:
+    return _inspect_transport_ledger_unlocked(path).to_summary()
 
 
 def verify_transport_ledger(
@@ -204,13 +278,15 @@ class RecordingTransport:
         self,
         request: ModelCallRequest,
         *,
+        schema_version: str,
         sequence: int,
+        previous_record_digest: str | None,
         outcome_type: str,
         result: dict[str, object] | None,
         error: dict[str, object] | None,
     ) -> dict[str, object]:
-        return {
-            "schema_version": SCHEMA_VERSION,
+        record: dict[str, object] = {
+            "schema_version": schema_version,
             "sequence": sequence,
             "recorded_at": _timestamp(self.clock()),
             "provider": self.provider,
@@ -220,6 +296,9 @@ class RecordingTransport:
             "result": result,
             "error": error,
         }
+        if schema_version == SCHEMA_VERSION:
+            record["previous_record_digest"] = previous_record_digest
+        return record
 
     def _append_unlocked(self, record: dict[str, object]) -> None:
         _validate_path(self.ledger_path, require_exists=False)
@@ -263,14 +342,22 @@ class RecordingTransport:
         ):
             _validate_path(self.ledger_path, require_exists=False)
             if self.ledger_path.exists() and self.ledger_path.stat().st_size > 0:
-                summary = _verify_transport_ledger_unlocked(self.ledger_path)
-                sequence = int(summary["records"]) + 1
+                state = _inspect_transport_ledger_unlocked(self.ledger_path)
+                schema_version = state.schema_version
+                sequence = state.records + 1
+                previous_record_digest = (
+                    state.last_record_digest if schema_version == SCHEMA_VERSION else None
+                )
             else:
+                schema_version = SCHEMA_VERSION
                 sequence = 1
+                previous_record_digest = None
             self._append_unlocked(
                 self._record(
                     request,
+                    schema_version=schema_version,
                     sequence=sequence,
+                    previous_record_digest=previous_record_digest,
                     outcome_type=outcome_type,
                     result=result,
                     error=error,
