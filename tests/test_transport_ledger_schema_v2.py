@@ -113,6 +113,20 @@ class TransportLedgerSchemaV2Tests(unittest.TestCase):
             self.assertEqual(rows[1]["previous_record_digest"], rows[0]["record_digest"])
             self.assertEqual(verify_transport_ledger(ledger)["schema_version"], "2")
 
+    def test_existing_empty_file_starts_schema2(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = Path(directory) / "calls.jsonl"
+            ledger.write_bytes(b"")
+
+            RecordingTransport(StaticTransport(), ledger, clock=lambda: FIXED_TIME).complete(
+                make_request("empty-existing")
+            )
+
+            rows = load_rows(ledger)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["schema_version"], "2")
+            self.assertIsNone(rows[0]["previous_record_digest"])
+
     def test_existing_schema1_ledger_verifies_and_continues_without_rewrite(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             ledger = Path(directory) / "calls.jsonl"
