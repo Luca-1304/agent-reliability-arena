@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the first real Stage 7 execution path enforce the unresolved privacy hold, exact reviewed candidate policy, strict JSON boundary and explicit provider model identity before any key access, output creation or provider call.
+**Goal:** Make the first real Stage 7 execution path enforce the unresolved privacy hold, exact reviewed candidate policy, strict JSON boundary, prepared private output and explicit provider model identity before any credential access or provider call.
 
-**Architecture:** Keep the existing disabled Stage 7 packet as the source of truth. Add a source-controlled privacy execution gate that remains closed, extend `stage7_candidate.py` with strict reusable input and exact enabled-policy-delta verification, harden the real CLI to call those gates before secret access, and make the OpenAI transport reject missing model provenance rather than synthesizing it.
+**Architecture:** Keep the existing disabled Stage 7 packet as the source of truth. Add a source-controlled privacy execution gate that remains closed, extend `stage7_candidate.py` with strict reusable input and exact enabled-policy-delta verification, harden the real CLI to call those gates and validate a pre-created private output directory before secret access, and make the OpenAI transport reject missing model provenance rather than synthesizing it.
 
 **Tech Stack:** Python standard library only; existing `unittest` suite; existing GitHub Actions reliability gates; no new dependency.
 
@@ -14,6 +14,7 @@
 - `examples/stage7_candidate/privacy-execution-gate.json` must remain `execution_permitted: false` in this change.
 - The private enabled policy may differ from the committed disabled candidate only by `external_execution_enabled: false -> true`.
 - Missing provider-returned model identity must fail closed as non-retryable `invalid_response`.
+- The paid Stage 7 command must validate an existing empty operator-private output directory before API-key lookup.
 - No workflow, dependency, release/publication authority, Git mutation authority or Vercel deployment change.
 - No privacy-incident closure claim, spend approval, automatic retry or comparative model-performance claim.
 - Preserve feature branch after merge.
@@ -79,16 +80,18 @@
 **Interfaces:**
 - The CLI uses fixed repository paths for `examples/stage7_candidate/` and its privacy gate; there is no privacy-gate override argument.
 - Reuses: `verify_stage7_privacy_gate`, `verify_stage7_candidate`, `verify_stage7_execution_policy`, strict Stage 7 JSON reader.
+- Adds a provider-free prepared-output check requiring an existing, empty, non-symlink directory and mode `0700` on non-Windows systems before credential lookup.
 
 - [x] Add subprocess regressions using the actual Stage 7 candidate. With all operator flags present, the committed open privacy gate refuses before output creation or API-key lookup.
 - [x] Add regression proving a materially altered enabled policy cannot become a valid Stage 7 execution policy even when it has its own internally valid digest.
 - [x] Add duplicate-key and symlinked execution-policy regressions.
 - [x] Confirm RED because the old paid CLI reached the API-key check and used the generic fixture boundary.
-- [x] Change script order to: approvals -> GitHub Actions refusal -> fixed privacy gate -> committed packet verification -> strict candidate/config/catalog/policy binding -> reviewed enabled policy digest/preflight validation -> API-key lookup -> transport -> runner.
+- [x] Change script order to: approvals -> GitHub Actions refusal -> fixed privacy gate -> committed packet verification -> strict candidate/config/catalog/policy binding -> reviewed enabled policy digest/preflight validation -> prepared output-path validation -> API-key lookup -> transport -> runner.
 - [x] Replace plain JSON execution-input loading with the strict Stage 7 reader.
-- [x] Keep output creation in the existing runner, after every pre-secret gate.
+- [x] Require the operator to pre-create the output directory; reject absent, dirty, symlinked or over-broad Unix permissions before credential lookup; retain the runner's independent root recheck.
+- [x] Add in-process provider-free tests with a test-only injected closed privacy result proving bad output fails before the key gate and a valid prepared output reaches the missing-key refusal only after the path check passes.
 - [x] Align the legacy private-pilot script tests with the actual Stage 7 candidate and privacy-first ordering.
-- [ ] Confirm the complete source suite is green on the post-alignment head.
+- [ ] Confirm the complete source suite is green on the final post-alignment head.
 
 ### Task 5: Governance and budget semantics reconciliation
 
@@ -102,6 +105,7 @@
 
 - [x] Update hosting/privacy docs to name the machine gate and state that a future reviewed source change is required after external closure evidence.
 - [x] Make privacy closure Step 0 in the private pilot runbook before model/pricing refresh or policy enablement.
+- [x] Require the private output directory to be prepared/verified before the key is put into the environment.
 - [x] Clarify that 16,384 tokens / 96 cents / proposed $1 maximum are local pre-call reservation/accounting controls, not an instantaneous provider billing cutoff; recommend a dedicated restricted provider project/key and a low provider-side spend backstop before execution.
 - [x] Update Stage 7 ROADMAP remaining work so privacy closure is explicitly first.
 - [x] Preserve the current GPT-5.5/USD candidate and remove stale current-path assumptions rather than rewriting historical records.
