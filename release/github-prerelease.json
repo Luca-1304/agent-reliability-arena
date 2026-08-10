@@ -1,5 +1,5 @@
 {
-  "attestation_action": "actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d",
+  "attestation_action": "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6",
   "attestation_signer_workflow": ".github/workflows/release.yml",
   "changelog_heading": "## v0.2.0rc2",
   "claims_boundary": "Public prerelease of verified software architecture, deterministic fixture evidence, provider-free rehearsals and signed build provenance only; no real-provider benchmark, representative model performance, production readiness, unrestricted-tool safety, statistical generality, vulnerability absence or measured real-world cost-efficiency claim.",
@@ -29,7 +29,7 @@
   "source_repository": "https://github.com/Luca-1304/agent-reliability-arena",
   "source_sbom_sha256": "d571b710b7a12fb47d0da151cf923a82dccf666e1c2f2c207342777c01ce500d",
   "source_showcase_manifest_digest": "30061fec34ed199b6dcec650b78a7ee320166d11f08c74302871015fb4ca12e7",
-  "source_supply_chain_manifest_sha256": "2fbfb37b0eb3a3e0ed877162234395d50a7286637c2c4f1b12c44c0d0a2bb7da",
+  "source_supply_chain_manifest_sha256": "cf477c8e8c86aa10c6b6c5ff03874e6ab39b33916bac2ce15f977b46ddca0d32",
   "tag": "v0.2.0rc2",
   "target_branch": "main",
   "version": "0.2.0rc2"

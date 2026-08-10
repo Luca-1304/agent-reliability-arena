@@ -19,7 +19,7 @@ _CITATION_PROVENANCE_PATH = Path("citation/provenance.json")
 _SUPPLY_CHAIN_MANIFEST_PATH = Path("security/supply-chain-manifest.json")
 _SBOM_PATH = Path("security/sbom.cdx.json")
 _WORKFLOW_PATH = Path(".github/workflows/release.yml")
-_ATTESTATION_ACTION = "actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d"
+_ATTESTATION_ACTION = "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6"
 _VERSION_PATTERN = re.compile(r'^version\s*=\s*"(?P<version>[^"]+)"\s*$', re.MULTILINE)
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 _EXPECTED_CONTRACT_KEYS = {
