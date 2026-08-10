@@ -117,9 +117,11 @@ def _read_witness_rows(
     plan_digest: str,
     preflight_manifest_digest: str,
 ) -> list[dict[str, object]]:
+    if path.is_symlink():
+        raise ValueError("Experiment evidence witness must be a regular non-symlink file.")
     if not path.exists():
         return []
-    if path.is_symlink() or not path.is_file():
+    if not path.is_file():
         raise ValueError("Experiment evidence witness must be a regular non-symlink file.")
     try:
         text = path.read_text(encoding="utf-8")
