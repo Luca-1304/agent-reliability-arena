@@ -132,6 +132,20 @@ def _load_rows(ledger: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
 
 
+def _assert_schema2_chain(
+    testcase: unittest.TestCase,
+    rows: list[dict[str, object]],
+) -> None:
+    testcase.assertTrue(rows)
+    testcase.assertEqual({row["schema_version"] for row in rows}, {"2"})
+    testcase.assertIsNone(rows[0]["previous_record_digest"])
+    for previous, current in zip(rows, rows[1:]):
+        testcase.assertEqual(
+            current["previous_record_digest"],
+            previous["record_digest"],
+        )
+
+
 def _wait_for_ready_processes(
     ready_dir: Path,
     expected_names: set[str],
@@ -192,7 +206,10 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
                 {row["request"]["call_id"] for row in rows},
                 {f"thread-{index}" for index in range(count)},
             )
-            self.assertEqual(verify_transport_ledger(ledger)["records"], count)
+            _assert_schema2_chain(self, rows)
+            summary = verify_transport_ledger(ledger)
+            self.assertEqual(summary["schema_version"], "2")
+            self.assertEqual(summary["records"], count)
 
     def test_provider_calls_remain_parallel_while_commits_serialize(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -226,6 +243,8 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
 
             self.assertFalse(any(thread.is_alive() for thread in threads))
             self.assertEqual(failures, [])
+            rows = _load_rows(ledger)
+            _assert_schema2_chain(self, rows)
             self.assertEqual(verify_transport_ledger(ledger)["records"], count)
 
     def test_spawned_processes_write_unique_sequences_and_mixed_outcomes(self) -> None:
@@ -268,17 +287,21 @@ class ConcurrentTransportLedgerTests(unittest.TestCase):
                 {row["request"]["call_id"] for row in rows},
                 expected_names,
             )
+            _assert_schema2_chain(self, rows)
             summary = verify_transport_ledger(ledger)
+            self.assertEqual(summary["schema_version"], "2")
             self.assertEqual(summary["records"], count)
             self.assertEqual(summary["results"], 4)
             self.assertEqual(summary["errors"], 2)
 
             follow_up = make_request("process-follow-up")
             RecordingTransport(StaticTransport(), ledger, clock=lambda: FIXED_TIME).complete(follow_up)
+            rows = _load_rows(ledger)
             self.assertEqual(
-                [row["sequence"] for row in _load_rows(ledger)],
+                [row["sequence"] for row in rows],
                 list(range(1, count + 2)),
             )
+            _assert_schema2_chain(self, rows)
 
     def test_malformed_tail_blocks_preexisting_recorder_without_appending(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
