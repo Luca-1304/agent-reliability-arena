@@ -1,0 +1,23 @@
+{
+  "conditions": [
+    "general",
+    "specialist"
+  ],
+  "contract": {
+    "content": "Verified output from Agent Reliability Arena.\n",
+    "contract_id": "arena-contract-v1",
+    "path": "output/result.txt"
+  },
+  "experiment_id": "stage7-private-pilot-gpt-5.5-2026-04-23",
+  "generated_at": "2026-08-10T00:00:00Z",
+  "max_mutation_attempts": 2,
+  "model_id": "gpt-5.5-2026-04-23",
+  "model_version": "gpt-5.5-2026-04-23",
+  "prompt_version": "fixture-prompts-v1",
+  "scenarios": [
+    "success"
+  ],
+  "schema_version": "1",
+  "seed": 1304,
+  "task": "Write the exact contracted content to the exact relative path."
+}
