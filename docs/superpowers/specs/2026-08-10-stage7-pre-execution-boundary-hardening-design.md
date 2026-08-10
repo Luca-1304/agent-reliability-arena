@@ -15,6 +15,7 @@ Close the final provider-free gaps found in the Stage 7 self-audit before any re
 4. `OpenAIResponsesTransport` currently substitutes the requested model ID when a provider response omits the `model` field, turning missing provenance into apparent identity agreement.
 5. Existing private-pilot CLI tests use generic fixture inputs rather than the actual Stage 7 candidate path.
 6. Documentation uses “hard ceiling” language for local reservations in places where the code provides a pre-call reservation/accounting guard rather than an instantaneous provider billing cap.
+7. Final design review found that the documented execution order requires output-path safety before API-key lookup, while the prior paid script deferred that check to the runner after the key was read.
 
 ## Considered approaches
 
@@ -63,13 +64,14 @@ Closing the gate later requires a separately reviewed source change after the ex
 Extend the Stage 7 candidate module with an execution-policy verifier that:
 
 1. verifies the committed disabled packet first;
-2. strictly loads the private enabled policy;
-3. compares its normalized `PilotPolicy.to_dict()` against the committed disabled policy;
-4. requires every field to match exactly except `external_execution_enabled`;
-5. requires the candidate value to be `false` and private value to be `true`;
-6. rebuilds the enabled preflight against the committed candidate experiment and prompt catalogue;
-7. confirms call membership, scenario, model, prompt version, token reservations, currency, per-call reservation and maximum reservation are unchanged;
-8. returns the enabled policy digest and preflight manifest digest for operator review.
+2. binds the supplied execution config to the exact committed candidate config digest;
+3. strictly loads the private enabled policy;
+4. compares its normalized `PilotPolicy.to_dict()` against the committed disabled policy;
+5. requires every field to match exactly except `external_execution_enabled`;
+6. requires the candidate value to be `false` and private value to be `true`;
+7. rebuilds the enabled preflight against the committed candidate experiment and prompt catalogue;
+8. confirms call membership, scenario, model, prompt version, token reservations, currency, per-call reservation and maximum reservation are unchanged;
+9. returns the candidate packet digest, enabled policy digest and preflight manifest digest for operator review.
 
 No enabled policy is committed.
 
@@ -94,7 +96,21 @@ The transport must never synthesize provider identity from `request.model_id`.
 
 The existing `RecordingTransport` equality check remains the second boundary for a present-but-different model ID.
 
-### 5. Actual Stage 7 end-to-end provider-free regression
+### 5. Prepared private output before credential lookup
+
+The paid Stage 7 command must require its output directory to be deliberately prepared **before** the API key is read.
+
+Before credential lookup, the script requires:
+
+- the output path already exists;
+- it is a directory;
+- it is not a symlink;
+- it is empty;
+- on non-Windows platforms, its permission bits are exactly operator-only mode `0700`.
+
+The paid script performs this provider-free precheck. `run_private_paired_pilot(...)` then retains its existing independent root checks when execution begins. A bad, absent, dirty or over-broad output directory therefore fails before credential lookup and is checked again by the runner rather than relying on one layer.
+
+### 6. Actual Stage 7 end-to-end provider-free regression
 
 Add permanent tests using `examples/stage7_candidate/` rather than only generic fixtures. They must prove:
 
@@ -104,9 +120,11 @@ Add permanent tests using `examples/stage7_candidate/` rather than only generic 
 - duplicate-key and symlinked private policy inputs are rejected;
 - provider response missing `model` is rejected as invalid response;
 - present-but-different model identity remains rejected by the recording boundary;
+- after an injected test-only closed privacy result, an absent/unsafe output directory fails before the API-key gate;
+- a valid prepared output directory reaches the missing-key refusal only after the output precheck passes;
 - no test makes a real provider request.
 
-Tests that need to exercise post-privacy-gate logic should call isolated validation functions with an injected temporary closed gate rather than exposing a runtime CLI override.
+Tests that need to exercise post-privacy-gate logic call isolated functions or patch the in-process privacy verifier with a test-only closed result. The production CLI exposes no privacy-gate override.
 
 ## Execution ordering
 
@@ -118,12 +136,12 @@ The paid Stage 7 script should fail closed in this order:
 4. committed Stage 7 packet verification;
 5. strict config/catalog/private-policy loading and exact candidate binding;
 6. reviewed enabled-policy digest/preflight digest checks;
-7. private output-path safety checks performed by the existing runner;
+7. prepared private output-path safety checks;
 8. API-key lookup;
 9. transport construction;
-10. provider execution.
+10. runner recheck and provider execution.
 
-The key must not be read and the output directory must not be created when any earlier gate fails.
+The key must not be read and the output directory must not be created when any earlier gate fails. The output directory is deliberately created by the operator before invoking the paid command and is required to be empty/private before the key can be read.
 
 ## Budget semantics
 
@@ -168,11 +186,12 @@ After merge, update issue #14 to replace the stale gpt-5-mini/GBP candidate desc
 
 The change is acceptable only if:
 
-1. tests demonstrate the audited failures first and the final implementation closes them;
+1. tests demonstrate the audited failures and the final implementation closes them;
 2. the committed privacy gate remains closed;
 3. the live Stage 7 path cannot read `OPENAI_API_KEY` or create output while the privacy gate is closed;
 4. the private enabled policy can differ from the committed candidate only in the execution-enable Boolean;
 5. missing provider model identity fails closed;
-6. the actual Stage 7 candidate path has a provider-free end-to-end boundary regression;
-7. no workflow, dependency, provider execution, release authority or Vercel path changes;
-8. the exact final PR head passes all triggered required repository workflow families before merge.
+6. the paid path validates an already prepared private output directory before credential lookup and the runner retains its own recheck;
+7. the actual Stage 7 candidate path has provider-free end-to-end boundary regressions;
+8. no workflow, dependency, provider execution, release authority or Vercel path changes;
+9. the exact final PR head passes all triggered required repository workflow families before merge.
