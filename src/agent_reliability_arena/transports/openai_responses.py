@@ -267,8 +267,15 @@ class OpenAIResponsesTransport:
                 client_request_id=client_request_id,
                 provider_request_id=provider_request_id,
             )
-        if not isinstance(response_model, str) or not response_model:
-            response_model = request.model_id
+        if not isinstance(response_model, str) or not response_model.strip():
+            raise TransportError(
+                "OpenAI API response did not include a valid model identity.",
+                category="invalid_response",
+                retryable=False,
+                client_request_id=client_request_id,
+                provider_request_id=provider_request_id,
+            )
+        response_model = response_model.strip()
         if not isinstance(status, str) or not status:
             status = "unknown"
         if status == "failed":
