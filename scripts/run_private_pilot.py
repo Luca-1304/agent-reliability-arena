@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import stat
 import sys
 from pathlib import Path
 
@@ -23,6 +24,27 @@ ROOT = Path(__file__).resolve().parents[1]
 CANDIDATE_ROOT = ROOT / "examples" / "stage7_candidate"
 PRIVACY_GATE = CANDIDATE_ROOT / "privacy-execution-gate.json"
 OPERATOR_CONFIRMATION = "I_APPROVE_ONE_PRIVATE_PILOT"
+
+
+def _verify_prepared_private_output(path: Path) -> Path:
+    target = Path(path)
+    if target.is_symlink():
+        raise RuntimeError("Private pilot output directory must not be a symlink.")
+    if not target.exists():
+        raise RuntimeError(
+            "Private pilot output directory must already exist before credential lookup."
+        )
+    if not target.is_dir():
+        raise RuntimeError("Private pilot output path must be a directory.")
+    if any(target.iterdir()):
+        raise RuntimeError("Private pilot output directory must be empty before credential lookup.")
+    if os.name != "nt":
+        mode = stat.S_IMODE(target.stat().st_mode)
+        if mode & 0o777 != 0o700:
+            raise RuntimeError(
+                "Private pilot output directory must have operator-only mode 0700 before credential lookup."
+            )
+    return target
 
 
 def _run(args: argparse.Namespace) -> dict[str, object]:
@@ -72,6 +94,8 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
     if preflight["manifest_digest"] != execution["preflight_manifest_digest"]:
         raise RuntimeError("The execution preflight no longer matches the reviewed Stage 7 boundary.")
 
+    output = _verify_prepared_private_output(args.output)
+
     api_key = os.environ.get("OPENAI_API_KEY")
     if not isinstance(api_key, str) or not api_key.strip():
         raise RuntimeError("OPENAI_API_KEY must be supplied through the local process environment.")
@@ -85,13 +109,13 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
         catalog,
         policy,
         transport,
-        args.output,
+        output,
         reviewed_policy_digest=args.reviewed_policy_digest,
         external_execution_approved=True,
     )
     return {
         "status": summary["status"],
-        "private_output": str(args.output),
+        "private_output": str(output),
         "scenario_id": summary["scenario_id"],
         "provider": summary["provider"],
         "model_id": summary["model_id"],
