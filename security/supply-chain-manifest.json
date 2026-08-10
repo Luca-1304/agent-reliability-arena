@@ -27,7 +27,7 @@
     },
     {
       "path": ".github/workflows/codeql.yml",
-      "sha256": "396c6e73ea3e161291ee5bb721f1e2ec2da0b52a6c839ed6ab1e596a8fd13aa2"
+      "sha256": "0e2b2fb9b163d5c8a5d6c0f117fe02fc9f67e9db2b2c87c6199d6f0f16b3af1b"
     },
     {
       "path": "SECURITY.md",
