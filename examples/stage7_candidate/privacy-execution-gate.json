@@ -1,0 +1,8 @@
+{
+  "execution_permitted": false,
+  "incident_status": "open",
+  "issue_number": 14,
+  "last_verified_date": "2026-08-10",
+  "rationale": "Historical Vercel projects still exist and platform-level historical GitHub/Vercel removal has not been independently confirmed.",
+  "schema_version": "arena-stage7-privacy-execution-gate-v1"
+}

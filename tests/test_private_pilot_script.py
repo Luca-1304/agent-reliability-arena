@@ -12,9 +12,9 @@ from agent_reliability_arena.pilot_policy import PilotPolicy
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = ROOT / "examples" / "fixture_experiment.json"
+CONFIG = ROOT / "examples" / "stage7_candidate" / "experiment.json"
 CATALOG = ROOT / "examples" / "live_prompt_catalog.json"
-DISABLED_POLICY = ROOT / "examples" / "pilot_policy.disabled.json"
+DISABLED_POLICY = ROOT / "examples" / "stage7_candidate" / "policy.disabled.json"
 SCRIPT = ROOT / "scripts" / "run_private_pilot.py"
 APPROVAL = "I_APPROVE_ONE_PRIVATE_PILOT"
 
@@ -100,7 +100,7 @@ class PrivatePilotScriptTests(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertNotIn(environment["OPENAI_API_KEY"], result.stdout + result.stderr)
 
-    def test_enabled_policy_without_environment_key_stops_before_output(self) -> None:
+    def test_enabled_policy_stops_at_privacy_gate_before_environment_key_or_output(self) -> None:
         raw = json.loads(DISABLED_POLICY.read_text(encoding="utf-8"))
         raw["external_execution_enabled"] = True
         policy = PilotPolicy.from_dict(raw)
@@ -128,7 +128,8 @@ class PrivatePilotScriptTests(unittest.TestCase):
                 check=False,
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("openai_api_key", result.stderr.lower())
+            self.assertIn("privacy", result.stderr.lower())
+            self.assertNotIn("openai_api_key", result.stderr.lower())
             self.assertFalse(output.exists())
 
 
