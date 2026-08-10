@@ -67,10 +67,13 @@ class Stage7PrivateScriptBoundaryTests(unittest.TestCase):
             root = Path(directory)
             policy_path, policy = self.enabled_policy(root)
             output = root / "pilot"
+            environment = self.base_environment()
+            secret = "sk-stage7-privacy-boundary-test-secret"
+            environment["OPENAI_API_KEY"] = secret
             result = subprocess.run(
                 self.command(policy_path, output, policy.digest),
                 cwd=ROOT,
-                env=self.base_environment(),
+                env=environment,
                 text=True,
                 capture_output=True,
                 check=False,
@@ -78,6 +81,7 @@ class Stage7PrivateScriptBoundaryTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("privacy", result.stderr.lower())
             self.assertNotIn("openai_api_key", result.stderr.lower())
+            self.assertNotIn(secret, result.stdout + result.stderr)
             self.assertFalse(output.exists())
 
     def test_altered_enabled_policy_is_rejected_before_key_access(self) -> None:
