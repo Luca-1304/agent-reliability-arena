@@ -96,7 +96,8 @@ class TransportLedgerTests(unittest.TestCase):
             lines = ledger.read_text(encoding="utf-8").splitlines()
             self.assertEqual(len(lines), 1)
             row = json.loads(lines[0])
-            self.assertEqual(row["schema_version"], "1")
+            self.assertEqual(row["schema_version"], "2")
+            self.assertIsNone(row["previous_record_digest"])
             self.assertEqual(row["sequence"], 1)
             self.assertEqual(row["recorded_at"], "2026-07-22T18:00:00Z")
             self.assertEqual(row["provider"], "fixture-provider")
@@ -129,10 +130,13 @@ class TransportLedgerTests(unittest.TestCase):
             self.assertIs(raised.exception, error)
             self.assertEqual(wrapped.calls, 1)
             row = json.loads(ledger.read_text(encoding="utf-8"))
+            self.assertEqual(row["schema_version"], "2")
+            self.assertIsNone(row["previous_record_digest"])
             self.assertEqual(row["outcome_type"], "error")
             self.assertIsNone(row["result"])
             self.assertEqual(row["error"], error.to_dict())
             verify = verify_transport_ledger(ledger)
+            self.assertEqual(verify["schema_version"], "2")
             self.assertEqual(verify["records"], 1)
             self.assertEqual(verify["results"], 0)
             self.assertEqual(verify["errors"], 1)
@@ -149,6 +153,7 @@ class TransportLedgerTests(unittest.TestCase):
             first.complete(first_request)
 
             summary = verify_transport_ledger(ledger)
+            self.assertEqual(summary["schema_version"], "2")
             self.assertEqual(summary["records"], 1)
             self.assertEqual(summary["results"], 1)
             self.assertEqual(summary["errors"], 0)
@@ -164,6 +169,7 @@ class TransportLedgerTests(unittest.TestCase):
 
             rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
             self.assertEqual([row["sequence"] for row in rows], [1, 2])
+            self.assertEqual(rows[1]["previous_record_digest"], rows[0]["record_digest"])
             self.assertEqual(verify_transport_ledger(ledger)["records"], 2)
 
     def test_rejects_tampered_record_even_when_line_digest_is_recomputed(self) -> None:
