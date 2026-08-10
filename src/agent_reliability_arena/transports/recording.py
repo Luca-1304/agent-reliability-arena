@@ -216,6 +216,10 @@ def _validate_record(
             raise ValueError(f"Ledger result call_id mismatch at line {line_number}.")
         if result.get("provider") != provider:
             raise ValueError(f"Ledger result provider mismatch at line {line_number}.")
+        request_model_id = _required_text(request.get("model_id"), "request model_id", line_number)
+        result_model_id = _required_text(result.get("model_id"), "result model_id", line_number)
+        if result_model_id != request_model_id:
+            raise ValueError(f"Ledger result model_id mismatch at line {line_number}.")
         return "result", record_digest
     if outcome_type == "error":
         if result is not None or not isinstance(error, dict):
