@@ -147,6 +147,38 @@ Receipt creation refuses an existing output and requires the resolved destinatio
 
 A retained old receipt can therefore detect a wholesale replacement of the local witness/evidence history when the replacement changes the committed prefix. If an actor can rewrite both the complete experiment root **and every retained detached receipt**, this mechanism does not provide external notarization. A stronger stage would require separately controlled signatures, timestamping, transparency infrastructure, hardware-backed monotonic state or another independently governed anchor.
 
+## Authenticated detached receipt
+
+A detached receipt may additionally be protected with a create-once HMAC-SHA256 authentication envelope. This adds a separate secret-dependent boundary without changing the receipt itself.
+
+The authentication key must be a uniformly random 32-byte value retained outside the experiment-root failure/adversary domain. The command-line interface reads it only from `ARENA_RECEIPT_AUTH_KEY_HEX`, encoded as exactly 64 hexadecimal characters. Do not commit this value, put it in a receipt/auth file, pass it as a CLI argument, or store it inside the experiment root.
+
+Create the authentication envelope after the detached receipt verifies:
+
+```bash
+export ARENA_RECEIPT_AUTH_KEY_HEX='<64-hex-character secret>'
+python -m agent_reliability_arena.repeated_receipt_auth create \
+  --experiment-root /private/experiment-root \
+  --receipt /separate/receipts/checkpoint-0001.json \
+  --auth /separate/auth/checkpoint-0001.auth.json
+```
+
+Verify it later with the same independently retained secret:
+
+```bash
+export ARENA_RECEIPT_AUTH_KEY_HEX='<same 64-hex-character secret>'
+python -m agent_reliability_arena.repeated_receipt_auth verify \
+  --experiment-root /private/experiment-root \
+  --receipt /separate/receipts/checkpoint-0001.json \
+  --auth /separate/auth/checkpoint-0001.auth.json
+```
+
+The envelope stores only the fixed schema/algorithm, the receipt digest, a domain-separated non-secret key identifier and a domain-separated HMAC tag. It stores no secret key or experiment content. The auth output must resolve outside the experiment root, is create-once, rejects symlinks, and verification rejects an envelope with multiple hard links because another writable pathname would weaken the detached boundary.
+
+Authentication first runs the ordinary detached-receipt verifier. A correct HMAC therefore cannot make a broken witness, ledger or receipt pass. If the experiment root and detached receipt are both replaced, a valid replacement authentication envelope still cannot be produced without the independently retained key.
+
+This is **shared-secret authentication, not a digital signature**. Anyone who obtains the HMAC key can create valid envelopes. It provides no trusted timestamp, transparency-log inclusion, public third-party verification or protection after key compromise. A later asymmetric-signature or external-transparency stage would require its own dependency, key-lifecycle and trust review.
+
 ## Safe pause and continuation
 
 The provider-free API supports a deliberate `max_new_trials` limit. This allows an operator to run a bounded number of new trials and stop only after the last new trial has independently verified and been witnessed.
@@ -161,7 +193,7 @@ On continuation:
 - the next preregistered trial begins;
 - the same exact plan, preflight and start records must match.
 
-The checkpoint remains useful as an atomic progress convenience, but it is not the stronger history commitment: the append-only witness must agree first. Detached receipts are optional operator-retained checkpoints and are not required for ordinary provider-free runner continuation.
+The checkpoint remains useful as an atomic progress convenience, but it is not the stronger history commitment: the append-only witness must agree first. Detached receipts and their optional authentication envelopes are operator-retained checkpoints and are not required for ordinary provider-free runner continuation.
 
 ## Terminal conditions
 
@@ -191,7 +223,7 @@ A process crash in the narrow interval after a trial has persisted completed evi
 - both-complete, neither-complete, Specialist-only and General-only pairs;
 - absolute completion proportions;
 - Specialist-minus-General paired completion difference;
-- Wilson 95% intervals for each condition proportion;
+- Wilson 95% condition intervals;
 - a labelled paired normal-approximation 95% interval;
 - an exact two-sided binomial sign-test p-value over discordant pairs;
 - measured calls, tokens, wall-clock latency and provider-processing time when recorded.
@@ -213,7 +245,7 @@ Monetary cost is not inferred from tokens. Any cost calculation requires separat
 7. preserves its trial and experiment abort records;
 8. proves continuation of that aborted root is refused.
 
-Dedicated witness regression tests prove retained-witness rejection of a valid-looking ledger suffix truncation even when the trial's ledger summary is rewritten to match the shorter still-valid ledger. Detached-receipt tests additionally prove that an older separately retained prefix receipt remains valid after later witness appends but rejects a rewritten committed prefix or a different locally valid replacement history.
+Dedicated witness regression tests prove retained-witness rejection of a valid-looking ledger suffix truncation even when the trial's ledger summary is rewritten to match the shorter still-valid ledger. Detached-receipt tests additionally prove that an older separately retained prefix receipt remains valid after later witness appends but rejects a rewritten committed prefix or a different locally valid replacement history. Authentication-envelope tests prove that replacing the root and receipt still cannot produce a valid replacement HMAC envelope without the independently retained 256-bit key.
 
 The release reproduction explicitly reports `provider_called: false` and `comparative_claim_permitted: false`.
 
@@ -233,4 +265,4 @@ No standard test, release verifier or installed public command makes a real prov
 
 ## Claims boundary
 
-The repeated runner, witness, optional detached receipts, resume rules and analysis methods can be validated using provider-free scripted evidence. That proves experiment infrastructure, not hosted-model performance. The local witness strengthens continuity while retained; a detached receipt can additionally detect replacement of the prefix it committed when that receipt is retained outside the rewritten root. Neither mechanism is proof against an adversary who can rewrite every local evidence copy and every retained receipt. Real comparative claims remain prohibited until a preregistered real dataset is complete, independently verified, disclosure-safe and interpreted with its limitations intact.
+The repeated runner, witness, optional detached receipts and optional HMAC authentication envelopes, resume rules and analysis methods can be validated using provider-free scripted evidence. That proves experiment infrastructure, not hosted-model performance. The local witness strengthens continuity while retained; a detached receipt can additionally detect replacement of the prefix it committed; HMAC authentication can additionally reject replacement of the receipt when the independently retained secret remains uncompromised. None of these mechanisms is a public-key signature, trusted timestamp or external notarization. Real comparative claims remain prohibited until a preregistered real dataset is complete, independently verified, disclosure-safe and interpreted with its limitations intact.
