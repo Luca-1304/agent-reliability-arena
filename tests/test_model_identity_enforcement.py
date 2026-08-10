@@ -205,6 +205,28 @@ class ModelIdentityEnforcementTests(unittest.TestCase):
             self.assertEqual(summary["results"], 1)
             self.assertEqual(summary["errors"], 0)
 
+    def test_verified_success_record_rejects_recomputed_model_identity_rewrite(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = Path(directory) / "calls.jsonl"
+            request = make_request()
+            RecordingTransport(
+                StaticTransport(make_result(request)),
+                ledger,
+                clock=lambda: FIXED_TIME,
+            ).complete(request)
+            row = json.loads(ledger.read_text(encoding="utf-8"))
+            row["result"]["model_id"] = "rewritten-model-snapshot"
+            unsigned = dict(row)
+            unsigned.pop("record_digest")
+            row["record_digest"] = canonical_json_sha256(unsigned)
+            ledger.write_text(
+                json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "model_id"):
+                verify_transport_ledger(ledger)
+
     def test_mismatched_model_is_recorded_as_terminal_error_before_return(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             ledger = Path(directory) / "calls.jsonl"
