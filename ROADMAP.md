@@ -76,7 +76,7 @@ Tracking: [#13 — Prepare Agent Reliability Arena v0.2 release candidate](https
 - package, installed distribution and documentation versions aligned;
 - provider-free pilot preflight command;
 - private run-directory and secret-handling rules;
-- hard call, requested-output-token, reserved-total-token and monetary ceilings;
+- hard call/requested-output gates plus local total-token and monetary reservation ceilings;
 - exact reviewed-policy digest and separate execution approval;
 - real adapter network opener disabled by default;
 - explicit abort conditions;
@@ -105,7 +105,7 @@ These controls verify repository, packaging, deterministic fixture, isolation an
 
 ### Stage 7 — Minimal private provider pilot
 
-Status: **runner and disabled execution packet implemented and provider-free rehearsed; real provider execution not yet performed**  
+Status: **runner, disabled execution packet and provider-free pre-execution boundary implemented; historical privacy hold remains open; real provider execution not yet performed**  
 Tracking: [#14 — Run a minimal private real-provider pilot](https://github.com/Luca-1304/agent-reliability-arena/issues/14)
 
 Completed preparation:
@@ -114,30 +114,40 @@ Completed preparation:
 - [x] both conditions use the same model, task, contract, seed and tool boundary;
 - [x] exact preflight call-plan enforcement;
 - [x] duplicate and unplanned calls rejected before provider invocation;
-- [x] strict call, token and monetary reservations;
+- [x] hard call/requested-output gates and conservative local token/monetary reservations;
 - [x] fresh private run directory required and reuse rejected;
 - [x] preflight, policy, start, condition-result, ledger and verification artifacts;
 - [x] abort evidence and partial ledger preserved on failure;
-- [x] provider-reported model identity is checked at the recording boundary, preserved as a non-retryable independently verifiable mismatch error, and rejected before orchestration can use mismatched output;
+- [x] provider response must contain explicit non-empty model provenance; missing identity fails closed rather than being synthesized from the request;
+- [x] provider-reported model identity is checked again at the recording boundary, preserved as a non-retryable independently verifiable mismatch error, and rejected before orchestration can use mismatched output;
 - [x] provider-free paired rehearsal covering both conditions and five role calls;
-- [x] local-only execution script refuses GitHub Actions, missing approvals and missing environment credentials;
+- [x] local-only execution script refuses GitHub Actions and missing operator approvals before any later live boundary;
+- [x] source-controlled Stage 7 privacy execution gate ties real execution to issue #14 and remains `incident_status: open`, `execution_permitted: false` until external closure is independently verified and reviewed;
+- [x] paid CLI has no privacy-gate override and stops at the open gate before API-key lookup, output creation or provider transport construction;
 - [x] disabled review packet pins candidate snapshot `gpt-5.5-2026-04-23`, one `success` scenario, exact config/policy/preflight commitments and a dated `2026-08-10` price-source digest;
-- [x] disabled packet reserves 16,384 total tokens and 96 USD cents against a deliberately pessimistic 50-cent all-tokens-at-output-rate planning bound, under a proposed-not-approved $1.00 hard ceiling;
+- [x] disabled packet reserves 16,384 total tokens and 96 USD cents against a deliberately pessimistic 50-cent all-tokens-at-output-rate planning bound, under a proposed-not-approved $1.00 maximum local reservation;
 - [x] packet verification reconstructs every commitment provider-free and requires `external_execution_enabled: false`, `operator_approved: false` and `provider_called: false`;
-- [x] complete Python 3.10–3.13 source, release, wheel and clean-wheel verification.
+- [x] private execution-policy verification binds the execution config to the candidate and permits only `external_execution_enabled: false -> true`; model, scenario, call, token, currency or monetary drift is rejected even if the altered policy has its own digest;
+- [x] Stage 7 execution JSON inputs reject duplicate keys and symlinks;
+- [x] actual Stage 7 candidate/paid-script boundary has permanent provider-free regressions;
+- [x] complete Python 3.10–3.13 source, release, wheel and clean-wheel verification for merged predecessor stages.
 
-Still required to complete Stage 7:
+Still required to complete Stage 7, in order:
 
-- [ ] freshly re-confirm the exact dated model snapshot is available at the execution time;
-- [ ] freshly re-confirm current provider pricing and review a new packet if the dated source is stale or changed;
-- [ ] create and privately review an enabled one-scenario policy from the disabled candidate;
-- [ ] explicitly approve the exact worst-case monetary ceiling after reading the final preflight;
-- [ ] supply `OPENAI_API_KEY` through the local process environment only;
-- [ ] execute one local paired pilot;
-- [ ] verify the resulting private ledger and final manifest independently;
-- [ ] retain failures and make no public comparative performance claim.
+- [ ] independently verify every historical privacy-closure criterion in `docs/HOSTING_PRIVACY_BOUNDARY.md`, then merge a focused exact-head-reviewed change closing `examples/stage7_candidate/privacy-execution-gate.json`;
+- [ ] freshly re-confirm the exact dated model snapshot is available at execution time;
+- [ ] freshly re-confirm current provider pricing and review a new packet if the dated source is stale or materially changed;
+- [ ] prepare a dedicated restricted provider project/key and suitably low provider-side spend backstop where practical;
+- [ ] create a private enabled one-scenario policy differing from the committed candidate only by `external_execution_enabled: true`, then independently verify its exact policy and preflight digests;
+- [ ] explicitly approve the exact local token and monetary reservation after reading the final preflight;
+- [ ] supply `OPENAI_API_KEY` through the local process environment only after all provider-free gates pass;
+- [ ] execute one local paired pilot exactly once, with no automatic retry;
+- [ ] clear the credential and verify the resulting private ledger and final manifest independently;
+- [ ] retain success, failure and abort evidence and make no public comparative performance claim.
 
-Exit condition: one real-provider paired run completes or aborts with preserved, independently verified private evidence. One pilot remains insufficient for a representative performance conclusion.
+The 16,384-token and 96-cent values are local pre-call reservation/accounting controls, not proof of an instantaneous provider billing cutoff. Provider-side project/key restrictions and spend controls are an independent backstop, not a substitute for the Arena policy.
+
+Exit condition: one real-provider paired run completes or aborts with preserved, independently verified private evidence after the privacy gate has been legitimately closed. One pilot remains insufficient for a representative performance conclusion.
 
 ### Stage 8 — Repeated paired experiment
 
