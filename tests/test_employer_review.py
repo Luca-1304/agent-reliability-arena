@@ -100,10 +100,11 @@ class EmployerReviewTests(unittest.TestCase):
     def test_project_status_is_current_and_preserves_empirical_boundary(self) -> None:
         text = PROJECT_STATUS.read_text(encoding="utf-8")
         for marker in (
-            "Last verified: 23 July 2026",
+            "Last verified: 10 August 2026",
             "published prerelease",
             "attested",
-            "Execution pending",
+            "Historical privacy closure pending",
+            "source-controlled privacy gate remains open",
             "No real provider request has been used as benchmark evidence.",
         ):
             self.assertIn(marker, text)
