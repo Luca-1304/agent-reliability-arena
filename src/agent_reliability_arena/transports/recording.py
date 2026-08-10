@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,7 @@ LEGACY_SCHEMA_VERSION = "1"
 SCHEMA_VERSION = "2"
 _SUPPORTED_SCHEMA_VERSIONS = {LEGACY_SCHEMA_VERSION, SCHEMA_VERSION}
 DEFAULT_LOCK_TIMEOUT_SECONDS = 30.0
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _RECORD_KEYS_V1 = {
     "schema_version",
     "sequence",
@@ -32,6 +34,19 @@ _RECORD_KEYS_V1 = {
     "record_digest",
 }
 _RECORD_KEYS_V2 = _RECORD_KEYS_V1 | {"previous_record_digest"}
+_MODEL_IDENTITY_MISMATCH_ERROR_KEYS = {
+    "message",
+    "category",
+    "retryable",
+    "status_code",
+    "provider_error_code",
+    "client_request_id",
+    "provider_request_id",
+    "expected_model_id",
+    "observed_model_id",
+    "response_id",
+    "raw_response_sha256",
+}
 
 
 @dataclass(frozen=True)
@@ -90,6 +105,52 @@ def _validate_path(path: Path, *, require_exists: bool) -> None:
             raise ValueError(f"Ledger path must be a regular file: {path}")
     elif require_exists:
         raise ValueError(f"Ledger does not exist: {path}")
+
+
+def _validate_model_identity_mismatch_error(
+    error: dict[str, object],
+    request: dict[str, object],
+    line_number: int,
+) -> None:
+    if error.get("category") != "model_identity_mismatch":
+        return
+    if set(error) != _MODEL_IDENTITY_MISMATCH_ERROR_KEYS:
+        raise ValueError(
+            f"Ledger model identity mismatch error shape is invalid at line {line_number}."
+        )
+    if error.get("retryable") is not False:
+        raise ValueError(
+            f"Ledger model identity mismatch must be non-retryable at line {line_number}."
+        )
+    expected_model_id = _required_text(
+        error.get("expected_model_id"),
+        "error expected_model_id",
+        line_number,
+    )
+    request_model_id = _required_text(request.get("model_id"), "request model_id", line_number)
+    if expected_model_id != request_model_id:
+        raise ValueError(
+            f"Ledger model identity mismatch expected_model_id disagrees with request at line {line_number}."
+        )
+    observed_model_id = _required_text(
+        error.get("observed_model_id"),
+        "error observed_model_id",
+        line_number,
+    )
+    if observed_model_id == expected_model_id:
+        raise ValueError(
+            f"Ledger model identity mismatch observed_model_id does not differ at line {line_number}."
+        )
+    _required_text(error.get("response_id"), "error response_id", line_number)
+    raw_response_sha256 = _required_text(
+        error.get("raw_response_sha256"),
+        "error raw_response_sha256",
+        line_number,
+    )
+    if not _HEX64.fullmatch(raw_response_sha256):
+        raise ValueError(
+            f"Ledger model identity mismatch raw_response_sha256 is invalid at line {line_number}."
+        )
 
 
 def _validate_record(
@@ -163,6 +224,7 @@ def _validate_record(
         _required_text(error.get("category"), "error category", line_number)
         if not isinstance(error.get("retryable"), bool):
             raise ValueError(f"Ledger error retryable flag is invalid at line {line_number}.")
+        _validate_model_identity_mismatch_error(error, request, line_number)
         return "error", record_digest
     raise ValueError(f"Ledger outcome_type is invalid at line {line_number}.")
 
@@ -383,6 +445,28 @@ class RecordingTransport:
             raise ValueError("Wrapped transport result does not match the request.")
         if result.provider != self.provider:
             raise ValueError("Wrapped transport result provider does not match the transport provider.")
+        if result.model_id != request.model_id:
+            error = TransportError(
+                "Provider-reported model_id does not match the requested model_id.",
+                category="model_identity_mismatch",
+                retryable=False,
+                client_request_id=result.client_request_id,
+                provider_request_id=result.provider_request_id,
+            )
+            mismatch_evidence = {
+                **error.to_dict(),
+                "expected_model_id": request.model_id,
+                "observed_model_id": result.model_id,
+                "response_id": result.response_id,
+                "raw_response_sha256": result.raw_response_sha256,
+            }
+            self._commit_record(
+                request,
+                outcome_type="error",
+                result=None,
+                error=mismatch_evidence,
+            )
+            raise error
         self._commit_record(
             request,
             outcome_type="result",
