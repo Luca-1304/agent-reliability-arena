@@ -118,6 +118,7 @@ Completed preparation:
 - [x] fresh private run directory required and reuse rejected;
 - [x] preflight, policy, start, condition-result, ledger and verification artifacts;
 - [x] abort evidence and partial ledger preserved on failure;
+- [x] provider-reported model identity is checked at the recording boundary, preserved as a non-retryable independently verifiable mismatch error, and rejected before orchestration can use mismatched output;
 - [x] provider-free paired rehearsal covering both conditions and five role calls;
 - [x] local-only execution script refuses GitHub Actions, missing approvals and missing environment credentials;
 - [x] complete Python 3.10–3.13 source, release, wheel and clean-wheel verification.
