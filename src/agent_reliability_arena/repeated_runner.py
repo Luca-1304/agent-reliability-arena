@@ -16,6 +16,11 @@ from .repeated_plan import (
     TrialPlan,
     build_repeated_experiment_preflight,
 )
+from .repeated_witness import (
+    WITNESS_FILENAME,
+    append_completed_trial_witness,
+    verify_completed_trial_witnesses,
+)
 from .transports import ModelTransport, verify_transport_ledger
 
 
@@ -26,6 +31,7 @@ _FIXED_ROOT_NAMES = {
     "experiment-checkpoint.json",
     "experiment-summary.json",
     "experiment-abort.json",
+    WITNESS_FILENAME,
 }
 
 
@@ -454,6 +460,12 @@ def run_private_repeated_experiment(
 
     completed = _discover_trial_prefix(run_root, plan, preflight, catalog)
     completed_ids = [trial.trial_id for trial in plan.trials[: len(completed)]]
+    verify_completed_trial_witnesses(
+        run_root,
+        completed_ids,
+        plan.digest,
+        str(preflight["manifest_digest"]),
+    )
     _validate_checkpoint(checkpoint_path, plan, preflight, completed_ids)
     _replace_checkpoint(checkpoint_path, _checkpoint_payload(plan, preflight, completed_ids, clock))
 
@@ -504,8 +516,20 @@ def run_private_repeated_experiment(
             )
             if trial_summary != verified:
                 raise ValueError(f"Trial {trial.trial_id} returned summary differs from persisted evidence.")
+            append_completed_trial_witness(
+                run_root,
+                trial.trial_id,
+                plan.digest,
+                str(preflight["manifest_digest"]),
+            )
             completed.append(verified)
             completed_ids.append(trial.trial_id)
+            verify_completed_trial_witnesses(
+                run_root,
+                completed_ids,
+                plan.digest,
+                str(preflight["manifest_digest"]),
+            )
             new_trials_started += 1
             _replace_checkpoint(
                 checkpoint_path,

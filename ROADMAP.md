@@ -29,6 +29,7 @@ Status: **complete**
 Status: **complete**
 
 - append-only JSONL ledger;
+- new ledgers use hash-chained record schema 2 while non-empty legacy schema-1 ledgers remain verifiable and continuable without migration;
 - request, record and full-ledger digests;
 - sequence and cross-field validation;
 - tamper, malformed-data, symlink and unsafe-path rejection;
@@ -84,7 +85,7 @@ Tracking: [#13 — Prepare Agent Reliability Arena v0.2 release candidate](https
 
 ### Reliability assurance architecture
 
-Status: **implemented; exact-head rollout evidence required before treating the current branch as merged**
+Status: **implemented, exact-head verified and merged; required gates remain the evidence authority for subsequent changes**
 
 The repository reliability system is intentionally layered rather than one oversized repeated job:
 
@@ -98,7 +99,7 @@ Fast, Deep and Specialist are required reliability roles. Scheduled remains advi
 
 Performance telemetry is **observational only**. Median/worst timing can be reported, but no performance threshold becomes merge-blocking from this architecture alone. A `slower-than-recent-median` observation requires at least ten explicit prior samples and still does not change the required-gate decision.
 
-These controls verify repository, packaging, deterministic fixture, isolation and evidence behavior. They do **not** prove provider deletion, production deployment health, Git-to-Vercel provenance, absence of every possible flake, or real-provider/model performance.
+These controls verify repository, packaging, deterministic fixture, isolation and evidence behavior. They do **not** prove provider deletion, production deployment health, Git-to-Vercel provenance, absence of every possible flake, external immutability of local private evidence, or real-provider/model performance.
 
 ## Current empirical boundary
 
@@ -147,6 +148,8 @@ Completed implementation:
 - [x] General-first and Specialist-first private paired execution without changing condition artifact names;
 - [x] immutable experiment plan, preflight and start records;
 - [x] independently verified trial ledger and summary before checkpoint advancement;
+- [x] append-only hash-chained root witness commits each verified completed trial before the replaceable checkpoint advances;
+- [x] continuation re-verifies the witnessed completed prefix and rejects retained-witness ledger truncation or evidence rewrite before any new provider-shaped call;
 - [x] atomic experiment checkpoint after each verified completed trial;
 - [x] deliberate pause after a verified trial and continuation without replaying completed calls;
 - [x] refusal of non-contiguous, partial, altered, unexpected or aborted evidence;
@@ -159,6 +162,8 @@ Completed implementation:
 - [x] permanent provider-free four-trial pause/resume release reproduction;
 - [x] separate terminal-abort reproduction;
 - [x] `comparative_claim_permitted: false` throughout.
+
+The root witness is a local continuity control, not external notarization: an actor able to rewrite both complete local evidence and the complete witness history still requires a separately controlled external anchor to defeat that stronger threat model.
 
 Still required before Stage 8 becomes empirical evidence:
 

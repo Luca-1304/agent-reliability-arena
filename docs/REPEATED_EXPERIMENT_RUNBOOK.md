@@ -43,6 +43,7 @@ experiment-root/
 ├── experiment-plan.json
 ├── experiment-preflight.json
 ├── experiment-start.json
+├── experiment-evidence-witness.jsonl
 ├── experiment-checkpoint.json
 ├── trial-0001/
 │   ├── preflight.json
@@ -57,9 +58,9 @@ experiment-root/
 └── experiment-summary.json        or experiment-abort.json
 ```
 
-Plan, preflight, start, final summary and abort records are immutable create-once files. The checkpoint is the only replaceable root artifact and is atomically replaced after a trial has completed and independently verified.
+Plan, preflight, start, final summary and abort records are immutable create-once files. The evidence witness is append-only and hash-chained: one root-level record is durably appended for each independently verified completed trial. The checkpoint remains the only replaceable root artifact and is atomically replaced only after the corresponding witness record has been written and reverified.
 
-Private directories and JSON evidence use restrictive permissions where the operating system supports them.
+Private directories and evidence files use restrictive permissions where the operating system supports them.
 
 ## Trial execution
 
@@ -85,18 +86,45 @@ A trial is not counted as completed merely because the function returns. Before 
 - the complete transport ledger and its recorded summary;
 - `comparative_claim_permitted: false`.
 
+After that independent trial verification succeeds, the runner appends a root-level witness record containing the exact trial ID, plan/preflight commitments, verified ledger schema and record count, whole-ledger SHA-256 and raw verification-summary SHA-256. The witness record itself is chained to the preceding witness digest. The complete witnessed prefix is reverified before the ordinary replaceable checkpoint may advance.
+
+## Evidence continuity witness
+
+`experiment-evidence-witness.jsonl` exists to protect the interval between completed trials and later final evidence indexing.
+
+Transport ledger schema 2 already links records *inside* a ledger, while the disclosure-safe private evidence-set index commits finalized evidence sets. The witness has a different job: it makes the sequence of already accepted trials monotonic during a repeated experiment.
+
+For witness sequence 1, `previous_witness_digest` is `null`. Every later witness record points to the immediately preceding `witness_digest`. Each digest covers the entire unsigned witness record through canonical JSON SHA-256.
+
+On continuation, the witness must exactly equal the independently reverified completed-trial prefix:
+
+- same number of records;
+- same ordered trial IDs;
+- same plan and preflight digests;
+- same witness sequence and predecessor links;
+- same ledger schema, record count and whole-ledger SHA-256;
+- same raw verification-summary SHA-256;
+- same recomputed witness digests.
+
+A completed trial with no matching witness, a shorter witness, a witness ahead of trial evidence, or any witness/evidence mismatch fails closed before another provider-shaped call starts. The runner does not silently backfill unwitnessed completed history.
+
+This is a **local continuity control**, not an external notarization system. It detects later truncation or consistent rewriting of already-witnessed trial evidence while the witness remains trustworthy. An actor able to rewrite both the complete local evidence history and the complete witness history can still construct a different internally consistent local history. Defeating that stronger threat requires an independently controlled external anchor, signature/transparency service, hardware-backed monotonic counter or equivalent separately reviewed mechanism.
+
 ## Safe pause and continuation
 
-The provider-free API supports a deliberate `max_new_trials` limit. This allows an operator to run a bounded number of new trials and stop only after the last new trial has independently verified.
+The provider-free API supports a deliberate `max_new_trials` limit. This allows an operator to run a bounded number of new trials and stop only after the last new trial has independently verified and been witnessed.
 
-Continuation is permitted only when all existing trial directories form a contiguous prefix of the preregistered schedule and every one is a verified completed trial.
+Continuation is permitted only when all existing trial directories form a contiguous prefix of the preregistered schedule, every one is a verified completed trial, and the root witness exactly commits that same prefix.
 
 On continuation:
 
 - completed trials are re-verified;
+- the witness chain and every completed-trial commitment are reverified before checkpoint replacement;
 - completed trial calls are not reconstructed or replayed;
 - the next preregistered trial begins;
 - the same exact plan, preflight and start records must match.
+
+The checkpoint remains useful as an atomic progress convenience, but it is not the stronger history commitment: the append-only witness must agree first.
 
 ## Terminal conditions
 
@@ -109,10 +137,13 @@ The same experiment root must not continue after any of the following:
 - an unexpected file or directory appears in the experiment root;
 - plan, preflight, start or checkpoint digests drift;
 - a completed trial ledger or final summary no longer verifies;
+- the witness is missing, shorter, ahead, malformed, reordered, broken, or disagrees with the completed prefix;
 - a provider request falls outside that trial's preflight;
 - parser, contract, sandbox or verifier evidence becomes inconsistent.
 
 A terminal root remains evidence. To try again, create a new reviewed plan and a new private root. Reusing the old root could conceal duplicate provider calls and is therefore prohibited.
+
+A process crash in the narrow interval after a trial has persisted completed evidence but before its witness append completes is intentionally not auto-repaired. That root is treated as incomplete evidence instead of silently accepting unwitnessed history.
 
 ## Descriptive analysis
 
@@ -137,13 +168,15 @@ Monetary cost is not inferred from tokens. Any cost calculation requires separat
 `scripts/verify_repeated_release.py` proves the mechanism without credentials or network access. It:
 
 1. preregisters four success-scenario trials with two General-first and two Specialist-first orders;
-2. runs one trial and pauses after its verified evidence;
+2. runs one trial and pauses after its verified, witnessed evidence;
 3. resumes with a fresh scripted transport and proves the first trial is not replayed;
-4. completes all four trials and verifies 20 ledger records;
+4. completes all four trials, producing a four-record witness chain and 20 verified ledger records;
 5. reconstructs 400 measured total tokens and 20 ms of scripted latency;
 6. creates a separate invalid-output experiment;
 7. preserves its trial and experiment abort records;
 8. proves continuation of that aborted root is refused.
+
+Dedicated witness regression tests additionally prove retained-witness rejection of a valid-looking ledger suffix truncation even when the trial's ledger summary is rewritten to match the shorter still-valid ledger.
 
 The release reproduction explicitly reports `provider_called: false` and `comparative_claim_permitted: false`.
 
@@ -163,4 +196,4 @@ No standard test, release verifier or installed public command makes a real prov
 
 ## Claims boundary
 
-The repeated runner, resume rules and analysis methods can be validated using provider-free scripted evidence. That proves experiment infrastructure, not hosted-model performance. Real comparative claims remain prohibited until a preregistered real dataset is complete, independently verified, disclosure-safe and interpreted with its limitations intact.
+The repeated runner, witness, resume rules and analysis methods can be validated using provider-free scripted evidence. That proves experiment infrastructure, not hosted-model performance. The local witness strengthens continuity while retained; it is not proof against an adversary who can rewrite both witness and evidence history. Real comparative claims remain prohibited until a preregistered real dataset is complete, independently verified, disclosure-safe and interpreted with its limitations intact.
