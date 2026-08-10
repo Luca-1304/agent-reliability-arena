@@ -152,6 +152,8 @@ Completed implementation:
 - [x] continuation re-verifies the witnessed completed prefix and rejects retained-witness ledger truncation or evidence rewrite before any new provider-shaped call;
 - [x] deterministic create-once detached receipts commit exact verified witness prefixes outside the experiment root without adding network or Git authority;
 - [x] earlier detached receipts remain verifiable after later append-only witness growth and reject rewritten committed prefixes or different locally valid replacement histories;
+- [x] optional HMAC-SHA256 authentication envelopes bind a verified detached receipt to an independently retained 256-bit operator secret without adding runtime dependencies or network authority;
+- [x] replacing the local root and detached receipt is rejected by the authenticated envelope unless the HMAC key is also compromised;
 - [x] atomic experiment checkpoint after each verified completed trial;
 - [x] deliberate pause after a verified trial and continuation without replaying completed calls;
 - [x] refusal of non-contiguous, partial, altered, unexpected or aborted evidence;
@@ -165,7 +167,7 @@ Completed implementation:
 - [x] separate terminal-abort reproduction;
 - [x] `comparative_claim_permitted: false` throughout.
 
-The root witness is a local continuity control. A detached receipt can additionally detect replacement of the exact witness prefix it committed when at least one receipt copy is retained outside the rewritten root. Neither mechanism is external notarization: an actor able to rewrite complete local evidence, the complete witness history and every retained receipt still requires a separately controlled external anchor to defeat that stronger threat model.
+The root witness is a local continuity control. A detached receipt can detect replacement of the exact witness prefix it committed when at least one receipt copy is retained outside the rewritten root. An optional HMAC authentication envelope can additionally detect replacement of the detached receipt while the independently retained 256-bit key remains uncompromised. HMAC is shared-secret authentication, not a public-key signature, trusted timestamp or external notarization; compromise of the key or of every independently retained trust artifact remains outside this guarantee.
 
 Still required before Stage 8 becomes empirical evidence:
 
