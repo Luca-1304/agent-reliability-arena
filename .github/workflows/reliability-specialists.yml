@@ -108,7 +108,7 @@ jobs:
             --output "$RUNNER_TEMP/reproducible-build-scan.json"
       - name: Upload scanned specialist evidence
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-reproducible-build-${{ github.run_attempt }}
           path: ${{ runner.temp }}/reproducible-build-evidence
@@ -117,7 +117,7 @@ jobs:
           compression-level: 9
       - name: Upload blocked scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-reproducible-build-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/reproducible-build-scan.json
@@ -181,7 +181,7 @@ jobs:
             --output "$RUNNER_TEMP/determinism-scan.json"
       - name: Upload scanned specialist evidence
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-determinism-${{ github.run_attempt }}
           path: ${{ runner.temp }}/determinism-evidence
@@ -190,7 +190,7 @@ jobs:
           compression-level: 9
       - name: Upload blocked scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-determinism-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/determinism-scan.json
@@ -260,7 +260,7 @@ jobs:
             --output "$RUNNER_TEMP/clean-room-scan.json"
       - name: Upload scanned specialist evidence
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-clean-room-${{ github.run_attempt }}
           path: ${{ runner.temp }}/clean-room-evidence
@@ -269,7 +269,7 @@ jobs:
           compression-level: 9
       - name: Upload blocked scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-clean-room-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/clean-room-scan.json
@@ -329,7 +329,7 @@ jobs:
             --output "$RUNNER_TEMP/concurrency-scan.json"
       - name: Upload scanned specialist evidence
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-concurrency-${{ github.run_attempt }}
           path: ${{ runner.temp }}/concurrency-evidence
@@ -338,7 +338,7 @@ jobs:
           compression-level: 9
       - name: Upload blocked scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-concurrency-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/concurrency-scan.json
@@ -411,7 +411,7 @@ jobs:
             --output "$RUNNER_TEMP/diagnostic-security-scan.json"
       - name: Upload scanned specialist evidence
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-diagnostic-security-${{ github.run_attempt }}
           path: ${{ runner.temp }}/diagnostic-security-evidence
@@ -420,7 +420,7 @@ jobs:
           compression-level: 9
       - name: Upload blocked scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-diagnostic-security-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/diagnostic-security-scan.json
@@ -537,7 +537,7 @@ jobs:
 
       - name: Upload scanned Specialist role evidence
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-specialist-role-${{ github.run_attempt }}
           path: ${{ runner.temp }}/specialist-role-evidence
@@ -547,7 +547,7 @@ jobs:
 
       - name: Upload blocked Specialist scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-specialist-role-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/specialist-role-scan.json

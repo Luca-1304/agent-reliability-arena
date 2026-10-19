@@ -231,7 +231,7 @@ jobs:
 
       - name: Upload sanitised scanned reliability evidence
         if: always() && steps.diagnostic_redaction.outcome == 'success' && steps.diagnostic_scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: fifteen-pass-diagnostics-${{ matrix.python-version }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/fifteen-pass-diagnostics
@@ -241,7 +241,7 @@ jobs:
 
       - name: Upload redacted control reports only
         if: always() && (steps.diagnostic_redaction.outcome == 'failure' || steps.diagnostic_scan.outcome == 'failure')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: fifteen-pass-diagnostics-blocked-${{ matrix.python-version }}-${{ github.run_attempt }}
           path: |
@@ -344,7 +344,7 @@ jobs:
 
       - name: Upload scanned Deep role evidence
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-deep-role-${{ github.run_attempt }}
           path: ${{ runner.temp }}/deep-role-evidence
@@ -354,7 +354,7 @@ jobs:
 
       - name: Upload blocked Deep scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-deep-role-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/deep-role-scan.json
