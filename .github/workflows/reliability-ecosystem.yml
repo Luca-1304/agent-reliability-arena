@@ -106,7 +106,7 @@ jobs:
 
       - name: Upload scanned ecosystem advisory
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-ecosystem-advisory-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ecosystem-evidence
@@ -116,7 +116,7 @@ jobs:
 
       - name: Upload blocked scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-ecosystem-advisory-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ecosystem-scan.json
@@ -221,7 +221,7 @@ jobs:
 
       - name: Upload scanned Scheduled role evidence
         if: always() && steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-scheduled-role-${{ github.run_attempt }}
           path: ${{ runner.temp }}/scheduled-role-evidence
@@ -231,7 +231,7 @@ jobs:
 
       - name: Upload blocked Scheduled scanner report
         if: always() && steps.scan.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: reliability-scheduled-role-blocked-${{ github.run_attempt }}
           path: ${{ runner.temp }}/scheduled-role-scan.json
