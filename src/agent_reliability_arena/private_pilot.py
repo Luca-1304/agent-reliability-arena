@@ -45,8 +45,21 @@ def _normalise_condition_order(value: object) -> tuple[str, str]:
     return value
 
 
+def _assert_no_symlink_ancestors(path: Path) -> None:
+    """Reject redirected parent directories before private evidence is written.
+
+    This is a preflight boundary, not a replacement for OS-level isolation or
+    protection against an attacker that can replace path components mid-run.
+    """
+    for ancestor in Path(path).parents:
+        is_junction = getattr(ancestor, "is_junction", None)
+        if ancestor.is_symlink() or (callable(is_junction) and is_junction()):
+            raise ValueError("Private pilot path must not traverse a symlinked parent directory.")
+
+
 def _prepare_private_root(path: Path) -> Path:
     root = Path(path)
+    _assert_no_symlink_ancestors(root)
     if root.is_symlink():
         raise ValueError("Private pilot run directory must not be a symlink.")
     if root.exists():
