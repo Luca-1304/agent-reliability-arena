@@ -10,7 +10,10 @@ from pathlib import Path
 from agent_reliability_arena.config import ExperimentConfig
 from agent_reliability_arena.live_requests import PromptCatalog
 from agent_reliability_arena.pilot_policy import PilotPolicy, build_pilot_preflight
-from agent_reliability_arena.private_pilot import run_private_paired_pilot
+from agent_reliability_arena.private_pilot import (
+    _assert_no_symlink_ancestors,
+    run_private_paired_pilot,
+)
 from agent_reliability_arena.stage7_candidate import (
     read_stage7_json_object,
     verify_stage7_candidate,
@@ -28,6 +31,7 @@ OPERATOR_CONFIRMATION = "I_APPROVE_ONE_PRIVATE_PILOT"
 
 def _verify_prepared_private_output(path: Path) -> Path:
     target = Path(path)
+    _assert_no_symlink_ancestors(target)
     if target.is_symlink():
         raise RuntimeError("Private pilot output directory must not be a symlink.")
     if not target.exists():
