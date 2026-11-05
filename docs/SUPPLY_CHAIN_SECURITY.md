@@ -64,7 +64,7 @@ Dependabot checks both Python packaging metadata and GitHub Actions. CodeQL anal
 - CodeQL cannot prove the absence of logic, protocol, authorisation or operational vulnerabilities.
 - A dependency-free runtime still relies on Python, the operating system, GitHub Actions, the build backend and release infrastructure.
 - Existing `v0.2.0rc1` assets remain immutable and predate the SBOM package. The `v0.2.0rc2` release path publishes the SBOM and supply-chain manifest as first-class assets and generates GitHub provenance and SBOM attestations for the wheel and source distribution.
-- GitHub-hosted actions are external dependencies. Dependabot reduces staleness, while full commit-SHA pinning remains a future hardening option that must preserve maintainability.
+- GitHub-hosted actions remain external dependencies. The reviewed workflows use immutable action commit-SHA references, with Dependabot providing reviewable update proposals. Pinned action identities and compatibility still require ongoing verification; neither pinning nor Dependabot eliminates upstream or runner compromise.
 - Private real-provider evidence remains outside the public repository and requires separate local controls.
 
 ## Options considered
@@ -83,4 +83,4 @@ Add GitHub artifact attestations and release the deterministic SBOM without rewr
 
 ## Recommendation
 
-We should keep Option 2 as the repository baseline and use the rc2 implementation of Option 3 for downloadable release artifacts. Future hardening can pin third-party action revisions more strictly and move the builder into a reviewed reusable workflow if the maintenance tradeoff remains acceptable. Tactical findings from future CodeQL, dependency or manual reviews still require individual validation and fixes; architecture and automation do not close a vulnerability on their own.
+We should keep Option 2 as the repository baseline and use the rc2 implementation of Option 3 for downloadable release artifacts. Future hardening can improve action provenance review, consider a reviewed reusable build workflow if the maintenance tradeoff is justified, and strengthen source/history coverage with independent scans. Tactical findings from future CodeQL, dependency or manual reviews still require individual validation and fixes; architecture and automation do not close a vulnerability on their own.
